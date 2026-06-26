@@ -758,6 +758,7 @@ Memory Hub 不输出: Conclusion（结论）
 | ADR-018 | No Orphan Memory | Final Decision |
 | ADR-019 | Reflection Is Memory Maintenance | Final Decision |
 | ADR-020 | Memory Hub Is A Witness | Final Decision |
+| ADR-012 | Engine 重新定义（Phase B） | Final Decision（Engine = Domain Capability，参见 10_1 第 6 章） |
 
 ---
 
@@ -779,7 +780,7 @@ Memory Hub 不输出: Conclusion（结论）
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.0 | 2026-06-22 | 初始版本，确认 9 条边界原则（P1-P9）及 9 条 ADR | ✅ 已确认 |
+| 1.1 | 2026-06-26 | Phase B 修订：附录 A 补充 ADR-012（Engine 重新定义） | ✅ 已确认 |
 
 ---
 

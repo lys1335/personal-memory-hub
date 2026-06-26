@@ -34,7 +34,22 @@ Memory Engine **不是**人格模块，不模拟人格特征。
 
 Memory Engine 是底层记忆基础设施，提供记忆全生命周期管理能力。
 
-### 2.3 职责
+### 2.3 Memory Domain Orchestrator（Phase B 重新定义）
+
+> **重要变更（Phase B）**：MemoryEngine 重新定义为 **Memory Domain Orchestrator**（记忆领域编排器）。
+
+MemoryEngine 协调以下子 Engine：
+
+| 子 Engine | 职责 |
+|-----------|------|
+| ArchiveEngine | 认知压缩归档 |
+| EvidenceEngine | 证据链管理与验证 |
+| RelationshipEngine | 图关系管理 |
+| CandidateEngine | 候选生成与验证 |
+
+**关键约束**：MemoryEngine **不直接访问 Repository**。它通过 Service 层协调数据访问。
+
+### 2.4 职责
 
 | 职责 | 说明 |
 |------|------|
@@ -617,7 +632,7 @@ Entity = Observations + Beliefs + State（State = Belief + Current Context，参
 
 | 术语 | 说明 |
 |------|------|
-| Memory Engine | 记忆分类、归档、检索、总结、认知更新、上下文构建的核心引擎 |
+| Memory Engine | 记忆分类、归档、检索、总结、认知更新、上下文构建的核心引擎。**Phase B 重新定义为 Memory Domain Orchestrator**（记忆领域编排器），协调 ArchiveEngine / EvidenceEngine / RelationshipEngine / CandidateEngine，不直接访问 Repository（参见 10_1） |
 | Context Builder | 将记忆转换为 Prompt Context 的组件（含 Ranker/Compressor/Assembler 模块，参见 06 第 10.3 章） |
 | Ingestion Engine | 接收 Conversation，输出 Observation（参见 06 第 3.2 章） |
 | Reflection Engine | 执行 Reflection Workflow，输出 Pattern/Belief（参见 06 第 3.3 章） |
@@ -644,7 +659,7 @@ Entity = Observations + Beliefs + State（State = Belief + Current Context，参
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.5 | 2026-06-20 | Review 06 修订：(1) 术语表补充 Ingestion/Reflection/Activation/Retrieval/Context Builder/Scheduler 六引擎术语 | ✅ 已确认 |
+| 1.6 | 2026-06-26 | Phase B 修订：(1) MemoryEngine 重新定义为 Memory Domain Orchestrator，协调 Archive/Evidence/Relationship/Candidate Engine (2) 明确 MemoryEngine 不直接访问 Repository (3) 术语表补充 Phase B 变更 | ✅ 已确认 |
 
 ---
 

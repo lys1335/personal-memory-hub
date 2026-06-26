@@ -1059,6 +1059,7 @@ INSERT INTO memory_hub.workspace (name, description) VALUES
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
+| 1.2 | 2026-06-26 | Phase B 修订：(1) 新增 CR-008 与 10_1 的一致性检查 (2) Repository 按 Domain Aggregate 组织的表结构分组说明 (3) QueryRepository 概念对齐 | ✅ 已确认 |
 | 1.1 | 2026-06-25 | (1) 修复 UUIDv7 部署说明（参见 03 第 4.1 章） (2) State 不落库约束（参见 05 第 12 章 / 08 第 3.3 章） (3) Observation Type CHECK 约束（参见 05 第 6 章） (4) Memory Immutable RLS 策略（参见 08 第 8.1 章） (5) 新增 memory_relationships 表（参见 04 第 5.3 章） (6) 更新部署脚本索引 | ✅ 已确认 |
 | 1.0 | 2026-06-25 | 初始版本，定义完整物理 Schema（14 张表 + 索引 + 约束 + 视图） | ✅ 已确认 |
 
@@ -1116,7 +1117,7 @@ INSERT INTO memory_hub.workspace (name, description) VALUES
 | P7 No Orphan | 07 第 2.7 章 | 09 FK 约束 + candidates.status='orphaned' |
 | P4 Agent Cannot Modify | 07 第 2.4 章 | 09 RLS prohibit_update_memory_nodes 策略 |
 
-### CR-006: 08 Implementation Architecture
+### CR-007: 08 Implementation Architecture
 
 | 影响点 | 说明 | 处理方式 |
 |--------|------|----------|
@@ -1128,7 +1129,16 @@ INSERT INTO memory_hub.workspace (name, description) VALUES
 | MVP 表清单 | 08 第 13.1 章 | 09 扩展至 15 张表（+ memory_relationships） |
 | Reflection 模式 | 08 第 13.3 章 | 09 tasks.status 支持 Auto/Manual/Hybrid |
 
-### CR-007: 无冲突项
+### CR-008: 10_1 Implementation Service Layer（Phase B 新增）
+
+| 影响点 | 说明 | 处理方式 |
+|--------|------|----------|
+| Repository 按 Domain Aggregate 组织 | 10_1 第 5 章 | 09 的表结构按聚合域分组，供 Repository 层使用 |
+| QueryRepository 引入 | 10_1 第 5.4 章 | 09 的视图（views）和复合查询支持 QueryRepository |
+| Engine 无 Repository 依赖 | 10_1 第 6.5 章 | 09 的表结构不依赖 Engine 实现，纯数据层 |
+| ContextService 无独立 Repository | 10_1 第 4.4 章 | 09 的 context_trace 表供 ContextBuilder 使用，不由 ContextService 直接管理 |
+
+### CR-009: 无冲突项
 
 以下文档与 09 完全一致，无需变更：
 

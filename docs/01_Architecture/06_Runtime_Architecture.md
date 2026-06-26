@@ -127,6 +127,9 @@ graph TB
 
 ### 3.1 Engine 清单
 
+> **Phase B 重新定义**：Engine 代表**领域能力（Domain Capability）**，不是 Agent、不是 Service、不是 Repository。
+> Engine 必须是：无状态、可复用、能力导向。Composite Engine 可组合 Atomic Engine。
+
 Runtime 由 6 个核心 Engine 构成：
 
 | # | Engine | 所属层 | 职责 |
@@ -916,7 +919,7 @@ sequenceDiagram
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.0 | 2026-06-20 | 初始版本，确认 Runtime Architecture 全部设计要素 | ✅ 已确认 |
+| 1.1 | 2026-06-26 | Phase B 修订：(1) 第 3.1 章 Engine 重新定义为 Domain Capability（无状态/可复用/能力导向） (2) 补充 Composite Engine 可组合 Atomic Engine 模式 | ✅ 已确认 |
 
 ---
 

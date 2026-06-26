@@ -231,7 +231,14 @@ V2+: Event Driven
 
 ## 8. API Design
 
-### 8.1 Memory Immutable 约束
+### 8.1 API Entry Layer（Phase B 术语变更）
+
+> **Phase B 变更**：原"API Layer"更名为 **API Entry Layer**。
+> Entry 层职责：协议适配、DTO 转换、认证、能力检查。Entry 层不包含业务逻辑。
+> 支持 REST / MCP / CLI / SDK / Agent 等多种 Entry 适配器。
+> 原则：One Capability, One Implementation；Multiple Entry Adapters。
+
+### 8.3 Memory Immutable 约束
 
 **禁止**：
 
@@ -254,7 +261,7 @@ CORRECTS    // 修正关系
 SUPERSEDES  // 替代关系
 ```
 
-### 8.2 API 契约
+### 8.4 API 契约
 
 | 方法 | 输入 | 输出 | 说明 |
 |------|------|------|------|
@@ -267,7 +274,7 @@ SUPERSEDES  // 替代关系
 | `getMemoryNode()` | MemoryNode ID | MemoryNode | 获取记忆节点 |
 | `getEvidenceChain()` | Memory ID | Evidence Chain | 获取证据链 |
 
-### 8.3 约束
+### 8.5 约束
 
 * Memory 一旦创建，不可直接更新或删除
 * 修正通过 `correctMemory()` 完成，保留原始版本
@@ -622,6 +629,22 @@ graph TB
 
 > 所有升级项通过抽象层隔离，确保 V1 → V2+ 的平滑过渡。
 
+### 17.7 API Entry Layer（Phase B 新增）
+
+> 原"API Layer"更名为 API Entry Layer。职责为协议适配、DTO 转换、认证、能力检查。不包含业务逻辑。
+
+### 17.8 Engine as Domain Capability（Phase B 新增）
+
+> Engine 代表领域能力，不是 Agent、不是 Service、不是 Repository。Engine 必须无状态、可复用、能力导向。
+
+### 17.9 No Direct Repository Access by Engine（Phase B 新增）
+
+> Engine 不直接访问 Repository。数据持久化由 Service + Repository 完成。Service 是编排层。
+
+### 17.10 Project Memory Philosophy（Phase B 新增）
+
+> 文档 = 长期记忆，Chat = 工作记忆，代码 = 可执行记忆。以文档为权威来源，而非对话历史。
+
 ---
 
 ## 附录 A：MVP 表结构速查
@@ -670,7 +693,7 @@ graph TB
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.0 | 2026-06-23 | 初始版本，确认 Implementation Architecture 全部设计要素 | ✅ 已确认 |
+| 1.1 | 2026-06-26 | Phase B 修订：(1) API Layer 更名为 API Entry Layer (2) Engine 重新定义为 Domain Capability (3) 新增 MemoryEngine 不直接访问 Repository 约束 (4) 新增 Project Memory 哲学 (5) 新增依赖规则原则 (6) 附录 C 补充 Phase B 升级项 | ✅ 已确认 |
 
 ---
 

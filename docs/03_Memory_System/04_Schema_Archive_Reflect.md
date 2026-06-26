@@ -564,6 +564,8 @@ Final Score = Similarity + Importance
 
 ## 15. Context Builder 最终设计
 
+> **Phase B 补充**：ContextBuilder 是 Domain Engine，不属于 Service。ContextService 是 Application Service 层，负责编排 ContextBuilder Engine 和 ActivationEngine。ContextService **不拥有独立 Repository**（参见 10_1 第 4.4 章）。
+
 ### 15.1 最终读取顺序
 
 | 层 | 名称 | 说明 |
@@ -722,7 +724,7 @@ Final Score = Similarity + Importance
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.2 | 2026-06-20 | Review 06 修订：(1) 第 15 章 Context Builder 补充内部模块说明（Ranker/Compressor/Assembler，参见 06 第 10.3 章） (2) 术语表补充 6 个 Engine 名称 | ✅ 已确认 |
+| 1.3 | 2026-06-26 | Phase B 修订：第 15 章补充 ContextBuilder 是 Domain Engine，ContextService 不拥有独立 Repository（参见 10_1） | ✅ 已确认 |
 
 ---
 

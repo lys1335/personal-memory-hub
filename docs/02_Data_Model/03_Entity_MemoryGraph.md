@@ -659,6 +659,7 @@ entities / memory_nodes / relationships / archives / tags / vector_documents / t
 | ADR-009 | about 特殊关系 | Final Decision |
 | ADR-010 | Reflect 推导链设计 | Final Decision（具体 Workflow 参见 05 第 11 章） |
 | ADR-011 | 核心表规划 | Final Decision |
+| ADR-012 | Engine 重新定义（Phase B） | Final Decision（Engine = Domain Capability，参见 10_1 第 6 章） |
 
 ---
 
@@ -690,7 +691,7 @@ entities / memory_nodes / relationships / archives / tags / vector_documents / t
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.4 | 2026-06-20 | Review 06 修订：附录 B 术语表补充 6 个 Engine 术语 | ✅ 已确认 |
+| 1.5 | 2026-06-26 | Phase B 修订：附录 A 补充 ADR-012（Engine 重新定义） | ✅ 已确认 |
 
 ---
 

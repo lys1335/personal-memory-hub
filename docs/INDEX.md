@@ -69,6 +69,14 @@ Memory lifecycle and reflection engine design.
 
 ---
 
+## Phase 5 - Implementation Design
+
+### 10_1_Implementation_Service_Layer.md
+
+Implementation Service Layer — layered architecture, service classification, engine composition, repository layer, dependency rules, MVP order, project memory philosophy.
+
+---
+
 # Current Status
 
 ## Completed
@@ -82,85 +90,40 @@ Memory lifecycle and reflection engine design.
 * 07_Boundary_Review
 * 08_Implementation_Architecture
 * 09_Database_Physical_Design
+* 10_1_Implementation_Service_Layer（Phase B 开始）
 
-Current Progress: 9 / 9 completed
-
+Current Progress: 10 / 10 completed
 ---
 
 # Planned Documents
-
-## Phase 5 - Implementation Design
-
-### 10_1_Implementation_Service_Layer.md
-
-Service layer responsibilities and module boundaries.
-
-### 10_2_Implementation_Ingestion.md
-
-Memory ingestion pipeline.
-
-### 10_3_Implementation_Runtime.md
-
-Runtime execution implementation.
-
-### 10_4_Implementation_Reflection.md
-
-Reflection engine implementation.
-
-### 10_5_Implementation_Task_System.md
-
-Task scheduling and execution framework.
-
-### 10_6_Implementation_Query.md
-
-Retrieval and query implementation.
-
-### 10_7_Implementation_Consistency.md
-
-Consistency validation and repair.
-
-### 10_8_Implementation_API_Contract.md
-
-API contracts and interface definitions.
-
-### 10_9_Implementation_Migration.md
-
-Database migration and versioning strategy.
-
-### 10_10_Implementation_Orchestration.md
-
-Workflow orchestration and coordination.
-
----
-
-## Phase 6 - Review
-
-Consistency Review
-
-Architecture Review
-
-Implementation Review
-
----
-
-## Phase 7 - MVP Development
-
-Implementation under:
-
-/src
+* 10_2_Implementation_MemoryService.md
+* 10_3_Implementation_QueryService.md
+* 10_4_Implementation_ReflectionService.md
+* 10_5_Implementation_EntityService.md
+* 10_6_Implementation_Task_Runtime.md
+* 10_7_Implementation_API_Entry.md
+* 10_8_Implementation_Testing.md
+* 11_Implementation_Roadmap.md
+* 12_Architecture_Decisions.md
 
 ---
 
 # Design Principles
 
-* Evidence-Based Memory
-* Human Review First
-* Capability-Based Agent
-* Local First
-* Long-Term Evolvability
-* Memory Before Agent
-* Structured Before LLM
+## Architecture Principles
 
+- Memory First
+- Evidence-Based Memory
+- Capability-Based Agent
+- Structured Before LLM
+- Long-Term Evolvability
+
+## Development Principles
+
+- Document-Driven Design
+- Project Memory Philosophy
+- Human Review First
+- User-Controlled Architecture
 ---
 
-Last Updated: 2026-06
+Last Updated: 2026-06-26

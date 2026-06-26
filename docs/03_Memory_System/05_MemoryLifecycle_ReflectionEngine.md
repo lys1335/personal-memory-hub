@@ -852,6 +852,10 @@ graph LR
 
 > Ingestion Pipeline 的每个阶段都有明确的输入/输出，不依赖随机性。
 
+### 16.6 Engine as Domain Capability（Phase B 新增）
+
+> **Phase B 重新定义**：Engine 代表领域能力（Domain Capability），不是 Agent、不是 Service、不是 Repository。Engine 必须无状态、可复用、能力导向。IngestionEngine、ScoringEngine、ReflectionEngine、ActivationEngine 均遵循此定义（参见 10_1 第 6 章）。
+
 ---
 
 ## 附录 A：Observation Type → Scoring Weight 映射
@@ -872,7 +876,7 @@ graph LR
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.1 | 2026-06-20 | Review 06 修订：(1) 14.1 Runtime Components 补充 Retrieval Engine (2) 14.6 组件交互图补充 Retrieval Engine 到 Context Builder 的连线 | ✅ 已确认 |
+| 1.2 | 2026-06-26 | Phase B 修订：(1) 第 16 章新增 Engine as Domain Capability 原则 (2) 术语表补充 Phase B 变更引用 | ✅ 已确认 |
 
 ---
 

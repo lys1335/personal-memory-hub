@@ -410,6 +410,8 @@ graph TB
 
 ## 附录 A：术语表
 
+> **Phase B 补充**：本文档作为总纲，术语表覆盖所有后续文档的核心术语。新增 Project Memory 相关术语（参见 10_1 第 13 章）。
+
 | 术语 | 全称 | 说明 |
 |------|------|------|
 || Workspace | 顶层容器，支持单用户/家庭/团队场景（参见 04） |
@@ -423,6 +425,8 @@ graph TB
 || Retrieval Engine | 执行 Vector/Graph/Hybrid 检索（参见 06 第 3.5 章） |
 || Context Builder | 四层 Context 构建（参见 06 第 3.6 章） |
 || Scheduler | 事件驱动 + Cron 驱动的任务调度器（参见 06 第 3.7 章） |
+|| Memory Domain Orchestrator | MemoryEngine 的 Phase B 重新定义，协调 Archive/Evidence/Relationship/Candidate Engine（参见 10_1） |
+|| Project Memory | 文档=长期记忆，Chat=工作记忆，代码=可执行记忆（参见 10_1 第 13 章） |
 | Daily | Daily Storage | 短期记忆缓存，30~90 天 |
 | Topic Window | Topic Window | 主题聚类与索引，约 1 年 |
 | Monthly Archive | Monthly Archive | 月度归档，永久保存 |
@@ -436,7 +440,7 @@ graph TB
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.3 | 2026-06-20 | Review 06 修订：附录 A 术语表补充 Ingestion/Reflection/Activation/Retrieval/Context Builder/Scheduler 六个 Engine 术语 | ✅ 已确认 |
+| 1.4 | 2026-06-26 | Phase B 修订：(1) 附录 A 术语表补充 Memory Domain Orchestrator 和 Project Memory 术语 | ✅ 已确认 |
 
 ---
 
