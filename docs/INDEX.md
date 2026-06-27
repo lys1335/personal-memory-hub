@@ -75,6 +75,10 @@ Memory lifecycle and reflection engine design.
 
 Implementation Service Layer — layered architecture, service classification, engine composition, repository layer, dependency rules, MVP order, project memory philosophy.
 
+### 10_2_Implementation_MemoryService.md
+
+MemoryService — Domain Service design, capability-oriented API, batch import, transaction policy, error model, domain events, service collaboration matrix.
+
 ---
 
 # Current Status
@@ -91,8 +95,9 @@ Implementation Service Layer — layered architecture, service classification, e
 * 08_Implementation_Architecture
 * 09_Database_Physical_Design
 * 10_1_Implementation_Service_Layer（Phase B 开始）
+* 10_2_Implementation_MemoryService（Phase B-2）
 
-Current Progress: 10 / 10 completed
+Current Progress: 11 / 11 completed
 ---
 
 # Planned Documents

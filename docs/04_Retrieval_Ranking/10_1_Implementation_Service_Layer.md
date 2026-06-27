@@ -130,7 +130,7 @@ Application Service 层包含以下 Service，每个 Service 负责一个完整 
 
 | # | Service | 职责 | 编排的 Engine | 依赖的 Repository |
 |---|---------|------|--------------|-------------------|
-| 1 | **MemoryService** | 记忆 CRUD、Correct、Archive | MemoryEngine, ArchiveEngine | EntityRepo, MemoryNodeRepo, RelationshipRepo |
+| 1 | **MemoryService** | Memory Domain Service（Capture/Import/Merge/Archive/Lifecycle），**不是 CRUD Service** | MemoryEngine, ArchiveEngine | EntityRepo, MemoryNodeRepo, RelationshipRepo |
 | 2 | **IngestionService** | 证据摄入、Pipeline 编排 | IngestionEngine, ScoringEngine | EvidenceRepo, EntityRepo |
 | 3 | **ReflectionService** | Reflection 任务编排 | ReflectionEngine, CandidateEngine | MemoryNodeRepo, CandidateRepo, RelationshipRepo |
 | 4 | **QueryService** | 记忆检索、Context 构建 | RetrievalEngine, ContextBuilder | MemoryNodeRepo, VectorDocRepo, RelationshipRepo |
@@ -143,15 +143,35 @@ Application Service 负责：
 
 * **Use Case** — 完整业务流程
 * **Workflow** — 多步骤编排
-* **Transaction** — 事务控制
+* **Transaction 协调** — 事务边界协调（不负责数据库事务控制）
 * **Repository 协调** — 决定何时读/写 Repository
 * **Engine 协调** — 决定何时调用哪个 Engine
+* **Domain Event 发布** — 业务完成后发布事件解耦
 
 Service **不负责**：
 
 * 领域算法（由 Engine 实现）
 * 数据持久化细节（由 Repository 实现）
 * 协议适配（由 Entry 实现）
+* 数据库事务控制（由 Repository / Unit of Work 实现）
+
+### 4.2.1 Domain Service 原则（Phase B 新增）
+
+> **MemoryService is a Domain Service, not an Application CRUD Service.**
+> **Public APIs are organized around domain capabilities instead of persistence operations.**
+
+Service 不得暴露 `create()` / `update()` / `delete()` / `find()` 等 Repository 风格接口。
+
+### 4.2.2 Command / Query Separation 原则（Phase B 新增）
+
+> **Command Returns Identity, Query Returns State.**
+
+| 操作类型 | 所属 Service | 返回值 |
+|----------|-------------|--------|
+| Command（写） | MemoryService | `MemoryId` / `JobId` / `Status` / `ImportReport` |
+| Query（读） | QueryService | `Memory` / `MemoryView` / `Context` / `Evidence` |
+
+MemoryService **不承担 Query 职责**。所有 Memory 数据读取统一由 QueryService 提供。
 
 ### 4.3 ContextService 的特殊性
 
@@ -382,6 +402,25 @@ IngestionService（写入新 Observation）
 | QueryService | | | | | | ✅ | | | | | |
 | ContextService | | | | | ✅ | | ✅ | | | | |
 | TaskService | | | | | | | | | | | |
+
+### 7.4 Service Collaboration Matrix（Phase B 统一规范）
+
+> **Phase B 规范**：每个 Service 文档必须包含 Service Collaboration Matrix。所有矩阵合并形成完整的 Service Dependency Graph。
+
+| 规范 | 说明 |
+|------|------|
+| 每个 Service 文档末尾必须包含固定章节 | Service Collaboration Matrix |
+| Matrix 必须包含 5 列 | Caller, Callee, Allowed, Interaction Pattern, Reason |
+| Allowed 使用三级符号 | ✅ 允许同步调用, ⚠️ 允许但有限制, ❌ 禁止 |
+| Interaction Pattern 标注调用方式 | Sync, Async Preferred, Job Dispatch, Event |
+| 所有 Matrix 合并后形成 | Complete Service Dependency Graph |
+| 用于 | Consistency Review / Architecture Review / Implementation Review / DAG 验证 |
+
+**示例**（MemoryService → QueryService）：
+
+| Caller | Callee | Allowed | Interaction Pattern | Reason |
+|--------|--------|---------|---------------------|--------|
+| MemoryService | QueryService | ❌ | N/A | 防止 Command → Query 耦合，CQRS 分离 |
 
 ---
 
@@ -734,7 +773,13 @@ src/
 | 12 | **Common 模块边界**：仅共享模型/DTO/Value Object/Infrastructure/Utility，业务逻辑在 Engine | shared/ |
 | 13 | **Project Memory 哲学**：文档 = 长期记忆，Chat = 工作记忆，代码 = 可执行记忆 | 整个项目 |
 | 14 | **未来项目结构**：entry/service/engine/repository/shared/infrastructure/config/event | 工程目录 |
-| 15 | **新增能力优先新增 Engine**：符合 Open-Closed Principle | 扩展策略 |
+| 16 | **Domain Service 原则** | MemoryService is a Domain Service, not CRUD. Public APIs organized by capability | 10_1、10_2 |
+| 17 | **Command / Query Separation** | Command Returns Identity, Query Returns State. MemoryService ≠ QueryService | 10_1、10_2 |
+| 18 | **Service Collaboration Matrix** | 每个 Service 文档必须包含 Matrix，合并形成完整 Service Dependency Graph | 10_1、10_2 |
+| 19 | **Error Model** | 统一 MemoryResult / ImportResult 返回模型，不依赖 Exception 作为控制流程 | 10_2 |
+| 20 | **Domain Events** | Service 间通过事件解耦，不直接互相调用 | 10_2 |
+| 21 | **Transaction Policy** | 默认 PerMemory，可扩展为 PerChunk / WholeBatch | 10_2 |
+| 22 | **Recovery Policy** | 默认 ContinueOnError，可扩展为 StopOnFatal / StopAfterNFailures | 10_2 |
 
 ### 14.2 对旧文档的回溯更新
 
@@ -748,7 +793,7 @@ src/
 | 06 | API Entry Layer 术语变更 |
 | 08 | Service/Engine/Repository 边界更新 |
 | 08 | 依赖规则补充 |
-| 09 | 项目结构预留 |
+| 10_1 | Service Layer 总纲 | Service 分类更新（MemoryService 不是 CRUD）、新增 Domain Service 原则、C/Q 分离、Service Collaboration Matrix 规范 |
 
 ---
 
@@ -786,7 +831,7 @@ src/
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.0 | 2026-06-26 | 初始版本，确认 Implementation Service Layer 全部设计要素 | ✅ 已确认 |
+| 1.1 | 2026-06-27 | Phase B-2 修订：(1) MemoryService 职责更新（不是 CRUD Service）(2) 新增 Domain Service 原则 (3) 新增 Command/Query Separation 原则 (4) 新增 Service Collaboration Matrix 统一规范 (5) Decision Summary 补充 16~22 决议 | ✅ 已确认 |
 
 ---
 

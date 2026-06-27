@@ -128,6 +128,7 @@ Current completed design documents:
 * Implementation Architecture
 * Database Physical Design
 * Implementation Service Layer（Phase B 新增）
+* Implementation MemoryService（Phase B-2 新增）
 
 ---
 
@@ -150,15 +151,16 @@ Completed
 Started
 
 * ✅ Service Layer（10_1_Implementation_Service_Layer.md）
-* ⏳ Ingestion Pipeline（10_2）
-* ⏳ Runtime Flow（10_3）
-* ⏳ Reflection Engine（10_4）
-* ⏳ Task System（10_5）
-* ⏳ Query System（10_6）
-* ⏳ Consistency Engine（10_7）
-* ⏳ API Contract（10_8）
-* ⏳ Migration Strategy（10_9）
-* ⏳ Orchestration Layer（10_10）
+* ✅ MemoryService（10_2_Implementation_MemoryService.md）
+* ⏳ Ingestion Pipeline（10_3）
+* ⏳ Runtime Flow（10_4）
+* ⏳ Reflection Engine（10_5）
+* ⏳ Task System（10_6）
+* ⏳ Query System（10_7）
+* ⏳ Consistency Engine（10_8）
+* ⏳ API Contract（10_9）
+* ⏳ Migration Strategy（10_10）
+* ⏳ Orchestration Layer（10_11）
 
 ## Phase C - Review
 
