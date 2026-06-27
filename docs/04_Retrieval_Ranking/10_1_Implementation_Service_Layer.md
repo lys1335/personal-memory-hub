@@ -780,6 +780,18 @@ src/
 | 20 | **Domain Events** | Service 间通过事件解耦，不直接互相调用 | 10_2 |
 | 21 | **Transaction Policy** | 默认 PerMemory，可扩展为 PerChunk / WholeBatch | 10_2 |
 | 22 | **Recovery Policy** | 默认 ContinueOnError，可扩展为 StopOnFatal / StopAfterNFailures | 10_2 |
+| 23 | **Query Service 定位** | QueryService 是纯读服务，Side-Effect Free，与 MemoryService 严格分离 | 10_3 |
+| 24 | **五大 Query Capability** | Retrieval / Search / Browse / Projection / Analytics | 10_3 |
+| 25 | **Query Planner** | Query Planning Before Execution，Optimization 为 Planner 内部能力 | 10_3 |
+| 26 | **Engines Produce Domain Knowledge** | Engine 返回 Domain Result，Projection 属于 QueryService | 10_3 |
+| 27 | **Service Independence Principle** | Service 之间不互相同步调用，通过 Shared Domain Engine 协作 | 10_3 |
+| 28 | **Command Return Policy** | Command 后基于当前 Domain Object 构建返回，不得再次 Query | 10_3 |
+| 29 | **Consumer-Agnostic Interface** | 面向能力设计，不面向调用方设计 | 10_3 |
+| 30 | **Stable Result Contract** | QueryResult 能力无关、协议无关 | 10_3 |
+| 31 | **Continuation Semantics** | QueryService 定义 Continuation，Entry 决定协议 | 10_3 |
+| 32 | **Streaming 归属** | Streaming 是 Entry Delivery Strategy，不是 Query Capability | 10_3 |
+| 33 | **Query Determinism** | 相同条件下语义一致 | 10_3 |
+| 34 | **Architecture Guidelines (13)** | 19 条 Guideline 编号体系（G-001~G-019） | 13 |
 
 ### 14.2 对旧文档的回溯更新
 
@@ -794,6 +806,7 @@ src/
 | 08 | Service/Engine/Repository 边界更新 |
 | 08 | 依赖规则补充 |
 | 10_1 | Service Layer 总纲 | Service 分类更新（MemoryService 不是 CRUD）、新增 Domain Service 原则、C/Q 分离、Service Collaboration Matrix 规范 |
+| 10_3 | Query Service 定位 + 五大 Query Capability + Query Planner + Service Independence + Consumer-Agnostic + Stable Result Contract |
 
 ---
 
@@ -831,7 +844,7 @@ src/
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
-| 1.1 | 2026-06-27 | Phase B-2 修订：(1) MemoryService 职责更新（不是 CRUD Service）(2) 新增 Domain Service 原则 (3) 新增 Command/Query Separation 原则 (4) 新增 Service Collaboration Matrix 统一规范 (5) Decision Summary 补充 16~22 决议 | ✅ 已确认 |
+| 1.2 | 2026-06-27 | Phase B-3 修订：(1) 新增 QueryService 定位原则 (2) Decision Summary 补充 23~34 (3) 回溯更新表补充 10_3 (4) 新增 13 Architecture Guidelines 引用 | ✅ 已确认 |
 
 ---
 

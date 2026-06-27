@@ -75,9 +75,13 @@ Memory lifecycle and reflection engine design.
 
 Implementation Service Layer — layered architecture, service classification, engine composition, repository layer, dependency rules, MVP order, project memory philosophy.
 
-### 10_2_Implementation_MemoryService.md
+### 10_3_Implementation_QueryService.md
 
-MemoryService — Domain Service design, capability-oriented API, batch import, transaction policy, error model, domain events, service collaboration matrix.
+QueryService — Domain Service design, five Query Capabilities (Retrieval/Search/Browse/Projection/Analytics), Query Pipeline with Planner, Engine interaction, Service Independence, Consumer-Agnostic Interface, Stable Result Contract.
+
+### 13_Architecture_Guidelines.md
+
+Living Guideline — 19 numbered guidelines (G-001~G-019) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Review Rules, Evolution Rules.
 
 ---
 
@@ -96,8 +100,10 @@ MemoryService — Domain Service design, capability-oriented API, batch import, 
 * 09_Database_Physical_Design
 * 10_1_Implementation_Service_Layer（Phase B 开始）
 * 10_2_Implementation_MemoryService（Phase B-2）
+* 10_3_Implementation_QueryService（Phase B-3）
+* 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 11 / 11 completed
+Current Progress: 13 / 13 completed
 ---
 
 # Planned Documents
