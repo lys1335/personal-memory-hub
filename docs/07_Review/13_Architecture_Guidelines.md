@@ -289,6 +289,35 @@
 
 ---
 
+## 3. Reflection & Memory Evolution
+
+### G-020: Memory Pyramid Abstraction by Scope
+
+> Memory Pyramid 层级按解释范围（Scope of Explanation）而非时间抽象。
+
+| 层级 | 解释范围 | 示例 |
+|------|----------|------|
+| L0 | 历史事实（What Happened?） | 聊天记录、导入文档 |
+| L1 | 主题知识（What Does This Topic Mean?） | 单主题总结 |
+| L2 | 跨主题模式（What Pattern Does It Reveal?） | 行为模式 |
+| L3 | 一般原则（What Principle Explains These Patterns?） | 决策哲学 |
+
+**引用**：10_4 §3.3
+
+### G-021: Higher-level Memory Stores Evolving Explanations
+
+> 高层 Memory 存储当前最佳知识（Current Best Knowledge）。当变化本身具有知识价值时，高层 Memory 应描述演化，而不是保存多个时间快照。
+
+**引用**：10_4 §3.2
+
+### G-022: L0 Protection Principle
+
+> 系统从不自主创建 L0 Memory。任何恢复基线（Recovery Baseline）必须源于用户明确参与的交互或用户预授权，因此始终保持证据基础（Evidence-Based）。
+
+**引用**：10_4 §10.5
+
+---
+
 ## 附录：Guideline 索引
 
 | 编号 | 名称 | 首次出现 |
@@ -312,6 +341,9 @@
 | G-017 | Stable Result Contract | 10_3 |
 | G-018 | Architecture Review Checklist | 10_3 |
 | G-019 | Planned vs Potential Evolution | 10_3 |
+|| G-020 | Memory Pyramid Abstraction by Scope | 10_4 |
+|| G-021 | Higher-level Memory Stores Evolving Explanations | 10_4 |
+|| G-022 | L0 Protection Principle | 10_4 |
 
 ---
 

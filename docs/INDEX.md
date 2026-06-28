@@ -79,9 +79,13 @@ Implementation Service Layer — layered architecture, service classification, e
 
 QueryService — Domain Service design, five Query Capabilities (Retrieval/Search/Browse/Projection/Analytics), Query Pipeline with Planner, Engine interaction, Service Independence, Consumer-Agnostic Interface, Stable Result Contract.
 
+### 10_4_Implementation_ReflectionService.md
+
+ReflectionService — Memory Pyramid evolution orchestration, four Capabilities (Reflect/Consolidate/Summarize/Evaluate), Reflection Pipeline with Semantic Evolution Decision, Evidence Completeness Constraint, Memory Pyramid theory (Scope-based abstraction, not time-based), Maximum Reflection Horizon, Recovery Baseline with L0 Protection, Incremental Propagation.
+
 ### 13_Architecture_Guidelines.md
 
-Living Guideline — 19 numbered guidelines (G-001~G-019) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Review Rules, Evolution Rules.
+Living Guideline — 22 numbered guidelines (G-001~G-022) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Review Rules, Evolution Rules.
 
 ---
 
@@ -103,7 +107,7 @@ Living Guideline — 19 numbered guidelines (G-001~G-019) covering Public API, S
 * 10_3_Implementation_QueryService（Phase B-3）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 13 / 13 completed
+Current Progress: 14 / 14 completed
 ---
 
 # Planned Documents

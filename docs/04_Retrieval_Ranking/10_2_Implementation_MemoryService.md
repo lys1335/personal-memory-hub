@@ -687,7 +687,7 @@ Complete Service Dependency Graph
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
 | 1.0 | 2026-06-27 | 初始版本，确认 MemoryService 全部设计要素 | ✅ 已确认 |
-| 1.1 | 2026-06-27 | Phase B-3 修订：新增与 10_3 的交叉引用（Service Independence、Shared Domain Engine、Consumer-Agnostic Interface） | ✅ 已确认 |
+| 1.2 | 2026-06-28 | Phase B-4 修订：(1) 新增与 10_4 的交叉引用（Service Independence、Shared Domain Engine、Semantic Uniqueness、L0 Protection）(2) Decision Summary 补充 23~26 | ✅ 已确认 |
 
 ---
 

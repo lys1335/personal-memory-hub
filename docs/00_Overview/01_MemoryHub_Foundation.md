@@ -21,6 +21,8 @@
 | 4 | 手机作为主要入口 | 移动端体验优先 |
 | 5 | 低成本优先 | 控制推理与存储成本 |
 | 6 | 长期可维护优先 | 架构简洁、可演进 |
+| 7 | Memory Pyramid 抽象层级 | 记忆组织为 L0（历史事实）→ L1（主题知识）→ L2（跨主题模式）→ L3（一般原则），层级按解释范围（Scope）而非时间抽象。详见 `10_4_Implementation_ReflectionService.md` §3.3。 |
+| 8 | 高层 Memory 存储演化解释 | 高层 Memory 存储当前最佳知识（Current Best Knowledge），当变化本身具有知识价值时描述演化而非快照。详见 `10_4_Implementation_ReflectionService.md` §3.2。 |
 
 ---
 

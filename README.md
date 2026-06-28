@@ -130,6 +130,7 @@ Current completed design documents:
 * Implementation Service Layer（Phase B 新增）
 * Implementation MemoryService（Phase B-2 新增）
 * Implementation QueryService（Phase B-3 新增）
+* Implementation ReflectionService（Phase B-4 新增）
 * Architecture Guidelines（Phase B Living Guideline 新增）
 
 ---
@@ -156,7 +157,7 @@ Started
 * ✅ MemoryService（10_2_Implementation_MemoryService.md）
 * ✅ QueryService（10_3_Implementation_QueryService.md）
 * ✅ Architecture Guidelines（13_Architecture_Guidelines.md）
-* ⏳ Ingestion Pipeline（10_4）
+* ✅ ReflectionService（10_4_Implementation_ReflectionService.md）
 * ⏳ Runtime Flow（10_5）
 * ⏳ Reflection Engine（10_6）
 * ⏳ Task System（10_7）
