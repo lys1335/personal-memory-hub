@@ -310,7 +310,13 @@
 
 **引用**：10_4 §3.2
 
-### G-022: L0 Protection Principle
+### G-022: Reflection Improves Explanatory Power
+
+> Reflection 的目标不是保存快照，而是随着证据不断积累，持续提升高层 Memory 对全部事实的解释能力。Reflection 每次更新时都会问：新的 Memory 能否更好地解释全部 Evidence？
+
+**引用**：10_4 §3.4
+
+### G-023: L0 Protection Principle
 
 > 系统从不自主创建 L0 Memory。任何恢复基线（Recovery Baseline）必须源于用户明确参与的交互或用户预授权，因此始终保持证据基础（Evidence-Based）。
 
@@ -343,7 +349,8 @@
 | G-019 | Planned vs Potential Evolution | 10_3 |
 || G-020 | Memory Pyramid Abstraction by Scope | 10_4 |
 || G-021 | Higher-level Memory Stores Evolving Explanations | 10_4 |
-|| G-022 | L0 Protection Principle | 10_4 |
+|| G-022 | Reflection Improves Explanatory Power | 10_4 |
+|| G-023 | L0 Protection Principle | 10_4 |
 
 ---
 
