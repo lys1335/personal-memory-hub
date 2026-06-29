@@ -322,9 +322,97 @@
 
 **引用**：10_4 §10.5
 
----
+### G-024: EntityID Stability
 
-## 附录：Guideline 索引
+> EntityID 是 Identity 的稳定锚点，永不改变。Entity 的属性（Canonical Name、Alias、Metadata、Relationships、Type）通过积累的证据持续演化。
+
+**引用**：10_5 §3.1
+
+### G-025: Domain Invariants Belong to Engine
+
+> EntityEngine 拥有 ALL 领域不变量（Identity Resolution、Merge Rules、Alias Rules、Relationship Rules、Canonical Name Selection、Entity Consistency）。Service 只执行验证、授权、事务、编排。
+
+**引用**：10_5 §5.3
+
+### G-026: Repository Is Persistence Only
+
+> EntityRepository 保持持久化层边界。不执行 merge 决策、alias 冲突决策、relationship 验证。Repository 仅返回 Domain Objects，Never Projection, Never DTO。
+
+**引用**：10_5 §6
+
+### G-027: Asynchronous Reference Migration
+
+> Entity Merge 采用异步 Reference Migration。Merge 后发布 Domain Event，Task Runtime 异步执行 Reference Migration / Relationship Update / Index Rebuild。Query 路径保持简单。
+
+**引用**：10_5 §7
+
+### G-028: Lifecycle Represents Objective State Transitions
+
+> Entity Lifecycle 表示客观状态转换（Created → Active → Merged）。语义演化通过证据驱动的属性更新表示，不是生命周期状态。
+
+**引用**：10_5 §8.3
+
+### G-029: Domain Events Publish Facts Only
+
+> Domain Events 代表已完成的业务事实，从不执行业务逻辑。异步处理属于 Task Runtime。EntityService 在成功提交后发布事件。
+
+**引用**：10_5 §9.2
+
+### G-030: Services May Orchestrate Multiple Domain Engines
+
+> A Service 可编排多个 Domain Engine。例如 MemoryService 可编排 EntityEngine + MemoryEngine。跨服务同步调用仍然禁止。
+
+**引用**：10_5 §10.3
+
+### G-031: Identity Modification Belongs Exclusively to EntityService
+
+> 只有 EntityService 可执行身份修改（Create / Merge / Rename / Alias / Relationship）。ReflectionService 可推断身份演化，但不可执行。
+
+**引用**：10_5 §10.2
+
+### G-032: Every Entity Must Be L0-Supported
+
+> 每个 Entity 最终必须由至少一条 L0 Memory 支持。手动创建 Entity 是允许的，因为创建交互本身产生 L0 Memory。
+
+**引用**：10_5 §11.2
+
+### G-033: No Entity Version
+
+> 不引入 Entity 版本。Entity 历史已通过 L0 Memory、Evidence Chain、Domain Events、Audit 自然存在。历史重建应始终依赖证据，而非重复的版本表。
+
+**引用**：10_5 §11.4
+
+### G-034: Task Runtime Performs Asynchronous Maintenance
+
+> 后台维护（Reference Migration / Graph Maintenance / Index Rebuild / Cache Refresh / Audit）属于 Task Runtime 职责。EntityService 从不等待后台维护完成。
+
+**引用**：10_5 §9.3
+
+### G-035: No Runtime Canonical Resolution
+
+> Merge 是低频率操作，Query 是高频率操作。不要在每次查询时做 Canonical Resolution。Merge 后通过异步 Reference Migration 更新索引。
+
+**引用**：10_5 §7.1
+
+### G-036: Entity Is Current Best Identity
+
+> Entity 始终代表 Current Best Identity。没有 Candidate 生命周期，没有验证工作流。
+
+**引用**：10_5 §3.1
+
+### G-037: Memory Fact ≠ Entity Reference
+
+> Entity Merge 更新引用，不修改 L0 事实。Reference Migration 是 Index Maintenance，不是历史修改。
+
+**引用**：10_5 §3.4
+
+### G-038: Planned vs Potential Evolution
+
+> 区分 Planned Evolution 和 Potential Evolution。不使用 TODO / Future Work / Later。
+
+**引用**：10_3
+
+---
 
 | 编号 | 名称 | 首次出现 |
 |------|------|----------|
@@ -347,10 +435,25 @@
 | G-017 | Stable Result Contract | 10_3 |
 | G-018 | Architecture Review Checklist | 10_3 |
 | G-019 | Planned vs Potential Evolution | 10_3 |
-|| G-020 | Memory Pyramid Abstraction by Scope | 10_4 |
-|| G-021 | Higher-level Memory Stores Evolving Explanations | 10_4 |
-|| G-022 | Reflection Improves Explanatory Power | 10_4 |
-|| G-023 | L0 Protection Principle | 10_4 |
+| G-020 | Memory Pyramid Abstraction by Scope | 10_4 |
+| G-021 | Higher-level Memory Stores Evolving Explanations | 10_4 |
+| G-022 | Reflection Improves Explanatory Power | 10_4 |
+| G-023 | L0 Protection Principle | 10_4 |
+| G-024 | EntityID Stability | 10_5 |
+| G-025 | Domain Invariants Belong to Engine | 10_5 |
+| G-026 | Repository Is Persistence Only (Entity) | 10_5 |
+| G-027 | Asynchronous Reference Migration | 10_5 |
+| G-028 | Lifecycle Represents Objective State Transitions | 10_5 |
+| G-029 | Domain Events Publish Facts Only | 10_5 |
+| G-030 | Services May Orchestrate Multiple Domain Engines | 10_5 |
+| G-031 | Identity Modification Belongs Exclusively to EntityService | 10_5 |
+| G-032 | Every Entity Must Be L0-Supported | 10_5 |
+| G-033 | No Entity Version | 10_5 |
+| G-034 | Task Runtime Performs Asynchronous Maintenance | 10_5 |
+| G-035 | No Runtime Canonical Resolution | 10_5 |
+| G-036 | Entity Is Current Best Identity | 10_5 |
+| G-037 | Memory Fact ≠ Entity Reference | 10_5 |
+| G-038 | Planned vs Potential Evolution | 10_3 |
 
 ---
 

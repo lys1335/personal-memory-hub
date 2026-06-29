@@ -288,7 +288,8 @@ Engine **不是**：
 | 8 | **ContextBuilder** | Domain | 四层 Context 构建 | Retrieval Results + States | Prompt Context | ContextService |
 | 9 | **ArchiveEngine** | Domain | 认知压缩归档 | Memory Batch | Archive Result | MemoryService |
 | 10 | **EvidenceEngine** | Domain | 证据链管理与验证 | Memory ID | Evidence Chain | MemoryEngine |
-| 11 | **RelationshipEngine** | Domain | 图关系管理 | Entity IDs | Relationships | MemoryEngine |
+|| 11 | **RelationshipEngine** | Domain | 图关系管理 | Entity IDs | Relationships | MemoryEngine / EntityService |
+|| 12 | **EntityEngine** | Domain | 身份管理（Resolution / Merge / Alias / Canonical Name） | Entity Command | Entity Result | EntityService |
 
 ### 6.3 Composite Engine 模式
 
@@ -398,6 +399,7 @@ IngestionService（写入新 Observation）
 |---------|-----------|---------|------------|-----------|------------|-----------|----------------|---------|----------|--------------|--------|
 | IngestionService | ✅ | ✅ | | | | | | | | | |
 | MemoryService | | | | | | | | ✅ | ✅ | ✅ | ✅ |
+| EntityService | | | | | | | | | ✅ | ✅ | ✅ |
 | ReflectionService | | | ✅ | ✅ | ✅ | | | | | | |
 | QueryService | | | | | | ✅ | | | | | |
 | ContextService | | | | | ✅ | | ✅ | | | | |
@@ -517,6 +519,7 @@ Service 之间不互相调用，但通过 Engine 形成依赖 DAG：
 IngestionService → ScoringEngine
 ReflectionService → ReflectionEngine, CandidateEngine
 MemoryService → MemoryEngine, ArchiveEngine
+EntityService → EntityEngine, EvidenceEngine, RelationshipEngine
 QueryService → RetrievalEngine
 ContextService → ActivationEngine, ContextBuilder
 TaskService → Scheduler
@@ -535,6 +538,8 @@ ActivationEngine → （无依赖）
 RetrievalEngine → （无依赖）
 ContextBuilder → RetrievalEngine, ActivationEngine
 MemoryEngine → ArchiveEngine, EvidenceEngine, RelationshipEngine, CandidateEngine
+EntityEngine → （无依赖）
+RelationshipEngine → （无依赖）
 ```
 
 **Engine 之间不允许循环依赖。**
@@ -590,11 +595,12 @@ MemoryEngine → ArchiveEngine, EvidenceEngine, RelationshipEngine, CandidateEng
 | 7 | RetrievalEngine | Engine | 多维检索 |
 | 8 | ContextBuilder | Engine | 四层 Context |
 | 9 | ActivationEngine | Engine | State 激活 |
-| 10 | MemoryEngine | Engine | 记忆领域编排 |
-| 11 | EntityRepository | Repository | Entity 持久化 |
-| 12 | MemoryNodeRepository | Repository | MemoryNode 持久化 |
-| 13 | EvidenceRepository | Repository | Evidence 持久化 |
-| 14 | RelationshipRepository | Repository | Relationship 持久化 |
+| 10 | **MemoryEngine** | Engine | 记忆领域编排 |
+| 11 | **EntityRepository** | Repository | Entity 持久化 |
+| 12 | **EntityEngine** | Engine | 身份管理（Resolution / Merge / Alias） |
+| 13 | MemoryNodeRepository | Repository | MemoryNode 持久化 |
+| 14 | EvidenceRepository | Repository | Evidence 持久化 |
+| 15 | RelationshipRepository | Repository | Relationship 持久化 |
 
 ### 10.3 MVP 暂缓（V2+）
 
@@ -791,7 +797,11 @@ src/
 | 31 | **Continuation Semantics** | QueryService 定义 Continuation，Entry 决定协议 | 10_3 |
 | 32 | **Streaming 归属** | Streaming 是 Entry Delivery Strategy，不是 Query Capability | 10_3 |
 | 33 | **Query Determinism** | 相同条件下语义一致 | 10_3 |
-| 34 | **Architecture Guidelines (13)** | 19 条 Guideline 编号体系（G-001~G-019） | 13 |
+|| 34 | **Architecture Guidelines (13)** | 22 条 Guideline 编号体系（G-001~G-022） | 13 |
+|| 35 | **EntityService 定位** | Identity Management 能力所有者，不是 CRUD | 10_5 |
+|| 36 | **Asynchronous Reference Migration** | Merge 后发布事件，Task Runtime 异步执行 | 10_5 |
+|| 37 | **EntityID Stability** | EntityID 永不改变，属性通过证据演化 | 10_5 |
+|| 38 | **No Entity Version** | 历史通过 L0 + Evidence + Events 自然存在 | 10_5 |
 
 ### 14.2 对旧文档的回溯更新
 
@@ -806,7 +816,8 @@ src/
 | 08 | Service/Engine/Repository 边界更新 |
 | 08 | 依赖规则补充 |
 | 10_1 | Service Layer 总纲 | Service 分类更新（MemoryService 不是 CRUD）、新增 Domain Service 原则、C/Q 分离、Service Collaboration Matrix 规范 |
-| 10_3 | Query Service 定位 + 五大 Query Capability + Query Planner + Service Independence + Consumer-Agnostic + Stable Result Contract |
+|| 10_3 | Query Service 定位 + 五大 Query Capability + Query Planner + Service Independence + Consumer-Agnostic + Stable Result Contract |
+|| 10_5 | EntityService 定位 + Identity Evolution + Asynchronous Reference Migration + EntityID Stability + No Entity Version |
 
 ---
 
@@ -845,6 +856,7 @@ src/
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
 | 1.2 | 2026-06-27 | Phase B-3 修订：(1) 新增 QueryService 定位原则 (2) Decision Summary 补充 23~34 (3) 回溯更新表补充 10_3 (4) 新增 13 Architecture Guidelines 引用 | ✅ 已确认 |
+| 1.3 | 2026-06-28 | Phase B-5 修订：(1) 新增 EntityEngine（#12）到 Engine 清单 (2) 新增 EntityService 到 Service Collaboration Matrix (3) 新增 EntityService 到 Service DAG / Engine DAG (4) Decision Summary 补充 35~38 (5) 回溯更新表补充 10_5 | ✅ 已确认 |
 
 ---
 

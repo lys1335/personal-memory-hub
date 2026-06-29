@@ -645,6 +645,10 @@ graph TB
 
 > 文档 = 长期记忆，Chat = 工作记忆，代码 = 可执行记忆。以文档为权威来源，而非对话历史。
 
+### 17.11 EntityRepository Persistence Only（Phase B-5 新增）
+
+> EntityRepository 保持持久化层边界。不执行 merge 决策、alias 冲突决策、relationship 验证。Repository 仅返回 Domain Objects，Never Projection, Never DTO。
+
 ---
 
 ## 附录 A：MVP 表结构速查

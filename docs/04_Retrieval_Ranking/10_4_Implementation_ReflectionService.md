@@ -658,8 +658,10 @@ L0 聊天记录 / Git Commit / 设计文档
 | **01_MemoryHub_Foundation** | 补充 Memory Pyramid 抽象层级定义（L0~L3 的解释范围） |
 | **04_Schema_Archive_Reflect** | 明确 Reflection 产生的是更高层级的 Memory，不是新对象类型 |
 | **05_MemoryLifecycle_ReflectionEngine** | 对齐 Reflection 与 Memory Lifecycle 的关系 |
-| **10_2_Implementation_MemoryService** | 新增与 10_4 的交叉引用（Service Independence、Shared Domain Engine、Semantic Uniqueness） |
+| **10_2_Implementation_MemoryService** | 新增与 10_4 的交叉引用（Service Independence、Shared Domain Engine、Semantic Uniqueness、L0 Protection） |
 | **10_3_Implementation_QueryService** | 补充 QueryService 为所有持久化领域状态的唯一读接口 |
+| **10_4_Implementation_ReflectionService** | 补充 EntityService 与 ReflectionService 的协作关系（ReflectionService 可推断身份演化，但只有 EntityService 可执行身份修改） |
+| **10_5_Implementation_EntityService** | 新增 |
 | **13_Architecture_Guidelines** | 新增 G-020~G-022 |
 
 ---

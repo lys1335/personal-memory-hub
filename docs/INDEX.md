@@ -83,9 +83,13 @@ QueryService — Domain Service design, five Query Capabilities (Retrieval/Searc
 
 ReflectionService — Memory Pyramid evolution orchestration, four Capabilities (Reflect/Consolidate/Summarize/Evaluate), Reflection Pipeline with Semantic Evolution Decision, Evidence Completeness Constraint, Memory Pyramid theory (Scope-based abstraction, not time-based), Maximum Reflection Horizon, Recovery Baseline with L0 Protection, Incremental Propagation.
 
+### 10_5_Implementation_EntityService.md
+
+EntityService — Identity Management capability owner, five Capability groups (Identity/Merge/Alias/Relationship/Profile Update), EntityID stability, Asynchronous Reference Migration, three-state lifecycle (Created→Active→Merged), Domain Events, Evidence-based Entity (L0 support required), No Entity Version.
+
 ### 13_Architecture_Guidelines.md
 
-Living Guideline — 22 numbered guidelines (G-001~G-022) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Review Rules, Evolution Rules.
+Living Guideline — 38 numbered guidelines (G-001~G-038) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Entity Identity, Review Rules, Evolution Rules.
 
 ---
 
@@ -107,7 +111,7 @@ Living Guideline — 22 numbered guidelines (G-001~G-022) covering Public API, S
 * 10_3_Implementation_QueryService（Phase B-3）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 14 / 14 completed
+Current Progress: 15 / 15 completed
 ---
 
 # Planned Documents

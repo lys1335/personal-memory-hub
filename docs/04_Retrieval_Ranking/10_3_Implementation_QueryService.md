@@ -627,8 +627,8 @@ QueryService 应保证语义一致性。
 ## 附录 B：文档变更记录
 
 | 版本 | 日期 | 变更说明 | 状态 |
-|------|------|----------|------|
-| 1.1 | 2026-06-28 | Phase B-4 修订：(1) 补充 QueryService 为所有持久化领域状态的唯一读接口（与 10_4 对齐）(2) Decision Summary 补充 35~37 (3) 回溯更新表补充 10_4 | ✅ 已确认 |
+| 1.1 | 2026-06-27 | Phase B-3 修订：(1) 新增 QueryService 定位原则 (2) Decision Summary 补充 23~34 (3) 回溯更新表补充 10_3 (4) 新增 13 Architecture Guidelines 引用 | ✅ 已确认 |
+| 1.2 | 2026-06-28 | Phase B-5 修订：(1) 补充 QueryService 消费 Entity 信息但不拥有 Entity 状态的角色（与 10_5 对齐）(2) Decision Summary 补充 38 | ✅ 已确认 |
 
 ---
 

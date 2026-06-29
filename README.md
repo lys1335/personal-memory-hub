@@ -156,9 +156,10 @@ Started
 * ✅ Service Layer（10_1_Implementation_Service_Layer.md）
 * ✅ MemoryService（10_2_Implementation_MemoryService.md）
 * ✅ QueryService（10_3_Implementation_QueryService.md）
-* ✅ Architecture Guidelines（13_Architecture_Guidelines.md）
 * ✅ ReflectionService（10_4_Implementation_ReflectionService.md）
-* ⏳ Runtime Flow（10_5）
+* ✅ EntityService（10_5_Implementation_EntityService.md）
+* ✅ Architecture Guidelines（13_Architecture_Guidelines.md）
+* ⏳ Runtime Flow（10_6）
 * ⏳ Reflection Engine（10_6）
 * ⏳ Task System（10_7）
 * ⏳ Query System（10_8）

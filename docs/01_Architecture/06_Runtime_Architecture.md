@@ -130,7 +130,7 @@ graph TB
 > **Phase B 重新定义**：Engine 代表**领域能力（Domain Capability）**，不是 Agent、不是 Service、不是 Repository。
 > Engine 必须是：无状态、可复用、能力导向。Composite Engine 可组合 Atomic Engine。
 
-Runtime 由 6 个核心 Engine 构成：
+Runtime 由 8 个核心 Engine 构成：
 
 | # | Engine | 所属层 | 职责 |
 |---|--------|--------|------|
@@ -140,6 +140,8 @@ Runtime 由 6 个核心 Engine 构成：
 | 4 | Retrieval Engine | Online | 接收 Query，输出相关记忆 |
 | 5 | Context Builder | Online | 接收检索结果 + State，输出 Prompt Context |
 | 6 | Scheduler | Offline | 事件驱动 + Cron 驱动的任务调度 |
+| 7 | EntityEngine | Domain | 身份管理（Resolution / Merge / Alias / Canonical Name） |
+| 8 | RelationshipEngine | Domain | 图关系管理（Entity 间关系维护） |
 
 ### 3.2 Ingestion Engine
 

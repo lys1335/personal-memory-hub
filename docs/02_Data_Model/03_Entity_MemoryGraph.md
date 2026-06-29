@@ -635,8 +635,8 @@ entities / memory_nodes / relationships / archives / tags / vector_documents / t
 
 | 维度 | 第一阶段（骨架） | 第二阶段（Engine + Context） | 第三阶段（Entity + Graph） |
 |------|------------------|------------------------------|---------------------------|
-| 关注点 | 记忆类型、生命周期、分类体系 | API 设计、上下文构建、实体模型 | 数据建模、图结构、推导链 |
-| 记忆类型 | Objective / Knowledge / Cognitive | Entity = Observations + Beliefs + Current State | MemoryNode (L1-L4) + Relationship |
+| 关注点 | 记忆类型、生命周期、分类体系 | API 设计、上下文构建、实体模型 | 数据建模、图结构、推导链 | 身份管理、合并策略、领域不变量 |
+| 记忆类型 | Objective / Knowledge / Cognitive | Entity = Observations + Beliefs + Current State | MemoryNode (L1-L4) + Relationship | Created → Active → Merged |
 | 组织模型 | User → Area → Project → Memory | 同上 + Tag | Workspace → User → Area → Project → Entity |
 | 图结构 | 未涉及 | 未涉及 | Entity + MemoryNode + Relationship |
 | 推导链 | 月度推导（粗粒度） | 认知更新（API 层） | Reflect 推导链（细粒度，L1→L4） |
