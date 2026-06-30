@@ -516,6 +516,7 @@ L0 聊天记录 / Git Commit / 设计文档
 | ReflectionService → QueryService | Service Independence Principle (G-005) |
 | ReflectionService → QueryEngine | QueryEngine 面向读取视图，Reflection 需要原始领域数据 |
 | ReflectionService → 自主创建 L0 | L0 Protection Principle |
+| ReflectionService → TaskRuntime | Task 提交通过 Domain Event 路由（G-024） |
 
 ---
 

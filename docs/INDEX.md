@@ -87,6 +87,10 @@ ReflectionService — Memory Pyramid evolution orchestration, four Capabilities 
 
 EntityService — Identity Management capability owner, five Capability groups (Identity/Merge/Alias/Relationship/Profile Update), EntityID stability, Asynchronous Reference Migration, three-state lifecycle (Created→Active→Merged), Domain Events, Evidence-based Entity (L0 support required), No Entity Version.
 
+### 10_6_Implementation_TaskRuntime.md
+
+Task Runtime — Generic task execution infrastructure, domain-agnostic task model, event-driven task chaining, minimal lifecycle (Pending→Running→Completed/Failed→Retry→Dead), at-least-once execution with idempotency, unified scheduler (not Cron), startup recovery, maintenance manager, layered observability.
+
 ### 13_Architecture_Guidelines.md
 
 Living Guideline — 38 numbered guidelines (G-001~G-038) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Entity Identity, Review Rules, Evolution Rules.
@@ -111,7 +115,7 @@ Living Guideline — 38 numbered guidelines (G-001~G-038) covering Public API, S
 * 10_3_Implementation_QueryService（Phase B-3）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 15 / 15 completed
+Current Progress: 16 / 16 completed
 ---
 
 # Planned Documents

@@ -616,7 +616,7 @@ DomainEvent
 | MemoryService | ReflectionService | ⚠️ | Event / Job Dispatch | 触发 Reflection，不直接调用 |
 | MemoryService | QueryService | ❌ | N/A | 防止 Command → Query 耦合，CQRS 分离 |
 | MemoryService | ContextService | ❌ | N/A | Context 构建属于 Query 侧 |
-| MemoryService | TaskRuntime | ⚠️ | Job Dispatch | Import Job 调度，不耦合实现 |
+| MemoryService | TaskRuntime | ✅ | Job Dispatch | 提交 Import/Reflection Job，通过 Task Registry 路由 |
 | MemoryService | Repository | ❌ | N/A | 无层跳跃，通过 Engine 间接访问 |
 
 ### 13.2 矩阵解读

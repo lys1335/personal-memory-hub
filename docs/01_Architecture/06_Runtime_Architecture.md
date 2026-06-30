@@ -142,6 +142,7 @@ Runtime 由 8 个核心 Engine 构成：
 | 6 | Scheduler | Offline | 事件驱动 + Cron 驱动的任务调度 |
 | 7 | EntityEngine | Domain | 身份管理（Resolution / Merge / Alias / Canonical Name） |
 | 8 | RelationshipEngine | Domain | 图关系管理（Entity 间关系维护） |
+| 9 | TaskRuntime | Infrastructure | 通用任务调度与执行基础设施 |
 
 ### 3.2 Ingestion Engine
 
@@ -285,19 +286,22 @@ State (L4) > Belief (L3) > Pattern (L2) > Observation (L1)
 
 ### 3.7 Scheduler
 
-**职责**：事件驱动 + Cron 驱动的后台任务调度器。
+**职责**：事件驱动 + Cron 驱动的后台任务调度器。（详见 10_6 §7）
 
 **约束**：
 
 * Scheduler 只负责任务调度，不承担业务逻辑。
-* 业务逻辑由各 Engine 自行实现。
+* 业务逻辑由各 Service 自行实现。
+* Scheduler 是 Task Runtime 的一部分，通过 Task Registry 路由 Domain Event → Task。
 
 **触发模式**：
 
 | 模式 | 说明 | 示例 |
 |------|------|------|
-| 事件驱动 | 特定事件发生时触发 | Observation Created、Belief Updated |
+| 事件驱动 | 特定事件发生时触发 | Observation Created、Belief Updated、EntityMerged |
 | Cron 驱动 | 定时触发（兜底机制） | Archive Cron（V2）、Maintenance Cron（V3） |
+| Startup Recovery | 启动恢复崩溃任务 | Running Tasks 恢复为 Pending |
+| User Async Request | 用户异步请求 | 用户手动触发 Reflection |
 
 ---
 
@@ -389,6 +393,8 @@ graph LR
 |------|------|
 | Retry | 失败任务自动重试，指数退避 |
 | Dead Letter Queue (DLQ) | 超过最大重试次数后标记为 `dead_letter`，人工审查 |
+| Priority | 支持 High / Normal / Low 优先级 |
+| Task Registry | Event → Task 类型映射 |
 
 ### 5.3 MVP 队列实现
 
@@ -398,9 +404,82 @@ MVP 阶段仅实现统一 `tasks` 表：
 tasks（统一管理所有任务类型）
 ```
 
+> **Task Runtime 是通用基础设施，所有 Service 通过 TaskService 提交任务。**
+
 ---
 
-## 6. Scheduler Architecture
+## 6. Task Runtime Overview
+
+> **Task Runtime 详见 10_6_Implementation_TaskRuntime.md。**
+
+Task Runtime 是 Memory Hub 的通用任务执行基础设施，负责：
+
+| 职责 | 说明 |
+|------|------|
+| Task Scheduling | 任务调度 |
+| Task Execution | 任务执行 |
+| Retry | 失败重试 |
+| Recovery | 崩溃恢复 |
+| Worker Management | Worker 管理 |
+| Queue Management | 队列管理 |
+| Runtime Maintenance | 运行时维护 |
+| Runtime Observability | 运行时可观测性 |
+
+Task Runtime 是 Domain-Agnostic，不理解 Memory、Entity、Reflection 等业务概念。
+
+### 6.1 Scheduler 与 Task Runtime 的关系
+
+Scheduler 是 Task Runtime 的一部分。
+
+```
+Scheduler（统一 Task 分发协调器）
+    ↓
+Priority Queue（High / Normal / Low）
+    ↓
+Worker Manager
+    ↓
+Task Execution
+```
+
+### 6.2 Domain Event → Task 路由
+
+```
+Domain Event
+    ↓
+Event Dispatcher
+    ↓
+Task Registry
+    ↓
+Task Factory
+    ↓
+Scheduler
+```
+
+### 6.3 Task Lifecycle in 06
+
+```
+Pending → Running → Completed
+         ↓
+        Failed → Retry → Pending
+         ↓
+        Dead（超过 maxRetry）
+```
+
+### 6.4 Startup Recovery
+
+```
+Application Startup
+    ↓
+Scan tasks WHERE status = 'Running' AND startedAt < threshold
+    ↓
+Set status = 'Pending'
+    ↓
+Re-dispatch to Scheduler
+```
+
+---
+
+## 7. Sync / Async Boundary
 
 ### 6.1 触发模式
 
@@ -427,14 +506,16 @@ Scheduler 采用 **事件驱动 + Cron 驱动** 混合架构。
 > 保留 Cron 能力，不配置 Cron 任务。
 > 所有定时行为由事件驱动触发。
 
-### 6.4 Scheduler 职责边界
+### 7.1 Scheduler 职责边界
 
 | 职责 | 说明 |
 |------|------|
-| ✅ 任务调度 | 何时执行哪个 Engine 的方法 |
-| ✅ 重试管理 | 失败任务的重试策略 |
-| ✅ 事件注册 | 监听 Engine 输出的事件 |
-| ❌ 业务逻辑 | 具体的处理逻辑由各 Engine 自行实现 |
+| ✅ 任务调度 | 何时执行哪个 Service 的方法 |
+| ✅ 重试管理 | 失败任务的重试策略（详见 10_6 §9） |
+| ✅ 事件注册 | 监听 Domain Event → Task Registry |
+| ✅ 优先级管理 | High / Normal / Low 优先级队列 |
+| ❌ 业务逻辑 | 具体的处理逻辑由各 Service 自行实现 |
+| ❌ 业务扫描 | 只提交 Entry Task，不扫描业务数据 |
 
 ---
 
@@ -836,7 +917,7 @@ sequenceDiagram
 | Archive Queue | ❌ 未实现 |
 | Maintenance Queue | ❌ 未实现 |
 | Cron 任务 | ❌ 不配置 |
-| tasks 表 | ✅ 实现（统一任务表） |
+|| tasks 表 | ✅ 实现（统一任务表，含 Priority + Task Registry） |
 
 ### 12.2 V2
 

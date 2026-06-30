@@ -158,6 +158,7 @@ Started
 * ✅ QueryService（10_3_Implementation_QueryService.md）
 * ✅ ReflectionService（10_4_Implementation_ReflectionService.md）
 * ✅ EntityService（10_5_Implementation_EntityService.md）
+* ✅ Task Runtime（10_6_Implementation_TaskRuntime.md）
 * ✅ Architecture Guidelines（13_Architecture_Guidelines.md）
 * ⏳ Runtime Flow（10_6）
 * ⏳ Reflection Engine（10_6）

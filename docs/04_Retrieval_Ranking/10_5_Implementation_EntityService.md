@@ -380,6 +380,7 @@ Maintenance Tasks
 | EntityService | MemoryService | ❌ | Forbidden | Service Independence Principle | G-005 |
 | EntityService | ReflectionService | ❌ | Forbidden | Service Independence Principle | G-005 |
 | EntityService | QueryService | ❌ | Forbidden | Service Independence Principle | G-005 |
+| EntityService | TaskRuntime | ⚠️ | Event → Task Registry | 通过 Domain Event 触发异步维护，不直接调用 | G-024 |
 
 ### 10.2 与其他 Service 的协作关系
 
@@ -413,7 +414,8 @@ MemoryEngine
 | EntityService → MemoryService | Service Independence Principle (G-005) |
 | EntityService → ReflectionService | Service Independence Principle (G-005) |
 | EntityService → QueryService | Service Independence Principle (G-005) |
-| EntityService → QueryEngine | QueryEngine 面向读取视图 |
+| EntityService | QueryEngine | QueryEngine 面向读取视图 |
+| EntityService | TaskRuntime | Task 提交通过 Domain Event 路由（G-024） |
 
 ---
 

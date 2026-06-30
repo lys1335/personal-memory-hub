@@ -454,8 +454,87 @@
 | G-036 | Entity Is Current Best Identity | 10_5 |
 | G-037 | Memory Fact ≠ Entity Reference | 10_5 |
 | G-038 | Planned vs Potential Evolution | 10_3 |
+| G-039 | Task Runtime Is Infrastructure | 10_6 |
+| G-040 | Task Runtime Domain Agnostic | 10_6 |
+| G-041 | Task Chaining via Events | 10_6 |
+| G-042 | Retry vs Re-trigger | 10_6 |
+| G-043 | Task Idempotency | 10_6 |
+| G-044 | Operational Interface Principle | 10_6 |
+| G-045 | Scheduler Is Unified Task Dispatcher | 10_6 |
+| G-046 | Recovery Never Re-evaluates | 10_6 |
+| G-047 | Maintenance Manager Scope | 10_6 |
+| G-048 | Observability Layering | 10_6 |
+| G-049 | Infrastructure Isolation | 10_6 |
 
 ---
+
+## 附录：Task Runtime Guidelines
+
+### G-039: Task Runtime Is Infrastructure
+
+> Task Runtime 是通用基础设施层，不是业务逻辑。Task Runtime 不理解 Memory、Entity、Reflection 等业务概念。
+
+**引用**：10_6 §2
+
+### G-040: Task Runtime Domain Agnostic
+
+> Task Runtime 操作 exclusively on generic Task abstraction。Payload 属于 Task 实现，Runtime 从不解析 Payload。
+
+**引用**：10_6 §3
+
+### G-041: Task Chaining via Events
+
+> Task 从不直接创建另一个 Task。Task Chaining 通过 Domain Event → Event Dispatcher → Task Registry → Task Factory → New Task 实现。
+
+**引用**：10_6 §4
+
+### G-042: Retry vs Re-trigger
+
+> Retry = 同一 Task 的技术恢复（Runtime 责任）。Re-trigger = 新 Task 的业务决策（Service 责任）。
+
+**引用**：10_6 §5.4
+
+### G-043: Task Idempotency
+
+> Task Runtime 提供 At-Least-Once 执行保证。每个 Task 实现应该是幂等的。
+
+**引用**：10_6 §6
+
+### G-044: Operational Interface Principle
+
+> Task Runtime 仅暴露操作接口（submit/getTask/queryRuntimeStatus/retry）。不暴露业务接口。
+
+**引用**：10_6 §12
+
+### G-045: Scheduler Is Unified Task Dispatcher
+
+> Scheduler 不是 Cron。Scheduler 是统一的 Task 分发协调器，支持 Domain Event / Cron / Startup Recovery / User Async Request 四种触发源。
+
+**引用**：10_6 §7
+
+### G-046: Recovery Never Re-evaluates Business Logic
+
+> Startup Recovery 只恢复执行，不重新评估业务逻辑。依靠 Task 幂等性保证安全。
+
+**引用**：10_6 §9.4
+
+### G-047: Maintenance Manager Scope
+
+> Maintenance Manager 仅负责 Runtime 维护（Task Cleanup / Lock Cleanup / Statistics / Health / Log Retention）。业务维护属于 Service 层。
+
+**引用**：10_6 §10
+
+### G-048: Observability Layering
+
+> Runtime Metadata / Logging / Metrics / Dashboard 是分层独立的。Dashboard 是消费者，不是 Runtime 的一部分。
+
+**引用**：10_6 §13
+
+### G-049: Infrastructure Isolation
+
+> Task Runtime 与业务逻辑完全隔离。基础设施关注执行，Service 关注业务。
+
+**引用**：10_6 §15.1
 
 *本文档是 Living Guideline，随 Phase B 推进持续更新。*
 

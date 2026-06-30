@@ -135,7 +135,7 @@ Application Service 层包含以下 Service，每个 Service 负责一个完整 
 | 3 | **ReflectionService** | Reflection 任务编排 | ReflectionEngine, CandidateEngine | MemoryNodeRepo, CandidateRepo, RelationshipRepo |
 | 4 | **QueryService** | 记忆检索、Context 构建 | RetrievalEngine, ContextBuilder | MemoryNodeRepo, VectorDocRepo, RelationshipRepo |
 | 5 | **ContextService** | Context 组装与输出 | ContextBuilder, ActivationEngine | （无独立 Repository） |
-| 6 | **TaskService** | 任务调度管理 | Scheduler | TaskRepo |
+| 6 | **TaskService** | 任务调度管理 | Scheduler, TaskRuntime | TaskRepo |
 
 ### 4.2 Service 职责原则
 
@@ -288,8 +288,9 @@ Engine **不是**：
 | 8 | **ContextBuilder** | Domain | 四层 Context 构建 | Retrieval Results + States | Prompt Context | ContextService |
 | 9 | **ArchiveEngine** | Domain | 认知压缩归档 | Memory Batch | Archive Result | MemoryService |
 | 10 | **EvidenceEngine** | Domain | 证据链管理与验证 | Memory ID | Evidence Chain | MemoryEngine |
-|| 11 | **RelationshipEngine** | Domain | 图关系管理 | Entity IDs | Relationships | MemoryEngine / EntityService |
-|| 12 | **EntityEngine** | Domain | 身份管理（Resolution / Merge / Alias / Canonical Name） | Entity Command | Entity Result | EntityService |
+| 11 | **EntityEngine** | Domain | 身份管理（Resolution / Merge / Alias / Canonical Name） | Entity Command | Entity Result | EntityService |
+| 12 | **RelationshipEngine** | Domain | 图关系管理（Entity 间关系维护） | Relationship Command | Relationship Result | EntityService |
+| 13 | **TaskRuntime** | Infrastructure | 通用任务调度与执行基础设施 | Task | Execution Result | MemoryService / EntityService / ReflectionService |
 
 ### 6.3 Composite Engine 模式
 
@@ -522,7 +523,7 @@ MemoryService → MemoryEngine, ArchiveEngine
 EntityService → EntityEngine, EvidenceEngine, RelationshipEngine
 QueryService → RetrievalEngine
 ContextService → ActivationEngine, ContextBuilder
-TaskService → Scheduler
+TaskService → TaskRuntime
 ```
 
 ### 9.3 Engine DAG
@@ -537,9 +538,10 @@ CandidateEngine → ReflectionEngine
 ActivationEngine → （无依赖）
 RetrievalEngine → （无依赖）
 ContextBuilder → RetrievalEngine, ActivationEngine
-MemoryEngine → ArchiveEngine, EvidenceEngine, RelationshipEngine, CandidateEngine
-EntityEngine → （无依赖）
-RelationshipEngine → （无依赖）
+| MemoryEngine → ArchiveEngine, EvidenceEngine, RelationshipEngine, CandidateEngine |
+| EntityEngine → （无依赖） |
+| RelationshipEngine → （无依赖） |
+| TaskRuntime → （无依赖，基础设施） |
 ```
 
 **Engine 之间不允许循环依赖。**
@@ -579,7 +581,7 @@ RelationshipEngine → （无依赖）
 | **Phase B-3** | QueryService + RetrievalEngine | 10_3 |
 | **Phase B-4** | ReflectionService + ReflectionEngine | 10_4 |
 | **Phase B-5** | ContextService + ContextBuilder | 10_5 |
-| **Phase B-6** | TaskService + Scheduler | 10_6 |
+| **Phase B-6** | TaskService + TaskRuntime | 10_6 |
 | **Phase B-7** | API Contract + Integration | 10_7 |
 
 ### 10.2 MVP 必须实现的组件
