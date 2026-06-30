@@ -1,10 +1,10 @@
 # Personal AI Memory Hub — 13 Architecture Guidelines
 
-> **版本**: 1.0
-> **日期**: 2026-06-27
-> **阶段**: Phase B — 工程规范（Living Guideline）
-> **状态**: 已确认
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。
+> **版本**: 1.1  
+> **日期**: 2026-06-30  
+> **阶段**: Phase B — 工程规范（Living Guideline）  
+> **状态**: 已确认  
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-055。
 
 ---
 
@@ -464,7 +464,13 @@
 | G-046 | Recovery Never Re-evaluates | 10_6 |
 | G-047 | Maintenance Manager Scope | 10_6 |
 | G-048 | Observability Layering | 10_6 |
-| G-049 | Infrastructure Isolation | 10_6 |
+|| G-049 | Infrastructure Isolation | 10_6 |
+|| G-050 | API Entry Layer 职责 | 10_7 |
+|| G-051 | Capability Discovery | 10_7 |
+|| G-052 | Multi-Adapter Entry | 10_7 |
+|| G-053 | Entry Validation Layers | 10_7 |
+|| G-054 | DTO Transformation | 10_7 |
+|| G-055 | Memory Immutability at Entry | 10_7 |
 
 ---
 
@@ -535,6 +541,46 @@
 > Task Runtime 与业务逻辑完全隔离。基础设施关注执行，Service 关注业务。
 
 **引用**：10_6 §15.1
+
+---
+
+## 附录：API Entry Layer Guidelines
+
+### G-050: API Entry Layer 职责
+
+> API Entry Layer 负责协议适配、DTO 转换、认证、能力检查。Entry 层不包含业务逻辑。业务逻辑属于 Service 层。
+
+**引用**：10_7 §2
+
+### G-051: Capability Discovery
+
+> 外部调用者通过 Capability 交互，不直接面对 Service。Capability 是稳定的，Service 是内部实现细节。
+
+**引用**：10_7 §3
+
+### G-052: Multi-Adapter Entry
+
+> REST / MCP / CLI / SDK / Agent 等多种 Entry 适配器共享同一能力接口。新增适配器不修改 Service 层。
+
+**引用**：10_7 §5
+
+### G-053: Entry Validation Layers
+
+> 请求验证分三层：协议验证（Entry）→ 能力验证（Entry）→ 领域验证（Service）。每一层拒绝不符合其职责范围的请求。
+
+**引用**：10_7 §7
+
+### G-054: DTO Transformation
+
+> Entry 层负责协议特定的 DTO 与内部 Domain Command 之间的转换。内部模型不得泄漏到外部响应。
+
+**引用**：10_7 §8
+
+### G-055: Memory Immutability at Entry
+
+> Entry 层拒绝所有直接修改 Memory 的请求（update/delete）。修正通过 correctMemory() 完成，归档通过 archiveMemory() 完成。
+
+**引用**：10_7 §4, 08 §8.3
 
 *本文档是 Living Guideline，随 Phase B 推进持续更新。*
 

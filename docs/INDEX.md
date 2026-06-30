@@ -93,7 +93,7 @@ Task Runtime — Generic task execution infrastructure, domain-agnostic task mod
 
 ### 13_Architecture_Guidelines.md
 
-Living Guideline — 38 numbered guidelines (G-001~G-038) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Entity Identity, Review Rules, Evolution Rules.
+Living Guideline — 55 numbered guidelines (G-001~G-055) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Entity Identity, Task Runtime, API Entry Layer, Review Rules, Evolution Rules.
 
 ---
 
@@ -113,18 +113,16 @@ Living Guideline — 38 numbered guidelines (G-001~G-038) covering Public API, S
 * 10_1_Implementation_Service_Layer（Phase B 开始）
 * 10_2_Implementation_MemoryService（Phase B-2）
 * 10_3_Implementation_QueryService（Phase B-3）
+* 10_4_Implementation_ReflectionService（Phase B-4）
+* 10_5_Implementation_EntityService（Phase B-5）
+* 10_6_Implementation_TaskRuntime（Phase B-6）
+* 10_7_Implementation_API_Entry（Phase B-7）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 16 / 16 completed
+Current Progress: 17 / 17 completed
 ---
 
 # Planned Documents
-* 10_2_Implementation_MemoryService.md
-* 10_3_Implementation_QueryService.md
-* 10_4_Implementation_ReflectionService.md
-* 10_5_Implementation_EntityService.md
-* 10_6_Implementation_Task_Runtime.md
-* 10_7_Implementation_API_Entry.md
 * 10_8_Implementation_Testing.md
 * 11_Implementation_Roadmap.md
 * 12_Architecture_Decisions.md
@@ -149,4 +147,4 @@ Current Progress: 16 / 16 completed
 - User-Controlled Architecture
 ---
 
-Last Updated: 2026-06-26
+Last Updated: 2026-06-30

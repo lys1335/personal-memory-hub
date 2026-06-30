@@ -803,7 +803,10 @@ src/
 || 35 | **EntityService 定位** | Identity Management 能力所有者，不是 CRUD | 10_5 |
 || 36 | **Asynchronous Reference Migration** | Merge 后发布事件，Task Runtime 异步执行 | 10_5 |
 || 37 | **EntityID Stability** | EntityID 永不改变，属性通过证据演化 | 10_5 |
-|| 38 | **No Entity Version** | 历史通过 L0 + Evidence + Events 自然存在 | 10_5 |
+||| 38 | **No Entity Version** | 历史通过 L0 + Evidence + Events 自然存在 | 10_5 |
+||| 39 | **API Entry Layer** | 协议适配/DTO/认证/能力检查，不支持业务逻辑 | 10_7 |
+||| 40 | **Capability Discovery** | 外部调用者通过 Capability 交互，不直接面对 Service | 10_7 |
+||| 41 | **Multi-Adapter Entry** | REST/MCP/CLI/SDK/Agent 共享同一能力接口 | 10_7 |
 
 ### 14.2 对旧文档的回溯更新
 
@@ -858,7 +861,8 @@ src/
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
 | 1.2 | 2026-06-27 | Phase B-3 修订：(1) 新增 QueryService 定位原则 (2) Decision Summary 补充 23~34 (3) 回溯更新表补充 10_3 (4) 新增 13 Architecture Guidelines 引用 | ✅ 已确认 |
-| 1.3 | 2026-06-28 | Phase B-5 修订：(1) 新增 EntityEngine（#12）到 Engine 清单 (2) 新增 EntityService 到 Service Collaboration Matrix (3) 新增 EntityService 到 Service DAG / Engine DAG (4) Decision Summary 补充 35~38 (5) 回溯更新表补充 10_5 | ✅ 已确认 |
+|| 1.3 | 2026-06-28 | Phase B-5 修订：(1) 新增 EntityEngine（#12）到 Engine 清单 (2) 新增 EntityService 到 Service Collaboration Matrix (3) 新增 EntityService 到 Service DAG / Engine DAG (4) Decision Summary 补充 35~38 (5) 回溯更新表补充 10_5 | ✅ 已确认 |
+|| 1.4 | 2026-06-30 | Phase B-7 修订：(1) Decision Summary 补充 39~41（API Entry Layer / Capability Discovery / Multi-Adapter Entry） (2) 回溯更新表补充 10_7 | ✅ 已确认 |
 
 ---
 

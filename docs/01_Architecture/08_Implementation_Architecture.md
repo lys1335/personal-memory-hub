@@ -237,6 +237,7 @@ V2+: Event Driven
 > Entry 层职责：协议适配、DTO 转换、认证、能力检查。Entry 层不包含业务逻辑。
 > 支持 REST / MCP / CLI / SDK / Agent 等多种 Entry 适配器。
 > 原则：One Capability, One Implementation；Multiple Entry Adapters。
+> 详见 `10_7_Implementation_API_Entry.md`（Phase B-7）。
 
 ### 8.3 Memory Immutable 约束
 
