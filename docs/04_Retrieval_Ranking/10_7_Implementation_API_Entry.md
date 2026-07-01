@@ -1,6 +1,6 @@
 # Personal AI Memory Hub — API Entry Implementation Design
 
-> **Version**: 1.0
+> **Version**: 1.2
 > **Date**: 2026-06-30
 > **Phase**: Phase B-7 — API Contract + Integration
 > **Status**: Draft
@@ -64,7 +64,83 @@ Each capability defined by the Services has exactly one implementation. Multiple
                     └─────────┘            └──────────┘
 ```
 
-### 2.3 Entry Layer Architecture
+### 2.3 Unified Request Lifecycle
+
+> **Unified Entry Pipeline Principle**: Every external protocol must first be transformed into the same internal execution pipeline before reaching the Service layer.
+
+All requests pass through a standardized lifecycle regardless of the Entry adapter:
+
+```
+Receive Request (protocol-specific)
+  ↓
+Authentication (identity verification)
+  ↓
+Authorization (capability-based permission check)
+  ↓
+Structural Validation (schema, types, required fields)
+  ↓
+RequestContext Creation (RequestId, TraceId, Principal, Capability, ClientType, API Version)
+  ↓
+DTO Conversion: Public DTO → Internal Request
+  ↓
+Service (domain logic, Engine orchestration)
+  ↓
+Service returns Internal Result (domain-agnostic)
+  ↓
+DTO Conversion: Internal Result → Public Response DTO (protocol-specific)
+  ↓
+Response Delivery (protocol-specific)
+```
+
+**Key properties**:
+
+| Property | Description |
+|----------|-------------|
+| **Single Pipeline** | All adapters funnel through the same lifecycle |
+| **RequestContext as Abstraction** | Services depend on `RequestContext`, not on caller type |
+| **Internal Result Explicit** | Service returns an `Internal Result` (domain object), not a protocol response |
+| **Protocol Separation** | Only the outermost layers (receive/send) are protocol-aware |
+
+### 2.4 RequestContext Model
+
+The `RequestContext` is the bridge between Entry layer and Service layer. Services depend only on `RequestContext`, not on `ClientType` or protocol details.
+
+```
+RequestContext
+├── requestId: UUID (v7)          // Unique request identifier
+├── traceId: UUID (v7)            // Distributed tracing correlation
+├── principal: Principal          // Authenticated identity
+├── capability: Capability        // Target capability name
+├── clientType: ClientType        // REST | MCP | CLI | SDK | Agent
+├── apiVersion: string            // API version (e.g., "1.0")
+└── metadata: Map<String, String> // Extension metadata
+```
+
+**Principal** represents the authenticated caller. It may carry role information, but authorization is **capability-based**, not role-based.
+
+**ClientType** is informational only. Services do not branch logic based on `clientType`.
+
+### 2.5 Data Flow
+
+The complete data flow through the Entry Layer:
+
+```
+Public DTO (protocol-specific)
+  ↓ DTO Converter (Entry)
+Internal Request (unified, capability-level)
+  ↓
+Service (domain logic)
+  ↓
+Internal Result (unified, domain-level)
+  ↓ DTO Converter (Entry)
+Public Response DTO (protocol-specific)
+```
+
+- **Internal Request**: Unified representation after DTO conversion. Identical regardless of Entry adapter.
+- **Internal Result**: Explicit concept. Service returns a domain-level result. It is **not** a protocol response.
+- **Public DTO**: Protocol-specific serialization of the same internal data.
+
+### 2.6 Entry Layer Architecture
 
 ```
 Entry Adapter
@@ -76,7 +152,7 @@ Entry Adapter
        └─ Response Shaping (protocol-specific)
 ```
 
-### 2.4 Forbidden Behaviors
+### 2.7 Forbidden Behaviors
 
 | Forbidden | Reason |
 |-----------|--------|
@@ -85,6 +161,16 @@ Entry Adapter
 | Entry contains business logic | Business logic belongs to Services (G-007) |
 | Entry knows about Engine internals | Entry only calls Service interfaces |
 | Entry modifies domain state directly | Only Services can modify domain state |
+| Entry Adapter → Entry Adapter | Violates Entry Independence Principle |
+
+### 2.8 Entry Independence Principle
+
+> Entry adapters (REST / MCP / CLI / SDK / Agent) must never invoke each other. Shared behavior must always be delegated to the Service layer.
+
+This ensures:
+- Each adapter remains independently deployable and testable
+- No adapter becomes a de facto shared utility layer
+- Adding a new adapter does not require modifying existing adapters
 
 ---
 
@@ -166,7 +252,11 @@ All methods are defined by the Services. The Entry Layer adapts them to protocol
 
 ### 4.3 Request/Response Contract
 
-#### 4.3.1 Unified Request Envelope
+> **Relaxed Envelope Policy**: Internal Request and Internal Result are unified across all adapters. Protocol-specific response contracts are allowed at the Entry layer — each adapter shapes the response according to its protocol requirements.
+
+#### 4.3.1 Unified Internal Request
+
+Internal Request is the unified representation after DTO conversion. Identical regardless of Entry adapter.
 
 ```json
 {
@@ -185,9 +275,12 @@ All methods are defined by the Services. The Entry Layer adapts them to protocol
 }
 ```
 
-#### 4.3.2 Unified Response Envelope
+#### 4.3.2 Protocol-Specific Response Contract
+
+Each adapter may define its own response format. The following is the REST adapter's default response contract. Other adapters (MCP, CLI, SDK, Agent) define their own response shapes.
 
 ```json
+// REST Response (default)
 {
   "requestId": "uuid-v7",
   "status": "success" | "partial_success" | "failed",
@@ -221,6 +314,17 @@ All methods are defined by the Services. The Entry Layer adapts them to protocol
 ```
 
 ### 4.4 Standard Error Codes
+
+> **Stable Error Identity Principle**: Business errors use globally stable Error Codes. An Error Registry maps Error Codes to implementation locations, documentation, and tests.
+
+Error Codes are stable identifiers that do not change across adapter implementations or protocol translations. The Error Registry is the single source of truth for:
+
+| Registry Field | Description |
+|----------------|-------------|
+| **Error Code** | Globally stable identifier (e.g., `VALIDATION_ERROR`) |
+| **Implementation** | Which Service/Method produces this error |
+| **Documentation** | Where the error is defined and explained |
+| **Tests** | Test cases that verify this error path |
 
 | Error Code | HTTP (REST) | Description |
 |------------|-------------|-------------|
@@ -434,17 +538,29 @@ Agent Adapter provides a native interface for AI Agents (Hermes, Claude, etc.):
 | SDK | API Key in constructor | — |
 | Agent | Internal trust (same process) | — |
 
-### 6.2 Authorization Model
+### 6.2 Authentication Independence Principle
 
-> **Constraint**: Memory Hub is a personal AI platform. The MVP authorization model is simple.
+> Authentication providers may change (API Key, JWT, OAuth, MCP Identity, etc.) without affecting the capability-based authorization model.
 
-| Role | Permissions |
-|------|-------------|
-| **Owner** (authenticated user) | Full read/write access to all capabilities |
-| **Admin** (future) | Management access, user configuration |
+Authentication answers "Who are you?" — this can evolve independently of authorization. The `Principal` in `RequestContext` is an abstracted identity that authorization checks consume, regardless of how it was obtained.
+
+### 6.3 Authorization Model
+
+> **Capability-based authorization**. Roles are an optional identity abstraction; the core authorization model is capability-based.
+
+#### Role → Capability Mapping
+
+Roles (Owner, Admin, Read-Only) are optional convenience abstractions that map to capability permissions. The fundamental authorization unit is the **capability**, not the role.
+
+| Role | Capability Mapping |
+|------|-------------------|
+| **Owner** (authenticated user) | All capabilities granted by default |
+| **Admin** (future) | Management capabilities + all read capabilities |
 | **Read-Only** (future) | Query capabilities only |
 
-### 6.3 Capability-Level Permission Checks
+Roles simplify configuration but are not required. An authorization check always resolves to: **"Does this Principal have permission for this Capability?"**
+
+### 6.4 Capability-Level Permission Checks
 
 | Capability Group | Owner | Admin | Read-Only |
 |-----------------|-------|-------|-----------|
@@ -469,8 +585,7 @@ Request
        └─ Are field types correct?
   └─ Layer 2: Capability Validation (Entry)
        ├─ Does the capability exist?
-       ├─ Does the caller have permission?
-       └─ Are business preconditions met?
+       └─ Does the caller have authorization?
   └─ Layer 3: Domain Validation (Service)
        ├─ Is the evidence chain complete?
        ├─ Does the Entity exist?
@@ -518,11 +633,16 @@ Request
 ### 8.1 Transformation Direction
 
 ```
-External Request (protocol-specific)
+Public DTO (protocol-specific)
   └─ DTO Converter (Entry)
-       └─ Domain Command (capability-level)
+       └─ Internal Request (unified, capability-level)
             └─ Service Method
+                 └─ Internal Result (unified, domain-level)
+                      └─ DTO Converter (Entry)
+                           └─ Public Response DTO (protocol-specific)
 ```
+
+**Internal Request** and **Internal Result** are unified across all adapters. Only the outermost layers (Public DTO ↔ Internal Request/Result) are protocol-aware.
 
 ### 8.2 REST DTO Example
 
@@ -543,7 +663,7 @@ External Request (protocol-specific)
 
 // ↓ Entry Layer transforms to ↓
 
-// Domain Command (internal)
+// Internal Request (unified, capability-level)
 {
   "capability": "searchMemories",
   "params": {
@@ -564,18 +684,18 @@ External Request (protocol-specific)
 ### 8.3 Response Transformation
 
 ```
-Domain Result (Service)
+Internal Result (unified, domain-level)
   └─ DTO Converter (Entry)
-       └─ External Response (protocol-specific)
+       └─ Public Response DTO (protocol-specific)
 ```
 
 ### 8.4 Transformation Rules
 
 | Rule | Description |
 |------|-------------|
-| **One Capability, One Internal Model** | Regardless of Entry adapter, the internal domain command is identical |
+| **Unified Internal Request/Result** | Internal Request and Internal Result are identical across all adapters |
 | **Protocol-Specific Shaping** | REST uses pagination, MCP uses tool schema, CLI uses flags |
-| **No Domain Leakage** | Internal domain models must not appear in external responses |
+| **No Domain Leakage** | Internal domain models must not appear in Public Response DTOs |
 | **Continuation Preservation** | QueryService Continuation is preserved across transformations (G-003) |
 
 ---
@@ -874,6 +994,11 @@ The Entry Layer exposes:
 | P0-8 | **Standard Error Codes** | ✅ 11 error codes defined |
 | P0-9 | **Service Independence Preserved** | ✅ Entry calls Services, Services don't call each other |
 | P0-10 | **Consumer-Agnostic Interface** | ✅ G-003: Entry adapts, Capability is stable |
+| P0-11 | **Unified Request Lifecycle** | ✅ All adapters share same pipeline |
+| P0-12 | **RequestContext Abstraction** | ✅ Services depend on RequestContext, not caller type |
+| P0-13 | **Internal Result Explicit** | ✅ Service returns domain-level Internal Result |
+| P0-14 | **Entry Independence** | ✅ Adapters never invoke each other |
+| P0-15 | **Capability-Based Authorization** | ✅ Roles optional, capability-permission mapping core |
 
 ### 14.2 P1 — Recommended
 
@@ -906,7 +1031,7 @@ The Entry Layer exposes:
 | 4 | **Capability Routing** | External callers interact with Capabilities, not Services | 10_7 §3 |
 | 5 | **Command / Query Separation** | Command returns Id, Query returns State | G-008 |
 | 6 | **Memory Immutability** | No update/delete; only correct/archive | 08 §8.3 |
-| 7 | **Unified Request/Response Envelope** | Standard envelope with requestId, status, data, metadata | 10_7 §4.3 |
+|| 7 | **Relaxed Envelope Policy** | Internal Request/Internal Result unified; protocol-specific response contracts allowed | 10_7 §4.3 |
 | 8 | **Validation at Entry Layer** | Three-layer validation: Protocol → Capability → Domain | 10_7 §7 |
 | 9 | **DTO Transformation** | Protocol-specific → Domain Command (Entry responsibility) | 10_7 §8 |
 | 10 | **Capability Discovery** | GET /capabilities exposes the full catalog | 10_7 §9 |
@@ -917,7 +1042,15 @@ The Entry Layer exposes:
 | 15 | **Observability** | TraceId, metrics, structured logging at Entry | 10_7 §12 |
 | 16 | **REST MVP** | Only REST adapter implemented in MVP; others deferred to V2+ | 10_7 §5.1 |
 | 17 | **Error Code Standardization** | 11 standard error codes across all adapters | 10_7 §4.4 |
-| 18 | **No Internal Architecture Exposure** | Capability discovery hides Service/Engine/Repository internals | 10_7 §9.3 |
+|| 18 | **No Internal Architecture Exposure** | Capability discovery hides Service/Engine/Repository internals | 10_7 §9.3 |
+|| 19 | **Unified Request Lifecycle** | Every request passes through the same pipeline: Auth → Authz → Validation → Service → Response | 10_7 §2.3 |
+|| 20 | **RequestContext Abstraction** | Services depend on RequestContext, not on caller type or protocol | 10_7 §2.4 |
+|| 21 | **Internal Result Explicit** | Service returns Internal Result (domain object); DTO conversion is Entry responsibility | 10_7 §2.5, §8 |
+|| 22 | **Entry Independence** | Entry adapters never invoke each other; shared behavior delegated to Service layer | 10_7 §2.9 |
+|| 23 | **Capability-Based Authorization** | Roles are optional convenience; core model is capability-permission mapping | 10_7 §6.3 |
+|| 24 | **Authentication Independence** | Auth providers may change without affecting capability-based authorization | 10_7 §6.2 |
+|| 25 | **Stable Error Identity** | Error Codes are globally stable; Error Registry maps codes to implementation/docs/tests | 10_7 §4.4 |
+|| 26 | **Unified Entry Pipeline Principle** | Every external protocol must first be transformed into the same internal execution pipeline | 10_7 §2.3 |
 
 ---
 
@@ -955,13 +1088,17 @@ Completing 10_7 requires updating the following documents:
 
 ## Appendix A: Terminology
 
-| Term | Description | Source |
+|| Term | Description | Source |
 |------|-------------|--------|
 | Capability | External-facing unit of functionality, mapped to a Service method | 10_7 |
 | Entry Adapter | Protocol-specific implementation (REST/MCP/CLI/SDK/Agent) | 08 §8.1 |
-| Domain Command | Internal representation after DTO transformation | 10_7 §8 |
+| Internal Request | Unified representation after DTO conversion | 10_7 §8.1 |
+| Internal Result | Unified domain-level result returned by Service | 10_7 §2.5, §8.1 |
+| RequestContext | Bridge between Entry and Service layers | 10_7 §2.4 |
 | Continuation | QueryService-defined pagination/state transfer mechanism | G-003 |
-| Unified Envelope | Standard request/response wrapper across all adapters | 10_7 §4.3 |
+| Public DTO | Protocol-specific serialization of internal data | 10_7 §2.5 |
+| Error Registry | Maps Error Codes to implementation, docs, tests | 10_7 §4.4 |
+| Unified Envelope | Relaxed: Internal Request/Result unified, response contracts protocol-specific | 10_7 §4.3 |
 
 ---
 
@@ -971,6 +1108,7 @@ Completing 10_7 requires updating the following documents:
 |---------|------|-------------------|--------|
 | 1.0 | 2026-06-30 | 初始版本 — API Entry Layer design, capability catalog, adapter definitions, validation, DTO transformation, integration compliance | ✅ Confirmed |
 | 1.1 | 2026-06-30 | Phase B-7 修订：(1) 回溯更新 08_Implementation_Architecture §8.1（添加 10_7 引用）(2) 回溯更新 10_1 Decision Summary 补充 39~41 (3) 回溯更新 13_Architecture_Guidelines 新增 G-050~G-055 (4) 回溯更新 INDEX.md 标记 10_7 完成 | ✅ Confirmed |
+| 1.2 | 2026-06-30 | Phase B-7 修订：(1) 新增 Unified Request Lifecycle (§2.3) (2) 新增 RequestContext Model (§2.4) (3) 新增 Data Flow (§2.5) (4) 新增 Entry Independence Principle (§2.9) (5) 修订 Authorization 为 Capability-Based (§6.3) (6) 新增 Authentication Independence Principle (§6.2) (7) 修订 Validation Layer 2 移除 business precondition (8) 修订 Envelope 为 Relaxed Policy (§4.3) (9) 新增 Stable Error Identity Principle + Error Registry (§4.4) (10) 修订 DTO 术语：Domain Command → Internal Request/Result (§8) (11) Decision Summary 补充 19~26 (12) Checklist 补充 P0-11~P0-15 (13) Appendix A 术语更新 | ✅ Confirmed |
 
 ---
 
