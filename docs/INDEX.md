@@ -99,6 +99,10 @@ Living Guideline — 65 numbered guidelines (G-001~G-065) covering Public API, S
 
 Testing Implementation Design — 19 Testing Principles, Testing Responsibilities per Layer (Entry/Service/Engine/Repository/Integration/E2E), Mock Strategy, Deterministic vs Evaluation Testing, Test Data Management, Regression Strategy, Future Extensibility.
 
+### 11_Implementation_Roadmap.md
+
+Implementation Roadmap — Six engineering milestones (Foundation/Core Memory/Query&Reflection/Entry&API/Testing&MVP), MVP lifecycle definition, coding order (dependency-driven), repository strategy, branch strategy, four-level review workflow, CI strategy, milestone completion criteria, AI engineering risks, implementation gate system, state-driven workflow, AI-driven engineering principles.
+
 ---
 
 # Current Status
@@ -122,14 +126,16 @@ Testing Implementation Design — 19 Testing Principles, Testing Responsibilitie
 * 10_6_Implementation_TaskRuntime（Phase B-6）
 * 10_7_Implementation_API_Entry（Phase B-7）
 * 10_8_Implementation_Testing（Phase B-8）
+* 11_Implementation_Roadmap（Phase B-9）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 18 / 18 completed
+Current Progress: 19 / 19 completed
 ---
 
 # Planned Documents
-* 11_Implementation_Roadmap.md
-* 12_Architecture_Decisions.md
+* 12_Engineering_Decisions.md
+* 13_AI_Development_Workflow.md
+* 14_Final_Implementation_Review.md
 
 ---
 

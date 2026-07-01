@@ -605,6 +605,8 @@ tests/
 | 14 | **Evaluation Tests Non-Blocking** | LLM quality is signal, not gate | 10_8 §5.2 |
 | 15 | **New Capability Requires New Test Ownership** | Every capability needs test scaffolding | 10_8 §8.2 |
 | 16 | **Test Review Before Coverage** | Quality over quantity | 10_8 §2.1 (P12) |
+| 17 | **Roadmap Alignment** | Testing milestones map to 11 Milestone 5 (Testing & Stabilization) | 11 |
+| 18 | **CI Testing Pipeline** | 10_8 testing principles implemented in CI strategy per 11 §8 | 11 |
 
 ---
 
@@ -620,7 +622,18 @@ The following documents require backport updates after 10_8 is finalized:
 
 ---
 
-## 13. Relationship with Other Documents
+## 13. Relationship with 11_Implementation_Roadmap
+
+| Relationship | Description |
+|--------------|-------------|
+| Milestone 5 (Testing & Stabilization) | Directly implements 10_8 testing architecture |
+| CI Strategy | 10_8 testing principles implemented in CI pipeline |
+| Regression Suite | 10_8 §7 regression strategy executed per milestone |
+| Golden Datasets | 10_8 §6.4 golden datasets maintained per milestone |
+
+---
+
+## 14. Relationship with Other Documents
 
 | Document | Relationship |
 |----------|-------------|
@@ -657,6 +670,7 @@ The following documents require backport updates after 10_8 is finalized:
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
 | 1.0 | 2026-07-01 | Initial version — Testing Philosophy (19 principles), Testing Responsibilities (6 layers), Mock Strategy, Deterministic vs Evaluation, Test Data, Regression Strategy, Future Extensibility | ✅ Confirmed |
+| 1.1 | 2026-07-01 | Phase B-9 修订：(1) Decision Summary 补充 17~18（Roadmap Alignment / CI Testing Pipeline） (2) 新增 Relationship with 11_Implementation_Roadmap | ✅ Confirmed |
 
 ---
 

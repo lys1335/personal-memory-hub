@@ -1062,7 +1062,8 @@ Completing 10_7 requires updating the following documents:
 |----------|---------------|
 | **08_Implementation_Architecture** | §8 API Design — align terminology (API Entry Layer), add capability catalog reference |
 | **10_1_Implementation_Service_Layer** | §10 MVP Implementation Order — confirm Phase B-7 position |
-| **13_Architecture_Guidelines** | Add G-050~G-055 (Entry Layer Guidelines) |
+|| **13_Architecture_Guidelines** | Add G-050~G-055 (Entry Layer Guidelines) |
+|| **11_Implementation_Roadmap** | Milestone 4 (Entry & API) maps to 10_7, CI strategy §8 |
 | **12_Architecture_Decisions** | Add ADR for API Entry Layer principles |
 
 ---

@@ -131,6 +131,11 @@ Current completed design documents:
 * Implementation MemoryService（Phase B-2 新增）
 * Implementation QueryService（Phase B-3 新增）
 * Implementation ReflectionService（Phase B-4 新增）
+* Implementation EntityService（Phase B-5 新增）
+* Implementation TaskRuntime（Phase B-6 新增）
+* Implementation API Entry（Phase B-7 新增）
+* Implementation Testing（Phase B-8 新增）
+* Implementation Roadmap（Phase B-9 新增）
 * Architecture Guidelines（Phase B Living Guideline 新增）
 
 ---
@@ -159,15 +164,10 @@ Started
 * ✅ ReflectionService（10_4_Implementation_ReflectionService.md）
 * ✅ EntityService（10_5_Implementation_EntityService.md）
 * ✅ Task Runtime（10_6_Implementation_TaskRuntime.md）
+* ✅ API Entry（10_7_Implementation_API_Entry.md）
+* ✅ Testing（10_8_Implementation_Testing.md）
+* ✅ Implementation Roadmap（11_Implementation_Roadmap.md）
 * ✅ Architecture Guidelines（13_Architecture_Guidelines.md）
-* ⏳ Runtime Flow（10_6）
-* ⏳ Reflection Engine（10_6）
-* ⏳ Task System（10_7）
-* ⏳ Query System（10_8）
-* ⏳ Consistency Engine（10_9）
-* ⏳ API Contract（10_10）
-* ⏳ Migration Strategy（10_11）
-* ⏳ Orchestration Layer（10_12）
 
 ## Phase C - Review
 
