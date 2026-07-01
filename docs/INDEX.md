@@ -93,7 +93,11 @@ Task Runtime — Generic task execution infrastructure, domain-agnostic task mod
 
 ### 13_Architecture_Guidelines.md
 
-Living Guideline — 55 numbered guidelines (G-001~G-055) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Entity Identity, Task Runtime, API Entry Layer, Review Rules, Evolution Rules.
+Living Guideline — 65 numbered guidelines (G-001~G-065) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Entity Identity, Task Runtime, API Entry Layer, Testing, Review Rules, Evolution Rules.
+
+### 10_8_Implementation_Testing.md
+
+Testing Implementation Design — 19 Testing Principles, Testing Responsibilities per Layer (Entry/Service/Engine/Repository/Integration/E2E), Mock Strategy, Deterministic vs Evaluation Testing, Test Data Management, Regression Strategy, Future Extensibility.
 
 ---
 
@@ -117,13 +121,13 @@ Living Guideline — 55 numbered guidelines (G-001~G-055) covering Public API, S
 * 10_5_Implementation_EntityService（Phase B-5）
 * 10_6_Implementation_TaskRuntime（Phase B-6）
 * 10_7_Implementation_API_Entry（Phase B-7）
+* 10_8_Implementation_Testing（Phase B-8）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 17 / 17 completed
+Current Progress: 18 / 18 completed
 ---
 
 # Planned Documents
-* 10_8_Implementation_Testing.md
 * 11_Implementation_Roadmap.md
 * 12_Architecture_Decisions.md
 
@@ -147,4 +151,4 @@ Current Progress: 17 / 17 completed
 - User-Controlled Architecture
 ---
 
-Last Updated: 2026-06-30
+Last Updated: 2026-07-01

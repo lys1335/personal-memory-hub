@@ -807,6 +807,8 @@ src/
 ||| 39 | **API Entry Layer** | 协议适配/DTO/认证/能力检查，不支持业务逻辑 | 10_7 |
 ||| 40 | **Capability Discovery** | 外部调用者通过 Capability 交互，不直接面对 Service | 10_7 |
 ||| 41 | **Multi-Adapter Entry** | REST/MCP/CLI/SDK/Agent 共享同一能力接口 | 10_7 |
+|| 42 | **Testing Architecture** | 19 Testing Principles, per-layer responsibilities, mock strategy, deterministic CI gate | 10_8 |
+|| 43 | **Testing Guidelines (13)** | 65 条 Guideline 编号体系（G-001~G-065） | 13 |
 
 ### 14.2 对旧文档的回溯更新
 
@@ -863,6 +865,7 @@ src/
 | 1.2 | 2026-06-27 | Phase B-3 修订：(1) 新增 QueryService 定位原则 (2) Decision Summary 补充 23~34 (3) 回溯更新表补充 10_3 (4) 新增 13 Architecture Guidelines 引用 | ✅ 已确认 |
 || 1.3 | 2026-06-28 | Phase B-5 修订：(1) 新增 EntityEngine（#12）到 Engine 清单 (2) 新增 EntityService 到 Service Collaboration Matrix (3) 新增 EntityService 到 Service DAG / Engine DAG (4) Decision Summary 补充 35~38 (5) 回溯更新表补充 10_5 | ✅ 已确认 |
 || 1.4 | 2026-06-30 | Phase B-7 修订：(1) Decision Summary 补充 39~41（API Entry Layer / Capability Discovery / Multi-Adapter Entry） (2) 回溯更新表补充 10_7 | ✅ 已确认 |
+|| 1.5 | 2026-07-01 | Phase B-8 修订：(1) Decision Summary 补充 42~43（Testing Architecture / Testing Guidelines G-056~G-065） (2) 回溯更新表补充 10_8 | ✅ 已确认 |
 
 ---
 

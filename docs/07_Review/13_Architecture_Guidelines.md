@@ -1,10 +1,10 @@
 # Personal AI Memory Hub — 13 Architecture Guidelines
 
-> **版本**: 1.1  
-> **日期**: 2026-06-30  
+> **版本**: 1.2  
+> **日期**: 2026-07-01  
 > **阶段**: Phase B — 工程规范（Living Guideline）  
 > **状态**: 已确认  
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-055。
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-065。
 
 ---
 
@@ -582,6 +582,85 @@
 
 **引用**：10_7 §4, 08 §8.3
 
+---
+
+## 附录：Testing Guidelines
+
+### G-056: Testing Mirrors Architecture
+
+> 测试结构镜像五层架构：Entry / Service / Engine / Repository / Integration。每层有明确的测试范围和边界。
+
+**引用**：10_8 §3
+
+### G-057: Mock Mirrors Layer Boundary
+
+> Mock 仅存在于层边界。禁止在同层内 Mock。禁止 Mock 当前测试对象自身。优先使用真实对象而非 Mock。
+
+**引用**：10_8 §4
+
+### G-058: Deterministic-by-Default
+
+> 所有单元测试和集成测试必须是确定性的。CI 门仅依赖确定性测试。LLM 评估测试为非阻塞信号。
+
+**引用**：10_8 §5
+
+### G-059: Semantic Equivalence Principle
+
+> 测试验证语义等价（含义、状态、行为），而非字面字符串匹配。特别是 LLM 生成内容的验证。
+
+**引用**：10_8 §2.1 (P18)
+
+### G-060: Regression as Executable Memory
+
+> 回归测试是可执行的项目记忆。每个 Bug Fix 必须新增回归测试。回归保护 Contract，不保护实现细节。
+
+**引用**：10_8 §7
+
+### G-061: Golden Dataset Principle
+
+> Golden Dataset 定义已知输入的期望输出，是回归测试的真相标准。Golden Dataset 随设计变更而更新，不随实现变更而更新。
+
+**引用**：10_8 §6.4
+
+### G-062: Testability Is an Architectural Requirement
+
+> 如果一个组件无法在隔离状态下测试，其架构是有缺陷的。可测试性驱动设计决策。
+
+**引用**：10_8 §8.1
+
+### G-063: Quality Is Designed, Not Inspected
+
+> 质量来自良好的架构、清晰的契约和确定性设计。测试验证质量，不创造质量。
+
+**引用**：10_8 §8.4
+
+### G-064: Tests Generated from Design
+
+> 测试用例从设计文档生成，而非从代码审查生成。测试用例是设计资产，不是代码附属品。
+
+**引用**：10_8 §2.1 (P9, P10)
+
+### G-065: Test Data Is a First-Class Artifact
+
+> 测试数据（Fixtures、Scenarios、Golden Datasets）是版本控制的一等公民，与源代码同等审查标准。
+
+**引用**：10_8 §6
+
+---
+
+| 编号 | 名称 | 首次出现 |
+|------|------|----------|
+| G-056 | Testing Mirrors Architecture | 10_8 |
+| G-057 | Mock Mirrors Layer Boundary | 10_8 |
+| G-058 | Deterministic-by-Default | 10_8 |
+| G-059 | Semantic Equivalence Principle | 10_8 |
+| G-060 | Regression as Executable Memory | 10_8 |
+| G-061 | Golden Dataset Principle | 10_8 |
+| G-062 | Testability Is an Architectural Requirement | 10_8 |
+| G-063 | Quality Is Designed, Not Inspected | 10_8 |
+| G-064 | Tests Generated from Design | 10_8 |
+| G-065 | Test Data Is a First-Class Artifact | 10_8 |
+
 *本文档是 Living Guideline，随 Phase B 推进持续更新。*
 
-*后续 10_4~10_N 每完成一个文档，同步更新本文档。*
+*后续 10_9~10_N 每完成一个文档，同步更新本文档。*

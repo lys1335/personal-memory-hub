@@ -1082,7 +1082,8 @@ Completing 10_7 requires updating the following documents:
 | **10_4** | ReflectionService → Entry Layer exposes ReflectionService capabilities |
 | **10_5** | EntityService → Entry Layer exposes EntityService capabilities |
 | **10_6** | TaskRuntime → Entry Layer exposes TaskService capabilities, tracks long-running tasks |
-| **13** | Architecture Guidelines → Entry Layer enforces G-001~G-049 |
+|| **13** | Architecture Guidelines → Entry Layer enforces G-001~G-055 |
+|| **10_8** | Testing Architecture → Entry Layer tests defined in 10_8 §3.1, mock strategy in 10_8 §4 |
 
 ---
 
