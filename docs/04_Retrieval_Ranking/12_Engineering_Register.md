@@ -1177,12 +1177,31 @@ This section tracks understanding enrichment over time.
 * If a proposed implementation conflicts with a registered decision, flag it for human review.
 * Do not infer or fabricate rationale for decisions not explicitly documented.
 * When enriching understanding, append to the relevant decision record with a new version (d1.1, d1.2, etc.) and update Knowledge Evolution Log.
+* Follow the AI Development Workflow (13_AI_Development_Workflow.md) for state transitions, gate system, and responsibility matrix.
 
 ### For Future Memory Hub Reflection
 
 * This register itself may become a memory source for the Memory Hub.
 * Reflection may identify patterns across decisions that suggest architectural principles.
 * Historical discussion import may enrich decisions with original context and rationale.
+* Knowledge enrichment must follow the Knowledge Lifecycle in 13 (Reflection → Candidate → Admission → Evolution).
+
+---
+
+## 9. Relationship with 13_AI_Development_Workflow
+
+This register constrains the AI Development Workflow. Key intersections:
+
+| ENG Decision | Workflow Section | Interaction |
+|-------------|-----------------|-------------|
+| ENG-002 (Witness, Not Actor) | §3 Human/AI Matrix | Defines AI prohibited actions |
+| ENG-003 (Agent External) | §9 Stateless Collaboration | Agent boundary preserved |
+| ENG-004 (Agent Write Restriction) | §6 Implementation | Agent writes flow through pipeline |
+| ENG-006 (Evidence-Based) | §8 Verification | Verification must be evidence-based |
+| ENG-008 (Reflection Scope) | §10 Knowledge Lifecycle | Reflection limited to maintenance |
+| ENG-023 (Service Independence) | §7 Escalation | Cross-service issues escalated |
+| ENG-038 (Reflection Mode) | §10.1 Reflection | Mode selection affects workflow |
+| ENG-040 (Non-Decision Role) | §3.3 Prohibited Actions | Memory Hub never makes decisions |
 
 ---
 

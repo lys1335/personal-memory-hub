@@ -1052,6 +1052,7 @@ The Entry Layer exposes:
 || 25 | **Stable Error Identity** | Error Codes are globally stable; Error Registry maps codes to implementation/docs/tests | 10_7 §4.4 |
 || 26 | **Unified Entry Pipeline Principle** | Every external protocol must first be transformed into the same internal execution pipeline | 10_7 §2.3 |
 || 27 | **Engineering Register (12)** | All entry-layer decisions cross-referenced in 12 (ENG-003, ENG-004, ENG-023, ENG-024, ENG-025) | 12 |
+|| 28 | **AI Development Workflow (13)** | Entry layer implementation governed by workflow: gate system, Human/AI matrix, state-driven transitions | 13 |
 
 ---
 

@@ -811,6 +811,7 @@ src/
 || 43 | **Testing Guidelines (13)** | 65 条 Guideline 编号体系（G-001~G-065） | 13 |
 || 44 | **Implementation Roadmap (11)** | Six engineering milestones, MVP lifecycle, coding order, repository strategy, state-driven workflow | 11 |
 || 45 | **Engineering Register (12)** | Living register of 40 decisions (ENG-001~ENG-040), knowledge evolution framework, tag index | 12 |
+|| 46 | **AI Development Workflow (13)** | Project lifecycle state machine, Human/AI responsibility matrix, gate system, knowledge lifecycle, stateless collaboration | 13 |
 
 ### 14.2 对旧文档的回溯更新
 
@@ -870,6 +871,7 @@ src/
 || 1.5 | 2026-07-01 | Phase B-8 修订：(1) Decision Summary 补充 42~43（Testing Architecture / Testing Guidelines G-056~G-065） (2) 回溯更新表补充 10_8 | ✅ 已确认 |
 | 1.6 | 2026-07-01 | Phase B-9 修订：(1) Decision Summary 补充 44（Implementation Roadmap） (2) 回溯更新表补充 11 | ✅ 已确认 |
 | 1.7 | 2026-07-01 | Phase B-10 修订：(1) Decision Summary 补充 45（Engineering Register） (2) 回溯更新表补充 12 | ✅ 已确认 |
+| 1.8 | 2026-07-01 | Phase B-11 修订：(1) Decision Summary 补充 46（AI Development Workflow） (2) 回溯更新表补充 13_AI_Development_Workflow | ✅ 已确认 |
 
 ---
 

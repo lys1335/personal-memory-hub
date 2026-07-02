@@ -608,6 +608,7 @@ tests/
 | 17 | **Roadmap Alignment** | Testing milestones map to 11 Milestone 5 (Testing & Stabilization) | 11 |
 | 18 | **CI Testing Pipeline** | 10_8 testing principles implemented in CI strategy per 11 §8 | 11 |
 | 19 | **Engineering Register (12)** | All testing-related decisions cross-referenced in 12 ENG-006~ENG-008, ENG-020 | 12 |
+| 20 | **AI Development Workflow (13)** | Testing verification aligns with workflow verification levels (self/architecture/testing/human) | 13 |
 
 ---
 

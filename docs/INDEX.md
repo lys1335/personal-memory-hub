@@ -107,6 +107,10 @@ Implementation Roadmap — Six engineering milestones (Foundation/Core Memory/Qu
 
 Engineering Decision Register — Living register of 40 confirmed engineering decisions (ENG-001~ENG-040) extracted from all Phase A and Phase B documentation. Each decision includes stable ID, current understanding assessment, knowledge maturity, alternatives considered, trade-offs, review triggers, evidence coverage, known gaps, and future enrichment plan. Tag index and usage notes for humans and AI.
 
+### 13_AI_Development_Workflow.md
+
+AI Development Workflow — Project lifecycle state machine (seven states), Human/AI responsibility matrix, Discussion→Decision→Design transition, gate system (Architecture/Engineering/AI/Human), implementation readiness criteria, engineering escalation procedures, verification framework (evidence-based, four-level), GitHub as Project State, stateless AI collaboration, knowledge lifecycle (Reflection→Candidate→Admission→Evolution), knowledge evolution preference (refinement over proliferation), future multi-workflow architecture extension point.
+
 ---
 
 # Current Status
@@ -132,9 +136,10 @@ Engineering Decision Register — Living register of 40 confirmed engineering de
 * 10_8_Implementation_Testing（Phase B-8）
 * 11_Implementation_Roadmap（Phase B-9）
 * 12_Engineering_Register（Phase B-10）
+* 13_AI_Development_Workflow（Phase B-11）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 20 / 20 completed
+Current Progress: 21 / 21 completed
 ---
 
 # Planned Documents

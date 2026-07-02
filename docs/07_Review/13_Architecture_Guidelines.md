@@ -1,10 +1,10 @@
 |# Personal AI Memory Hub — 13 Architecture Guidelines
 
-> **版本**: 1.3  
+> **版本**: 1.4  
 > **日期**: 2026-07-01  
 > **阶段**: Phase B — 工程规范（Living Guideline）  
 > **状态**: 已确认  
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-066。
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-070。
 
 ---
 
@@ -661,12 +661,36 @@
 | G-064 | Tests Generated from Design | 10_8 |
 | G-065 | Test Data Is a First-Class Artifact | 10_8 |
 | G-066 | Knowledge Evolution Principle | 12 |
+| G-067 | Stateless AI Collaboration | 13_AI_Development_Workflow |
+| G-068 | Evidence-Based Verification | 13_AI_Development_Workflow |
+| G-069 | GitHub as Project State | 13_AI_Development_Workflow |
+| G-070 | Knowledge Refinement Over Proliferation | 13_AI_Development_Workflow |
 
 ---
 
-## G-066: Knowledge Evolution Principle
+## G-067: Stateless AI Collaboration
 
-> Engineering decisions remain stable unless explicitly reviewed and approved. The project's understanding of those decisions may continuously evolve as additional evidence, historical discussions, and reflections become available. Knowledge enrichment improves explanations rather than altering approved decisions.
+> AI collaboration is stateless — each session operates from the current Project State (GitHub HEAD), not from conversation history. Conversation context is ephemeral; documents and repository are persistent.
+
+**引用**：13 §9
+
+## G-068: Evidence-Based Verification
+
+> Every verification claim must reference specific evidence (test output, document section, or approved decision). Claims without evidence are not accepted.
+
+**引用**：13 §8.3
+
+## G-069: GitHub as Project State
+
+> GitHub HEAD is the authoritative representation of current Project State. Project State is an engineering abstraction; it is not the entirety of Project Memory.
+
+**引用**：13 §9.2
+
+## G-070: Knowledge Refinement Over Proliferation
+
+> Knowledge should evolve primarily by refining existing knowledge instead of continuously creating new knowledge. Proliferation (creating new entries) is the least preferred evolution type.
+
+**引用**：13 §10.4
 
 *本文档是 Living Guideline，随 Phase B 推进持续更新。*
 
