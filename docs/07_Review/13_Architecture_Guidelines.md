@@ -1,10 +1,10 @@
-# Personal AI Memory Hub — 13 Architecture Guidelines
+|# Personal AI Memory Hub — 13 Architecture Guidelines
 
-> **版本**: 1.2  
+> **版本**: 1.3  
 > **日期**: 2026-07-01  
 > **阶段**: Phase B — 工程规范（Living Guideline）  
 > **状态**: 已确认  
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-065。
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-066。
 
 ---
 
@@ -660,6 +660,13 @@
 | G-063 | Quality Is Designed, Not Inspected | 10_8 |
 | G-064 | Tests Generated from Design | 10_8 |
 | G-065 | Test Data Is a First-Class Artifact | 10_8 |
+| G-066 | Knowledge Evolution Principle | 12 |
+
+---
+
+## G-066: Knowledge Evolution Principle
+
+> Engineering decisions remain stable unless explicitly reviewed and approved. The project's understanding of those decisions may continuously evolve as additional evidence, historical discussions, and reflections become available. Knowledge enrichment improves explanations rather than altering approved decisions.
 
 *本文档是 Living Guideline，随 Phase B 推进持续更新。*
 

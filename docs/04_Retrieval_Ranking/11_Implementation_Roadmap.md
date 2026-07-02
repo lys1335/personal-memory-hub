@@ -720,6 +720,7 @@ The following documents require backport updates after 11 is finalized:
 | Document | Update Required |
 |----------|----------------|
 | **10_1_Implementation_Service_Layer** | Add testing section to Decision Summary (items 44+) |
+| **12_Engineering_Register** | Cross-reference to 11 engineering principles (coding order, CI strategy, risk management) |
 | **INDEX.md** | Mark 11 as completed, update progress, replace 12_Architecture_Decisions with 12_Engineering_Decisions |
 | **README.md** | Update Phase B status, add 10_8, 11, update planned documents |
 

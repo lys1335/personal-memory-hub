@@ -136,6 +136,7 @@ Current completed design documents:
 * Implementation API Entry（Phase B-7 新增）
 * Implementation Testing（Phase B-8 新增）
 * Implementation Roadmap（Phase B-9 新增）
+* Engineering Register（Phase B-10 新增）
 * Architecture Guidelines（Phase B Living Guideline 新增）
 
 ---
@@ -167,6 +168,7 @@ Started
 * ✅ API Entry（10_7_Implementation_API_Entry.md）
 * ✅ Testing（10_8_Implementation_Testing.md）
 * ✅ Implementation Roadmap（11_Implementation_Roadmap.md）
+* ✅ Engineering Register（12_Engineering_Register.md）
 * ✅ Architecture Guidelines（13_Architecture_Guidelines.md）
 
 ## Phase C - Review

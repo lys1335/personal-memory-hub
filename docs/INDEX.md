@@ -103,6 +103,10 @@ Testing Implementation Design — 19 Testing Principles, Testing Responsibilitie
 
 Implementation Roadmap — Six engineering milestones (Foundation/Core Memory/Query&Reflection/Entry&API/Testing&MVP), MVP lifecycle definition, coding order (dependency-driven), repository strategy, branch strategy, four-level review workflow, CI strategy, milestone completion criteria, AI engineering risks, implementation gate system, state-driven workflow, AI-driven engineering principles.
 
+### 12_Engineering_Register.md
+
+Engineering Decision Register — Living register of 40 confirmed engineering decisions (ENG-001~ENG-040) extracted from all Phase A and Phase B documentation. Each decision includes stable ID, current understanding assessment, knowledge maturity, alternatives considered, trade-offs, review triggers, evidence coverage, known gaps, and future enrichment plan. Tag index and usage notes for humans and AI.
+
 ---
 
 # Current Status
@@ -127,13 +131,13 @@ Implementation Roadmap — Six engineering milestones (Foundation/Core Memory/Qu
 * 10_7_Implementation_API_Entry（Phase B-7）
 * 10_8_Implementation_Testing（Phase B-8）
 * 11_Implementation_Roadmap（Phase B-9）
+* 12_Engineering_Register（Phase B-10）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 
-Current Progress: 19 / 19 completed
+Current Progress: 20 / 20 completed
 ---
 
 # Planned Documents
-* 12_Engineering_Decisions.md
 * 13_AI_Development_Workflow.md
 * 14_Final_Implementation_Review.md
 
