@@ -506,7 +506,8 @@ The project lifecycle state machine may evolve to support:
 |----------|-------------|
 | **11_Implementation_Roadmap** | This document defines the workflow; 11 defines the execution plan within that workflow |
 | **12_Engineering_Register** | Decisions in 12 constrain workflow; workflow produces evidence that enriches 12 |
-| **13_Architecture_Guidelines** | G-066 (Knowledge Evolution) governs how knowledge in all documents evolves |
+|| **13_Architecture_Guidelines** | G-066 (Knowledge Evolution) governs how knowledge in all documents evolves |
+|| **14_Final_Implementation_Review** | 14 is the Human Gate evaluation within this workflow's four-gate system; Exit Gate triggers Design Freeze |
 | **10_1_Implementation_Service_Layer** | Workflow applies to all Service Layer implementation activities |
 | **10_8_Implementation_Testing** | Verification in this workflow uses testing principles from 10_8 |
 

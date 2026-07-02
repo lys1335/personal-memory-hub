@@ -138,13 +138,13 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * 12_Engineering_Register（Phase B-10）
 * 13_AI_Development_Workflow（Phase B-11）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
+* 14_Final_Implementation_Review（Phase B-12）
 
-Current Progress: 21 / 21 completed
+Current Progress: 22 / 22 completed
 ---
 
 # Planned Documents
-* 13_AI_Development_Workflow.md
-* 14_Final_Implementation_Review.md
+* (None remaining — Phase B complete)
 
 ---
 
