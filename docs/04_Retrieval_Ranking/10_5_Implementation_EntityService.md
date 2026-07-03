@@ -342,6 +342,8 @@ Merged
 | **事件从不执行业务逻辑** | 异步处理属于 Task Runtime |
 | **EntityService 在成功提交后发布事件** | 保证事件与持久化状态一致 |
 
+**参考**：10_6 §4 (Task Chaining via Events), §6 (Idempotency), §5.4 (Recovery)。Entity Merge 后发布的 Domain Event 遵循 10_6 定义的 Task Chaining 和幂等性规范。
+
 ### 9.3 与 Task Runtime 的集成
 
 ```

@@ -991,7 +991,7 @@ Each decision record uses the following fields. Fields marked `[Partial]` indica
 | **Alternatives Considered** | Allowing Repository to return projections or DTOs directly. |
 | **Trade-offs** | Repository returning only Domain Objects adds a mapping layer but preserves clean architecture. |
 | **Review Trigger** | Repository leaking domain logic into persistence layer. |
-| **Related Principles** | G-038 |
+| **Related Principles** | G-019 |
 | **Related Documents** | 10_1 §17.11 |
 | **Tags** | repository, isolation, domain-object |
 | **Keywords** | repository, domain-object, projection, dto, boundary |

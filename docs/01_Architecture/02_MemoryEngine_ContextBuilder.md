@@ -10,6 +10,8 @@
 
 ## 1. 设计目标
 
+> **ContextBuilder 是独立 Engine（参见 10_1 §6.2 Engine #8），并非 MemoryEngine 的子组件。**
+
 Memory Engine 是个人 AI 平台的长期记忆基础设施。
 
 ### 核心目标

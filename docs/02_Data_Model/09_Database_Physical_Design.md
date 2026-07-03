@@ -393,6 +393,8 @@ CREATE TABLE memory_hub.vector_documents (
     area_id UUID REFERENCES memory_hub.areas(id) ON DELETE SET NULL,
     entity_id UUID REFERENCES memory_hub.entities(id) ON DELETE SET NULL,
     memory_level INTEGER CHECK (memory_level IN (1, 2, 3, 4)),
+    -- memory_level = 4 仅用于向量检索元数据标记，不代表 State 作为 MemoryNode 持久化。
+    -- State 是运行时认知状态（参见 05 §1.1）。
     
     content TEXT NOT NULL,
     importance_score FLOAT DEFAULT 0.0 CHECK (importance_score >= 0.0 AND importance_score <= 1.0),

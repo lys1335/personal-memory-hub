@@ -38,6 +38,8 @@ It serves as the integration point that binds all Services (10_2~10_5) and TaskR
 ### 2.1 Terminology
 
 > **Phase B Definition**: The term "API Layer" is renamed to **API Entry Layer**.
+
+本节设计对应 Guidelines G-050~G-055（参见 13_Architecture_Guidelines 附录：API Entry Layer Guidelines）。
 >
 > **Entry Layer Responsibility**: Protocol adaptation, DTO transformation, authentication, capability checks. Entry contains **no business logic**.
 

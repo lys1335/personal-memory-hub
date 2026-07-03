@@ -304,6 +304,8 @@ MemoryEngine (Composite)
   └── CandidateEngine
 ```
 
+> **MemoryEngine 作为 Composite Engine，其子 Engine（Archive/Evidence/Relationship/Candidate）均不直接访问 Repository。数据持久化由 MemoryService 编排完成。**
+
 MemoryEngine **不直接访问 Repository**。它通过 Service 层协调。
 
 ### 6.4 Engine 依赖关系

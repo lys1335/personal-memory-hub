@@ -164,6 +164,21 @@ Current Progress: 22 / 22 completed
 - Project Memory Philosophy
 - Human Review First
 - User-Controlled Architecture
+
+---
+
+# Glossary (Selected Terms)
+
+## Evidence vs Observation
+
+> **Evidence**: 原始输入数据，包括聊天记录、导入文档、用户输入等。Evidence 是不可变的原始事实。
+>
+> **Observation**: 从 Evidence 中提取的结构化信息。Observation 是 IngestionEngine 的产出物，作为 Memory 构建的基础。
+>
+> **关系**: Evidence → Observation → Memory。Evidence 是原始输入，Observation 是经过处理的中间产物。
+>
+> **引用**：02 §5.1, 05 §2.1, 10_2 §2
+
 ---
 
 Last Updated: 2026-07-01

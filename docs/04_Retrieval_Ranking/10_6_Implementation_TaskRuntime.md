@@ -67,6 +67,8 @@ Task Runtime **不得**执行以下操作：
 
 Task Runtime 是一个通用基础设施，通过抽象 Task 模型和 Domain Events 与业务层解耦。
 
+> **所有业务 Service 通过 TaskService 提交 Task，不直接调用 TaskRuntime。**
+
 ```
 Task Runtime
 │

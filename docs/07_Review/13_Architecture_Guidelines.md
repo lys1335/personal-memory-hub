@@ -406,17 +406,12 @@
 
 **引用**：10_5 §3.4
 
-### G-038: Planned vs Potential Evolution
-
-> 区分 Planned Evolution 和 Potential Evolution。不使用 TODO / Future Work / Later。
-
-**引用**：10_3
 
 ---
 
 | 编号 | 名称 | 首次出现 |
 |------|------|----------|
-| G-001 | One Capability, One Implementation | 10_1 |
+| G-001 | One Capability, One Implementation | 13 §1 |
 | G-002 | One Public API Family | 10_3 |
 | G-003 | Consumer-Agnostic Interface | 10_3 |
 | G-004 | Stable Public Interface | 10_3 |
@@ -453,7 +448,6 @@
 | G-035 | No Runtime Canonical Resolution | 10_5 |
 | G-036 | Entity Is Current Best Identity | 10_5 |
 | G-037 | Memory Fact ≠ Entity Reference | 10_5 |
-| G-038 | Planned vs Potential Evolution | 10_3 |
 | G-039 | Task Runtime Is Infrastructure | 10_6 |
 | G-040 | Task Runtime Domain Agnostic | 10_6 |
 | G-041 | Task Chaining via Events | 10_6 |
