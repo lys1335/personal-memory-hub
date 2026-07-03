@@ -1076,6 +1076,81 @@ Each decision record uses the following fields. Fields marked `[Partial]` indica
 
 ---
 
+### ENG-041: Progressive Recall Is V2+
+
+| Field | Content |
+|-------|---------|
+| **Decision ID** | ENG-041 |
+| **Title** | Progressive Recall Deferred to V2+ |
+| **Status** | Final Decision |
+| **Decision Version** | d1.0 |
+| **Decision** | Multi-stage progressive recall is confirmed as a future retrieval enhancement (V2+). The current architecture intentionally uses single-pass retrieval. The existing QueryService and retrieval pipeline are considered sufficient and intentionally allow future evolution without changing architecture boundaries. |
+| **Context** | The project evaluated whether multi-stage recall (progressive deepening of retrieval based on intermediate results) should become part of the MVP architecture. After review, the team determined that single-pass retrieval covers all MVP use cases, and progressive recall introduces complexity that can be added incrementally. |
+| **Current Understanding** | Full |
+| **Completeness / Knowledge Maturity** | High |
+| **Alternatives Considered** | Including progressive recall in MVP. |
+| **Trade-offs** | Deferring progressive recall keeps MVP scope tight and reduces initial complexity. Future implementation may extend retrieval strategy internally within QueryService without changing architecture boundaries. |
+| **Review Trigger** | Any proposal to add multi-stage recall to MVP. |
+| **Related Principles** | G-001 (Memory First), G-015 (MVP Scope) |
+| **Related Documents** | 10_3, 11 |
+| **Tags** | retrieval, progressive-recall, v2+, scope |
+| **Keywords** | progressive, recall, multi-stage, retrieval, v2+, scope |
+| **Evidence Coverage** | 10_3, 11 |
+| **Known Gaps** | None. Progressive Recall is a known future enhancement with no MVP impact. |
+| **Future Enrichment** | Progressive Recall implementation strategy TBD. May involve internal QueryService extension without architectural change. |
+
+---
+
+### ENG-042: Entity Lifecycle Optimization Is V2+
+
+| Field | Content |
+|-------|---------|
+| **Decision ID** | ENG-042 |
+| **Title** | Entity Lifecycle Optimization Deferred to V2+ |
+| **Status** | Final Decision |
+| **Decision Version** | d1.0 |
+| **Decision** | Entity lifecycle optimization (inactive, dormant, suppressed entities) is deferred to V2+. The current Entity Graph architecture is considered sufficient. Future implementations may introduce entity lifecycle concepts as implementation-level evolution without changing architecture. Evidence preservation remains unchanged regardless of entity lifecycle state. |
+| **Context** | The project evaluated whether inactive or low-value entities require dedicated architecture before implementation. After review, the team determined that the current Entity Graph handles all entities equally, and lifecycle optimization can be added as an implementation detail without architectural change. |
+| **Current Understanding** | Full |
+| **Completeness / Knowledge Maturity** | High |
+| **Alternatives Considered** | Including entity suppression/dormancy in MVP architecture. |
+| **Trade-offs** | Deferring entity lifecycle optimization keeps MVP simpler. Future implementations may introduce inactive/dormant/suppressed states as implementation-level evolution. Memory evidence is never removed because of entity lifecycle decisions. |
+| **Review Trigger** | Any proposal to add entity lifecycle subsystem to MVP. |
+| **Related Principles** | G-009 (Entity Admission), G-013 (Evidence Preservation) |
+| **Related Documents** | 10_5, 11 |
+| **Tags** | entity, lifecycle, suppression, v2+, scope |
+| **Keywords** | entity, lifecycle, inactive, dormant, suppressed, evidence, preservation |
+| **Evidence Coverage** | 10_5 |
+| **Known Gaps** | None. Entity lifecycle is a known future enhancement with no MVP impact. |
+| **Future Enrichment** | Entity lifecycle state machine and transition rules TBD. Must preserve evidence integrity. |
+
+---
+
+### ENG-043: Human Memory Inspiration, Not Simulation
+
+| Field | Content |
+|-------|---------|
+| **Decision ID** | ENG-043 |
+| **Title** | Human Memory Behavior Philosophy |
+| **Status** | Final Decision |
+| **Decision Version** | d1.0 |
+| **Decision** | The Personal Memory Hub is inspired by human memory behavior but is NOT intended to simulate the human brain. Engineering simplicity, deterministic behavior, explainability, and evidence preservation take precedence over biological realism. Human memory principles are already reflected through: Evidence-Based Memory, Reflection, Entity Graph, Ranking, Context Building, Memory Lifecycle. Therefore no additional architecture for biological simulation is required. |
+| **Context** | The project evaluated whether the system should simulate biological human memory mechanisms. After review, the team confirmed that the existing architecture already embodies human memory principles (forgetting curves, spacing effect, associative recall) through engineering mechanisms, making biological simulation unnecessary and potentially harmful to system determinism. |
+| **Current Understanding** | Full |
+| **Completeness / Knowledge Maturity** | High |
+| **Alternatives Considered** | Adding biological simulation layers (e.g., synaptic weight decay, neurochemical modeling). |
+| **Trade-offs** | Prioritizing engineering simplicity over biological realism ensures deterministic, explainable behavior. Future features should continue following this philosophy without introducing unnecessary biological simulation. |
+| **Review Trigger** | Any proposal to add biological simulation to the architecture. |
+| **Related Principles** | G-006 (Evidence-Based Memory), G-026 (Query-First) |
+| **Related Documents** | 02, 03, 04, 05 |
+| **Tags** | philosophy, human-memory, inspiration, simplicity, determinism |
+| **Keywords** | human, memory, biology, simulation, inspiration, simplicity, determinism, explainability |
+| **Evidence Coverage** | 02, 03, 04, 05 |
+| **Known Gaps** | None. This is a guiding philosophy, not an evolving design. |
+| **Future Enrichment** | N/A — this is a philosophical constraint, not a design element. |
+
+---
+
 ## 4. Decision Index
 
 | ID | Title | Status | Maturity |
@@ -1120,6 +1195,9 @@ Each decision record uses the following fields. Fields marked `[Partial]` indica
 | ENG-038 | Reflection Mode Switching | Final Decision | High |
 | ENG-039 | Entity Type Extensibility | Final Decision | High |
 | ENG-040 | Memory Hub Non-Decision Role | Final Decision | High |
+| ENG-041 | Progressive Recall Is V2+ | Final Decision | High |
+| ENG-042 | Entity Lifecycle Optimization Is V2+ | Final Decision | High |
+| ENG-043 | Human Memory Inspiration, Not Simulation | Final Decision | High |
 
 ---
 
@@ -1129,16 +1207,20 @@ Each decision record uses the following fields. Fields marked `[Partial]` indica
 |-----|---------------------|
 | architecture | ENG-001, ENG-002, ENG-003, ENG-040 |
 | boundary | ENG-002, ENG-003, ENG-004, ENG-025, ENG-037 |
-| entity | ENG-009, ENG-010, ENG-027, ENG-028, ENG-029, ENG-036, ENG-039 |
+| entity | ENG-009, ENG-010, ENG-027, ENG-028, ENG-029, ENG-036, ENG-039, ENG-042 |
 | evidence | ENG-006, ENG-007, ENG-029 |
 | engine | ENG-024, ENG-025, ENG-034, ENG-037 |
 | memory | ENG-011, ENG-012, ENG-013, ENG-014, ENG-020, ENG-022 |
 | performance | ENG-016, ENG-017, ENG-026 |
+| philosophy | ENG-043 |
 | repository | ENG-025, ENG-037 |
+| retrieval | ENG-041 |
 | service | ENG-023, ENG-027, ENG-034 |
+| scope | ENG-041, ENG-042 |
 | storage | ENG-015, ENG-016, ENG-017, ENG-032, ENG-033 |
 | tag | ENG-031 |
 | unified-model | ENG-011, ENG-030, ENG-036 |
+| v2+ | ENG-041, ENG-042 |
 
 ---
 
@@ -1147,6 +1229,7 @@ Each decision record uses the following fields. Fields marked `[Partial]` indica
 | Version | Date | Change Description | Status |
 |---------|------|-------------------|--------|
 | 1.0 | 2026-07-01 | Initial Engineering Decision Register — 40 decisions extracted from Phase A and Phase B documentation | ✅ Created |
+| 1.1 | 2026-07-03 | Added ENG-041 (Progressive Recall V2+), ENG-042 (Entity Lifecycle V2+), ENG-043 (Human Memory Philosophy). Final architecture confirmations before Phase D. | ✅ Applied |
 
 ---
 
@@ -1157,6 +1240,7 @@ This section tracks understanding enrichment over time.
 | Date | Enrichment | Source |
 |------|-----------|--------|
 | — | Register created. All 40 decisions based on approved Phase A and Phase B documentation. | Current repository state |
+| 2026-07-03 | Added ENG-041, ENG-042, ENG-043 as final architecture confirmations before Phase D. These document intentional stability decisions, not new architecture. | Phase C Stage 3 completion |
 | TBD | Post-implementation enrichment: rationale validation, alternatives comparison, trade-off verification. | Future implementation experience |
 | TBD | Memory Hub import of historical discussions may enrich decisions with original context. | Future Reflection |
 | TBD | Engineering decisions may be refined after MVP implementation reveals practical constraints. | Future human review |
