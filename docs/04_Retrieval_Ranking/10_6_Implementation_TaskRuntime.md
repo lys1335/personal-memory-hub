@@ -564,6 +564,8 @@ Task Runtime **不暴露**以下接口：
 |-------------|-----------|-------------|
 | `ObservationCreated` | `REFLECTION_TASK` | IngestionService |
 | `ImportCompleted` | `REFLECTION_TASK` | MemoryService |
+| `MemoryCaptured` | `REFLECTION_TASK` | MemoryService |
+| `ReflectionTriggered` | `REFLECTION_TASK` | MemoryService |
 | `EntityMerged` | `REFERENCE_MIGRATION_TASK` | EntityService |
 | `EntityMerged` | `INDEX_REBUILD_TASK` | EntityService |
 | `MemoryArchived` | `ARCHIVE_TASK` | MemoryService |
@@ -576,6 +578,19 @@ Task Runtime **不暴露**以下接口：
 > **注意**：Reflection Engine 自身产出 Pattern/Belief 时，**不经过 Task Runtime**，而是直接通过 Repository 持久化。Domain Event（`BeliefUpdated`）仅在持久化完成后发出，用于触发下游异步动作（State 刷新）。
 >
 > **原则**：Reflection 输出 = 直接持久化；下游连锁反应 = Task Runtime 异步调度。
+
+> **IR-013: Online/Offline 通信机制**
+>
+> Online Runtime（Retrieval → Activation → ContextBuilder → LLM）和 Offline Runtime（Ingestion → Reflection → Memory Evolution）之间的通信通过 **Domain Event** 实现，不直接共享内存。
+>
+> 具体路径：
+> - Reflection Engine 产出 Belief 后发布 `BeliefUpdated` 事件
+> - Activation Engine 消费该事件，刷新 State
+> - 该过程通过 Task Runtime 的 Domain Event → Task 映射机制（10_6 §14.2）实现
+>
+> **原则**：两层通过 Domain Event 解耦，不引入额外的工作流图或通信机制。
+
+> **IR-003 补充说明**：MemoryService 发布的 `MemoryCaptured` 和 `ReflectionTriggered` 事件均映射到 `REFLECTION_TASK`。`MemoryCaptured` 与 `ObservationCreated` 语义重叠（均触发 Reflection），`ReflectionTriggered` 表示手动触发的 Reflection（如用户主动请求）。
 
 ### 14.3 Forbidden Dependencies
 

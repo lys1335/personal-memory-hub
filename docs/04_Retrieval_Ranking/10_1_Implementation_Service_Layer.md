@@ -173,6 +173,59 @@ Service 不得暴露 `create()` / `update()` / `delete()` / `find()` 等 Reposit
 
 MemoryService **不承担 Query 职责**。所有 Memory 数据读取统一由 QueryService 提供。
 
+### 4.2.3 IngestionService 详细编排流程
+
+IngestionService 是 Offline Path 的入口，负责证据摄入的 Pipeline 编排。其核心流程如下：
+
+```
+IngestionService.ingestEvidence(rawConversation)
+    ↓
+1. Chunking（分段）— IngestionEngine
+    ↓
+2. Extraction（实体/关系抽取）— IngestionEngine
+    ↓
+3. EntityLinking（实体链接）— EntityEngine.resolveEntity()
+    ↓
+4. Validation（校验）— IngestionEngine
+    ↓
+5. ObservationStore（写入 EvidenceRepository）
+    ↓
+6. Scoring（评分）— ScoringEngine（计算 L0 评分）
+    ↓
+7. 发布 Domain Event: ObservationCreated
+    ↓
+8. 提交 REFLECTION Task（通过 TaskService.submit()）
+```
+
+**设计要点**：
+- IngestionService 是 Pipeline 编排服务，不直接实现 Chunking/Extraction 等算法
+- 各步骤之间通过 IngestionEngine 和 ScoringEngine 实现
+- EntityLinking 阶段调用 EntityEngine.resolveEntity() 进行实体识别
+- Validation 失败则拒绝摄入，返回错误码
+- ObservationCreated 事件触发下游 Reflection
+
+> **参见**：`06_Runtime_Architecture.md` §3.2（Ingestion Pipeline 定义）
+
+### 4.3.1 ContextService 与 QueryService 的 Context 构建场景区分
+
+ContextService 和 QueryService 都编排 ContextBuilder Engine，但服务于完全不同的执行场景：
+
+| 维度 | ContextService | QueryService |
+|------|----------------|--------------|
+| **场景** | Online Runtime — LLM Prompt 构建 | 读操作 — 用户查询结果组织 |
+| **输入** | 检索结果 + Entity State | 用户查询条件 |
+| **编排** | ContextBuilder + ActivationEngine | RetrievalEngine + ContextBuilder |
+| **输出** | ContextPackage（含 State 激活的 Prompt Context） | QueryResult（含 Projection 的领域结果） |
+| **用途** | 供 LLM 调用的上下文 | 供用户/客户端浏览的记忆列表 |
+| **Token Budget** | 必须支持 Token Budget 管理 | 不适用 |
+
+**关键区别**：
+- ContextService 的 Context 构建面向 LLM Prompt，包含 State 激活（ActivationEngine）和 Token Budget 管理
+- QueryService 的 Context 构建面向用户查询结果，包含 Projection（不同视图）和分页管理
+- 两者共享 ContextBuilder Engine，但调用方式和输出目的不同
+
+> **参见**：`06_Runtime_Architecture.md` §3.1（ContextBuilder 定义）、`10_3` §3（Query Capability Taxonomy）
+
 ### 4.3 ContextService 的特殊性
 
 ContextService **不拥有独立 Repository**。
@@ -195,6 +248,23 @@ ContextBuilder (Composite Engine)
 ```
 
 ContextService 的职责是编排这个 Composite Engine，而非直接操作其内部原子模块。
+
+> **IR-014: ContextPackage Token Budget 设计**
+>
+> ContextBuilder Engine 必须支持 Token Budget 管理。以下仅定义设计要素，不定义具体算法。
+>
+> **配置来源**：Token Budget 总量通过配置文件或环境变量注入，不由代码硬编码。
+>
+> **接口**：ContextBuilder 暴露 `setTokenBudget(int budget)` 和 `getTokenRemaining(): int` 两个接口，供编排层调用。
+>
+> **优先级顺序**：四层 Context 的预算分配优先级为 Layer 1（Session）> Layer 2（Entity）> Layer 3（Graph）> Layer 4（Global）。超预算时按此优先级依次截断。
+>
+> **责任边界**：
+> - ContextBuilder 负责 Token Budget 的管理和截断策略
+> - Tokenizer 算法、压缩算法、裁剪策略属于实现细节，不在此定义
+> - ContextRanker 负责排序，ContextCompressor 负责压缩，ContextAssembler 负责最终组装——三者协同完成 Token Budget 内的 Context 构建
+>
+> **原则**：Token Budget 是 ContextBuilder 的关键实施约束，但具体实现策略（如使用何种 tokenizer、采用何种压缩算法）保持实现特定。
 
 > **参见**：`06_Runtime_Architecture.md` §3.1（Composite Engine 定义）
 
@@ -266,6 +336,20 @@ Repository **按 Domain Aggregate 组织，而非按数据库表组织**。
 | 一个 Repository = 一个 Domain Aggregate | 不是每张表一个 Repository |
 | Repository 之间不互相调用 | 跨聚合查询由 Service 编排 |
 | Repository 不依赖 Engine | Repository 是纯粹的持久化工具 |
+
+### 5.6 Repository 实施指导（IR-007）
+
+每个 Repository 应遵循以下实施规范：
+
+| 规范 | 说明 |
+|------|------|
+| **CRUD 方法清单** | 每个 Repository 至少提供：`create()`, `findById()`, `findAll()`, `update()`, `delete()`（软删除） |
+| **QueryRepository 复杂查询** | 复杂查询（多表 JOIN、条件组合、图遍历）通过 QueryRepository 提供，如 `MemoryQueryRepository.findWithEvidence()` |
+| **事务边界** | 单个 Repository 操作在一个事务内；跨 Repository 事务由 Service 层编排 |
+| **聚合根定义** | EntityRepository 的聚合根是 Entity（含 aliases、relationships）；MemoryNodeRepository 的聚合根是 MemoryNode（含 evidences） |
+| **索引策略** | UUIDv7 主键 + 业务字段索引（entity_id, level, timestamp）+ 向量索引（vector_documents） |
+
+> **注意**：本节为现有文档的补充，未引入新的独立 Repository 实现文档。如需更详细的 Repository 接口设计，可在后续阶段考虑新增 `10_9_Implementation_Repository_Layer.md`。
 
 ---
 

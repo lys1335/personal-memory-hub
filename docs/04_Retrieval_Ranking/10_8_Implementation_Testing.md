@@ -381,6 +381,17 @@ Golden datasets define the expected output for known inputs. They are the ground
 | **Purpose** | Detect unintended behavioral changes |
 | **Maintenance** | Updated only when design changes, not when implementation changes |
 
+> **IR-012: Golden Dataset 创建流程**
+>
+> Golden Dataset 的创建遵循以下步骤：
+>
+> 1. **Expected Output 创建**：设计阶段手工编写 expected output，基于架构设计和用例分析确定预期行为
+> 2. **实现验证**：实施阶段用参考实现运行 input，生成 actual.json
+> 3. **差异审查**：对比 expected.json vs actual.json，差异需人工审查——确认是设计变更还是实现缺陷
+> 4. **版本控制**：approved 的 Golden Dataset 纳入版本控制，作为回归测试的基准
+>
+> **注意**：Golden Dataset 的定义不重测架构，仅验证已知输入-输出的回归一致性。
+
 **Golden Dataset Structure**:
 
 ```

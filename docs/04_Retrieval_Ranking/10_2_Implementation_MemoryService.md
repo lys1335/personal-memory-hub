@@ -453,10 +453,39 @@ MemoryService 面向 **ImportJob**，不是 Thread，不是 HTTP Request。
 
 ### 9.3 职责分离
 
-| 组件 | 职责 |
-|------|------|
-| **MemoryService** | 负责 Job 生命周期管理（创建、查询、取消、重试） |
-| **TaskRuntime** | 负责真正调度（线程池、并发控制、重试机制） |
+> **IR-011: Import 工作流澄清**
+>
+> MemoryService 通过 **TaskService.submit()** 主动提交 Import Task，不使用 Domain Event 路由。
+>
+> 理由：Import 是 MemoryService 主动发起的操作，直接提交 Task 比通过 Domain Event 路由更直接、更可控。
+>
+> ```
+> MemoryService.createImportJob(source, file)
+>     ↓
+> 创建 ImportJob（状态 = IDLE）
+>     ↓
+> 返回 JobId
+>     ↓
+> MemoryService → TaskService.submit(importTask)  ← IR-011: 直接提交
+>     ↓
+> TaskRuntime 拾取并执行
+>     ↓
+> MemoryService 监听状态变更
+> ```
+
+MemoryService **不耦合** TaskRuntime 的具体实现。
+>
+> ImportJob 是业务层状态机，Task Runtime 是基础设施层状态机。两者映射关系如下：
+>
+> | ImportJob 状态 | Task Runtime 状态 | 说明 |
+> |----------------|-------------------|------|
+> | IDLE | Pending | 作业已创建，等待调度 |
+> | RUNNING | Running | 任务正在执行 |
+> | COMPLETED | Completed | 任务执行成功 |
+> | FAILED | Failed / Dead | 任务执行失败（根据重试次数决定） |
+> | CANCELLED | Skipped | 任务被跳过（不重试，不进入 Dead） |
+>
+> ImportJob.CANCELLED 对应 Task Runtime 的"跳过"语义：该 Task 不再重试，不进入 Dead Letter，也不影响其他 Task。
 
 MemoryService **不耦合** TaskRuntime 的具体实现。
 

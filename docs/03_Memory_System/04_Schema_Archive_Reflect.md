@@ -521,6 +521,16 @@ Final Score = Similarity + Importance
 
 **决策**：`tasks` 表统一管理所有任务类型（INGESTION / REFLECTION / ACTIVATION / ARCHIVE），不再为不同队列分别建表。
 
+> **IR-008: tasks 表字段定义对齐**
+>
+> 本文档定义 `tasks` 表的 Schema 视角，`10_6_Implementation_TaskRuntime.md` 定义 Task Runtime 的运行时视角。两者描述同一模型，实施时应合并为统一的表定义。
+>
+> **Schema 视角（本文档）**：定义 `tasks` 表的核心业务字段（task_type, entity_id, area_id, evidence_driven, debounce_key, payload）。
+>
+> **运行时视角（10_6 §3.1）**：定义 `tasks` 表的 Runtime Metadata 字段（taskId, taskType, status, priority, retryCount, maxRetries, traceId, createdAt, updatedAt, completedAt）。
+>
+> **统一原则**：优先引用 10_6 §3.1 的完整字段定义，本文档不重复定义 Runtime Metadata 字段。
+
 ### 14.4 核心任务
 
 | 任务 | 说明 | 输出 Level |

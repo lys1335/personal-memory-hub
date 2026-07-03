@@ -182,14 +182,20 @@ The Entry Layer exposes capabilities, not services. Each capability corresponds 
 
 ### 3.1 Capability Catalog
 
-| Capability | Service | Methods | Section |
-|------------|---------|---------|---------|
-| **Evidence Ingestion** | IngestionService | `ingestEvidence()`, `validateEvidence()` | 10_2 |
-| **Memory Management** | MemoryService | `captureMemory()`, `correctMemory()`, `archiveMemory()`, `restoreArchivedMemory()` | 10_2 |
-| **Memory Retrieval** | QueryService | `retrieveContext()`, `searchMemories()`, `browseMemories()`, `projectView()`, `analyzeStats()` | 10_3 |
-| **Reflection** | ReflectionService | `reflect()`, `consolidate()`, `summarize()`, `evaluate()` | 10_4 |
-| **Identity Management** | EntityService | `createEntity()`, `resolveEntity()`, `mergeEntities()`, `addAlias()`, `addRelationship()`, `updateCanonicalName()` | 10_5 |
-| **Task Operations** | TaskService | `submitTask()`, `getTask()`, `queryRuntimeStatus()`, `retryTask()` | 10_6 |
+> **MVP/V2+ Status Principle**: Each capability in the catalog must indicate whether it is available in MVP or deferred to V2+. This prevents external callers from assuming all capabilities are available at launch.
+
+| Capability | Service | Methods | Status | Section |
+|------------|---------|---------|--------|---------|
+| **Evidence Ingestion** | IngestionService | `ingestEvidence()`, `validateEvidence()` | MVP | 10_1 §4.2.3 |
+| **Memory Management** | MemoryService | `captureMemory()`, `correctMemory()`, `archiveMemory()`, `restoreArchivedMemory()` | MVP | 10_2 |
+| **Memory Retrieval** | QueryService | `retrieveContext()`, `searchMemories()`, `browseMemories()`, `projectView()`, `analyzeStats()` | MVP | 10_3 |
+| **Reflection** | ReflectionService | `reflect()`, `consolidate()`, `summarize()`, `evaluate()` | MVP | 10_4 |
+| **Identity Management** | EntityService | `createEntity()`, `resolveEntity()` | MVP | 10_5 |
+| **Identity Merge** | EntityService | `mergeEntities()` | V2+ | 10_5 §8 |
+| **Alias Management** | EntityService | `addAlias()`, `removeAlias()` | V2+ | 10_5 §8 |
+| **Relationship Management** | EntityService | `addRelationship()`, `removeRelationship()` | V2+ | 10_5 §8 |
+| **Profile Update** | EntityService | `updateCanonicalName()` | V2+ | 10_5 §8 |
+| **Task Operations** | TaskService | `submitTask()`, `getTask()`, `queryRuntimeStatus()`, `retryTask()` | MVP | 10_6 |
 
 ### 3.2 Capability vs Service Mapping
 
@@ -328,19 +334,31 @@ Error Codes are stable identifiers that do not change across adapter implementat
 | **Documentation** | Where the error is defined and explained |
 | **Tests** | Test cases that verify this error path |
 
-| Error Code | HTTP (REST) | Description |
-|------------|-------------|-------------|
-| `VALIDATION_ERROR` | 400 | Input validation failed |
-| `AUTHENTICATION_REQUIRED` | 401 | Authentication required |
-| `AUTHORIZATION_DENIED` | 403 | Permission denied |
-| `CAPABILITY_NOT_FOUND` | 404 | Requested capability does not exist |
-| `SERVICE_UNAVAILABLE` | 503 | Backend service unavailable |
-| `TASK_EXECUTION_FAILED` | 500 | Task execution failed |
-| `DUPLICATE_ENTITY` | 409 | Entity already exists |
-| `EVIDENCE_MISSING` | 422 | Required evidence not provided |
-| `ARCHIVE_NOT_FOUND` | 404 | Archive not found |
-| `JOB_NOT_FOUND` | 404 | Job not found |
-| `JOB_CANCELLED` | 410 | Job has been cancelled |
+> **IR-009: Unified Error Registry**
+>
+> The following table merges all Service-defined error codes into a single registry. Previously, 10_7 §4.4 defined 11 standard error codes and 10_2 §11.3 defined additional business error codes. Both are now consolidated.
+
+| Error Code | HTTP (REST) | Description | Defined In |
+|------------|-------------|-------------|------------|
+| `VALIDATION_ERROR` | 400 | Input validation failed | 10_7 §4.4 |
+| `AUTHENTICATION_REQUIRED` | 401 | Authentication required | 10_7 §4.4 |
+| `AUTHORIZATION_DENIED` | 403 | Permission denied | 10_7 §4.4 |
+| `CAPABILITY_NOT_FOUND` | 404 | Requested capability does not exist | 10_7 §4.4 |
+| `SERVICE_UNAVAILABLE` | 503 | Backend service unavailable | 10_7 §4.4 |
+| `TASK_EXECUTION_FAILED` | 500 | Task execution failed | 10_7 §4.4 |
+| `DUPLICATE_ENTITY` | 409 | Entity already exists | 10_7 §4.4 |
+| `DUPLICATE_MEMORY` | 409 | Memory already exists (idempotency check) | 10_2 §11.3 |
+| `EVIDENCE_MISSING` | 422 | Required evidence not provided | 10_7 §4.4 |
+| `INVALID_COMMAND` | 400 | Command parameters invalid | 10_2 §11.3 |
+| `ENTITY_RESOLUTION_FAILED` | 422 | Entity resolution failed | 10_2 §11.3 |
+| `ARCHIVE_NOT_FOUND` | 404 | Archive not found | 10_7 §4.4 |
+| `JOB_NOT_FOUND` | 404 | Job not found | 10_7 §4.4 |
+| `JOB_CANCELLED` | 410 | Job has been cancelled | 10_7 §4.4 |
+| `JOB_NOT_FOUND` | 404 | Job not found | 10_2 §11.3 |
+| `PARSER_UNAVAILABLE` | 503 | Parser not available | 10_2 §11.3 |
+| `IMPORT_LIMIT_EXCEEDED` | 413 | Import batch size exceeded | 10_2 §11.3 |
+
+**原则**：所有 Adapter（REST/MCP/CLI/SDK/Agent）必须使用相同的 Error Code 集合，仅在不同协议中映射为各自的错误表示。
 
 ---
 

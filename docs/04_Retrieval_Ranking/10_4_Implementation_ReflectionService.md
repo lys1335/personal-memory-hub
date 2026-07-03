@@ -437,7 +437,20 @@ Reflection 执行属于一个 Reflection Cycle。如果某一周期失败：
 
 ### 10.5 L0 Protection
 
-ReflectionService **必须 NEVER 自主创建 L0 Memory**。Recovery Baseline 必须源于用户交互或用户预授权的用户策略。
+> **IR-010: L0 Protection 实施规则**
+>
+> ReflectionService **必须 NEVER 自主创建 L0 Memory**。Recovery Baseline 必须源于用户交互或用户预授权的用户策略。
+>
+> **Recovery Baseline 的 L0 创建路径**：
+>
+> 1. 超过 Maximum Reflection Horizon 后，ReflectionService 向用户发出 Recovery Baseline 建议
+> 2. 用户确认（同意 / 拒绝 / 配置 Recovery Policy）
+> 3. 用户与系统的交互本身成为合法的 L0 证据（如"用户同意系统建议"）
+> 4. **该证据必须通过 IngestionService.ingestEvidence() 进入系统**，经由标准摄入 Pipeline 创建 L0 Observation
+> 5. ReflectionService 不得直接写入 L0 Observation
+> 6. 后续 Reflection 基于新的 L0 继续演化
+>
+> **核心原则**：Recovery Baseline 产生的 L0 是用户交互的结果，不是 ReflectionService 自主创建的。ReflectionService 仅触发建议，实际的 L0 创建通过 IngestionService 完成。
 
 ### 10.6 Reflection Transaction
 
@@ -448,7 +461,16 @@ Reflection 应逻辑原子：
 
 ---
 
-## 11. Memory Pyramid Consistency
+> **IR-006: Archive 职责分配**
+>
+> ReflectionService 与 MemoryService 的 Archive 职责边界：
+>
+> - **ReflectionService.evaluate()** 产出 ArchiveCandidate（建议）：通过 ReflectionEngine 分析 Memory 质量，判断是否需要归档，产出"建议归档"的候选列表
+> - **MemoryService.archiveMemory()** 执行归档（动作）：接收 ArchiveCommand，调用 ArchiveEngine 完成实际的归档操作
+>
+> ReflectionService 负责"评估是否应该归档"，MemoryService 负责"执行归档"。两者不改变 Service 所有权。
+
+### 11. Memory Pyramid Consistency
 
 ### 11.1 Memory Pyramid 维护者
 
