@@ -569,6 +569,14 @@ Task Runtime **不暴露**以下接口：
 | `MemoryArchived` | `ARCHIVE_TASK` | MemoryService |
 | `BeliefUpdated` | `ACTIVATION_TASK` | ReflectionService |
 
+> **AR-008 澄清：Domain Event 映射边界**
+>
+> 上表中的 `BeliefUpdated → ACTIVATION_TASK` 是 Task Runtime 处理的**下游异步触发**。
+>
+> **注意**：Reflection Engine 自身产出 Pattern/Belief 时，**不经过 Task Runtime**，而是直接通过 Repository 持久化。Domain Event（`BeliefUpdated`）仅在持久化完成后发出，用于触发下游异步动作（State 刷新）。
+>
+> **原则**：Reflection 输出 = 直接持久化；下游连锁反应 = Task Runtime 异步调度。
+
 ### 14.3 Forbidden Dependencies
 
 | Forbidden | Reason |
@@ -983,6 +991,7 @@ sequenceDiagram
 | 版本 | 日期 | 变更 | 状态 |
 |------|------|------|------|
 | 1.0 | 2026-06-29 | 初始版本，确认 Task Runtime 全部设计要素 | ✅ 已确认 |
+| 1.1 | 2026-07-03 | Phase C Stage 2 修订：(1) §14.2 新增 AR-008 Domain Event 映射边界澄清 | ✅ 已确认 |
 
 ---
 

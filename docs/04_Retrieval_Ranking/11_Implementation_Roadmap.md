@@ -184,6 +184,22 @@ Through at least one supported Entry interface (REST, MCP, or CLI).
 | Progressive Recall | Not required for MVP memory lifecycle |
 | Entity Suppression / Escape | Entity layer beyond MVP scope |
 | Human-like Memory Behavior | Evaluation metric, not architectural requirement |
+| EntityService (Advanced) | Merge/Alias/Profile 能力 V2+；MVP 仅实现基本 create/resolve |
+
+**EntityService MVP 范围说明**：
+
+EntityService 在 MVP 中**部分实现**，而非完全延期：
+
+| 能力 | MVP 状态 | 说明 |
+|------|----------|------|
+| `createEntity()` | ✅ MVP 实现 | 仅支持核心 Entity Type（User/Area/Project/Object） |
+| `resolveEntity()` | ✅ MVP 实现 | 按 Entity ID 查询，返回 Entity Profile |
+| `mergeEntities()` | ❌ V2+ | 合并逻辑超出 MVP 范围 |
+| `addAlias()` | ❌ V2+ | Alias 管理 V2+ |
+| `addRelationship()` | ❌ V2+ | 关系管理 V2+ |
+| `updateCanonicalName()` | ❌ V2+ | 规范化名称 V2+ |
+
+MVP 期间，Entity 引用由 **IngestionService** 通过 `resolveEntity()` 间接处理，不暴露 EntityService 的高级能力。
 
 **Completion Criteria**:
 
@@ -766,6 +782,7 @@ The following documents require backport updates after 11 is finalized:
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
 | 1.0 | 2026-07-01 | Initial version — Six engineering milestones, MVP lifecycle definition, coding order, repository strategy, branch strategy, four-level review, CI strategy, milestone completion criteria, AI engineering risks, gate system, state-driven workflow, AI-driven engineering concepts | ✅ Confirmed |
+| 1.1 | 2026-07-03 | Phase C Stage 2 修订：(1) §3.6 补充 EntityService MVP 范围澄清（AR-003）(2) 新增 EntityService MVP 范围表 | ✅ 已确认 |
 
 ---
 

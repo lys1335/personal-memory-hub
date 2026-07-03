@@ -183,6 +183,21 @@ ContextService **不拥有独立 Repository**。
 * ContextService 是编排层，不是数据层
 * 它协调 ContextBuilder Engine 和 ActivationEngine，但不直接读写数据库
 
+**Composite Engine 模式**：
+
+ContextBuilder Engine 是一个 **Composite Engine**（复合引擎），由三个 Atomic Engine 组合而成：
+
+```
+ContextBuilder (Composite Engine)
+  ├── ContextRanker   — 四层 Context 排序
+  ├── ContextCompressor — 上下文压缩
+  └── ContextAssembler — 最终 Context 组装
+```
+
+ContextService 的职责是编排这个 Composite Engine，而非直接操作其内部原子模块。
+
+> **参见**：`06_Runtime_Architecture.md` §3.1（Composite Engine 定义）
+
 ### 4.4 Service 数量控制
 
 | 原则 | 说明 |
@@ -307,6 +322,17 @@ MemoryEngine (Composite)
 > **MemoryEngine 作为 Composite Engine，其子 Engine（Archive/Evidence/Relationship/Candidate）均不直接访问 Repository。数据持久化由 MemoryService 编排完成。**
 
 MemoryEngine **不直接访问 Repository**。它通过 Service 层协调。
+
+**ContextBuilder 同样采用 Composite Engine 模式**：
+
+```
+ContextBuilder (Composite)
+  ├── ContextRanker
+  ├── ContextCompressor
+  └── ContextAssembler
+```
+
+ContextBuilder 由 ContextService 编排，其内部 Atomic Engine（Ranker/Compressor/Assembler）不直接访问 Repository。
 
 ### 6.4 Engine 依赖关系
 
@@ -876,6 +902,7 @@ src/
 | 1.7 | 2026-07-01 | Phase B-10 修订：(1) Decision Summary 补充 45（Engineering Register） (2) 回溯更新表补充 12 | ✅ 已确认 |
 | 1.8 | 2026-07-01 | Phase B-11 修订：(1) Decision Summary 补充 46（AI Development Workflow） (2) 回溯更新表补充 13_AI_Development_Workflow | ✅ 已确认 |
 | 1.9 | 2026-07-01 | Phase B-12 修订：(1) Decision Summary 补充 47（Final Implementation Review） (2) 回溯更新表补充 14_Final_Implementation_Review | ✅ 已确认 |
+| 1.10 | 2026-07-03 | Phase C Stage 2 修订：(1) §4.3 补充 ContextBuilder Composite Engine 模式（AR-002）(2) §6.3 补充 ContextBuilder Composite Engine 说明（AR-002）(3) Decision Summary 补充 48~49 | ✅ 已确认 |
 
 ---
 

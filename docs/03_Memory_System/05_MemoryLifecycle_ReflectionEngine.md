@@ -752,6 +752,31 @@ Belief: "用户倾向先 POC 后投入开发"
 
 **运行模式**：Light Reflect（事件驱动）+ Heavy Reflect（定时兜底）。
 
+**持久化边界（AR-008 澄清）**：
+
+Reflection Engine 的**自身输出**（Pattern、Belief）通过 Repository **直接持久化**，不经过 Task Runtime。
+
+```
+Reflection Engine
+  ↓ 直接写入
+Repository（MemoryNodeRepo）
+  ↓ 存入
+memory_nodes (L2 Pattern / L3 Belief)
+```
+
+**Task Runtime 的边界**：
+
+Reflection Engine 完成持久化后，如需触发下游动作（如 State 刷新），通过 **Domain Event**（`BeliefUpdated`）交由 Task Runtime 异步调度：
+
+```
+Reflection Engine → 直接持久化 Pattern/Belief
+                    ↓ 发出 Domain Event
+                    ↓
+Task Runtime → 异步触发 ACTIVATION_TASK → Activation Engine → State 刷新
+```
+
+> **关键区分**：Reflection 自身输出 = 直接持久化；下游异步触发 = Task Runtime。
+
 ### 14.5 Activation Engine
 
 **职责**：执行 State Activation（参见 12）。
@@ -877,6 +902,7 @@ graph LR
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
 | 1.2 | 2026-06-26 | Phase B 修订：(1) 第 16 章新增 Engine as Domain Capability 原则 (2) 术语表补充 Phase B 变更引用 | ✅ 已确认 |
+| 1.3 | 2026-07-03 | Phase C Stage 2 修订：(1) §14.4 新增持久化边界澄清（AR-008）(2) 补充 Reflection Engine 直接持久化 vs Task Runtime 下游触发的边界说明 | ✅ 已确认 |
 
 ---
 

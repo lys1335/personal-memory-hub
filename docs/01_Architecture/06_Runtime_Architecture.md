@@ -861,6 +861,14 @@ Activation Queue
 State Refresh (运行时)
 ```
 
+> **AR-008 澄清：Persistence Boundary**
+>
+> Pattern (L2) 和 Belief (L3) 的写入由 **Reflection Engine 直接通过 Repository 持久化**，不经过 Task Runtime。
+>
+> Task Runtime 仅处理下游异步触发：Reflection Engine 完成持久化后，发出 `BeliefUpdated` Domain Event，Task Runtime 接收后异步调度 `ACTIVATION_TASK` 触发 State 刷新。
+>
+> **规则**：Reflection Engine 的自身输出 = 直接持久化；下游动作 = Task Runtime 异步调度。
+
 ### 11.3 完整时序图
 
 ```mermaid
@@ -1003,6 +1011,7 @@ sequenceDiagram
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
 | 1.1 | 2026-06-26 | Phase B 修订：(1) 第 3.1 章 Engine 重新定义为 Domain Capability（无状态/可复用/能力导向） (2) 补充 Composite Engine 可组合 Atomic Engine 模式 | ✅ 已确认 |
+| 1.2 | 2026-07-03 | Phase C Stage 2 修订：(1) §11.2 新增 AR-008 持久化边界澄清（Reflection Engine 直接持久化 vs Task Runtime 下游触发） | ✅ 已确认 |
 
 ---
 
