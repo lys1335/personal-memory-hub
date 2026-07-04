@@ -1,222 +1,149 @@
 # Personal Memory Hub
 
-A document-driven architecture project for building a long-term memory system for personal AI assistants.
-
-The goal of Personal Memory Hub is to provide persistent, structured, explainable, and evolvable memory that can survive model changes, session resets, and application migrations.
-
----
-
-# Vision
-
-Most AI assistants today are stateless.
-
-Even when memory exists, it is often:
-
-* Opaque
-* Difficult to inspect
-* Difficult to migrate
-* Tightly coupled to a specific model or platform
-
-Personal Memory Hub aims to build a user-owned memory layer that remains independent from any particular LLM, agent framework, or application.
-
-The long-term objective is:
-
-> Build a personal memory infrastructure that can serve as the memory core of a Personal AI Platform.
+> **A document-driven long-term memory system for personal AI assistants.**
+>
+> **Phase D, Milestone D1: Infrastructure Foundation** — ✅ Complete
 
 ---
 
-# Core Principles
+## Quick Start
 
-## Memory Before Agent
+### Prerequisites
 
-Agents can be replaced.
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv) — Fast Python package installer and resolver
+- [Docker](https://www.docker.com/) and [docker-compose](https://docs.docker.com/compose/) — Optional, for local development
 
-Memory should persist.
+### Local Development
 
-The memory layer is treated as a first-class system rather than a side feature of an AI agent.
+```bash
+# 1. Navigate to the backend directory
+cd backend
 
----
+# 2. Install dependencies
+uv sync --all-extras
 
-## Evidence-Based Memory
+# 3. Run tests
+uv run pytest tests/ -v
 
-Important memories should not be stored solely because an LLM generated them.
+# 4. Run linting
+uv run ruff check src/ tests/
 
-Every memory should have traceable evidence and promotion rules.
-
----
-
-## Human Review First
-
-Users must be able to inspect, review, correct, archive, and delete memories.
-
-The system should remain understandable and controllable.
-
----
-
-## Structured Before LLM
-
-The platform prioritizes structured entities, relationships, observations, and evidence before relying on LLM reasoning.
-
----
-
-## Local First
-
-The architecture is designed primarily for personal deployment using local or self-hosted components, with optional cloud integration.
-
----
-
-# Architecture Direction
-
-Current architecture direction:
-
-```text
-User
-  │
-  ▼
-Open WebUI / Hermes Desktop
-  │
-  ▼
-Memory Engine
-  │
-  ├── Context Builder
-  ├── Retrieval Layer
-  ├── Reflection Engine
-  ├── Candidate Promotion
-  └── Memory Lifecycle
-  │
-  ▼
-Memory Hub Database
-  │
-  ├── Entity Graph
-  ├── Memory Store
-  ├── Evidence Store
-  ├── Reflection Records
-  └── Archive Layer
+# 5. Run type checking
+uv run mypy src/
 ```
 
-Planned deployment technologies include:
+### Docker Development
 
-* Open WebUI
-* Hermes Desktop
-* Ollama / Local Models
-* Chroma
-* Supabase
-* MCP Ecosystem
-* Google Cloud Storage (optional)
+```bash
+# 1. Start the database
+docker compose up -d db
 
-The architecture remains implementation-independent and may evolve over time.
+# 2. Start the application
+docker compose up -d app
 
----
+# 3. Run tests inside the container
+docker compose exec app uv run pytest tests/ -v
 
-# Documentation
-
-Main documentation index:
-
-```text
-docs/INDEX.md
+# 4. Stop all services
+docker compose down
 ```
 
-Current completed design documents:
+### Environment Variables
 
-* Memory Hub Foundation
-* Memory Engine & Context Builder
-* Entity & Memory Graph
-* Schema / Archive / Reflect
-* Memory Lifecycle & Reflection Engine
-* Runtime Architecture
-* Boundary Review
-* Implementation Architecture
-* Database Physical Design
-* Implementation Service Layer（Phase B 新增）
-* Implementation MemoryService（Phase B-2 新增）
-* Implementation QueryService（Phase B-3 新增）
-* Implementation ReflectionService（Phase B-4 新增）
-* Implementation EntityService（Phase B-5 新增）
-* Implementation TaskRuntime（Phase B-6 新增）
-* Implementation API Entry（Phase B-7 新增）
-* Implementation Testing（Phase B-8 新增）
-* Implementation Roadmap（Phase B-9 新增）
-* 12_Engineering_Register（Phase B-10 新增）
-* 13_AI_Development_Workflow（Phase B-11 新增）
-* 14_Final_Implementation_Review（Phase B-12 新增）
-* Architecture Guidelines（Phase B Living Guideline 新增）
+Copy `.env.example` to `.env` and adjust values:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+See `backend/.env.example` for all configurable options.
 
 ---
 
-# Development Status
+## Project Structure
 
-## Phase A - Foundation Design
-
-Completed
-
-* Vision
-* Architecture
-* Data Model
-* Lifecycle
-* Runtime
-* Boundary Definition
-* Physical Database Design
-
-## Phase B - Implementation Design
-
-Started
-
-* ✅ Service Layer（10_1_Implementation_Service_Layer.md）
-* ✅ MemoryService（10_2_Implementation_MemoryService.md）
-* ✅ QueryService（10_3_Implementation_QueryService.md）
-* ✅ ReflectionService（10_4_Implementation_ReflectionService.md）
-* ✅ EntityService（10_5_Implementation_EntityService.md）
-* ✅ Task Runtime（10_6_Implementation_TaskRuntime.md）
-* ✅ API Entry（10_7_Implementation_API_Entry.md）
-* ✅ Testing（10_8_Implementation_Testing.md）
-* ✅ Implementation Roadmap（11_Implementation_Roadmap.md）
-* ✅ Engineering Register（12_Engineering_Register.md）
-* ✅ AI Development Workflow（13_AI_Development_Workflow.md）
-* ✅ Final Implementation Review（14_Final_Implementation_Review.md）
-* ✅ Architecture Guidelines（13_Architecture_Guidelines.md）
-
-## Phase C - Review
-
-Planned
-
-* Consistency Review
-* Architecture Review
-* Implementation Review
-
-## Phase D - MVP Development
-
-Planned
-
-* Initial implementation
-* Local deployment
-* End-to-end validation
-
----
-
-# Project Status
-
-This repository currently focuses on architecture and design documentation.
-
-Implementation has not started yet.
-
-The project follows a document-first approach:
-
-```text
-Vision
-  ↓
-Architecture
-  ↓
-Data Model
-  ↓
-Implementation Design
-  ↓
-Review
-  ↓
-MVP Development
+```
+personal-memory-hub/
+├── docs/                    # Architecture & design documents
+│   ├── INDEX.md             # Document index
+│   ├── 01_Vision/           # Vision & goals
+│   ├── 02_Data_Model/       # Data model design
+│   ├── 03_Component_Model/  # Component architecture
+│   ├── 04_Retrieval_Ranking/ # Implementation design (Phase B)
+│   ├── 05_Implementation/   # Implementation plans (Phase D)
+│   └── 07_Review/           # Review documents
+├── backend/                 # Application code
+│   ├── src/backend/         # Source code (5-layer architecture)
+│   ├── tests/               # Test suite
+│   ├── alembic/             # Database migrations
+│   ├── pyproject.toml       # Project configuration
+│   ├── Dockerfile           # Container build
+│   └── .env.example         # Environment template
+├── docker-compose.yml       # Local dev environment
+├── .github/workflows/ci.yml # CI pipeline
+└── .gitignore               # Git ignore rules
 ```
 
 ---
 
-# License
+## Architecture
 
-License selection is deferred until the architecture and MVP implementation are sufficiently stable.
+The Personal Memory Hub follows a strict five-layer architecture:
+
+```
+Entry (REST/MCP/CLI)
+    ↓
+Service Layer (MemoryService, QueryService, etc.)
+    ↓
+Engine Layer (MemoryEngine, IngestionEngine, etc.)
+    ↓
+Repository Layer (EntityRepository, MemoryNodeRepository, etc.)
+    ↓
+Database (PostgreSQL + pgvector)
+```
+
+**Principle**: Documents define architecture. Code implements documents.
+
+See `docs/INDEX.md` for the full architecture documentation.
+
+---
+
+## Implementation Milestones
+
+| Milestone | Status | Description |
+|-----------|--------|-------------|
+| **D1: Infrastructure Foundation** | ✅ Complete | Project setup, database, logging, DI, testing, CI |
+| **D2: Repository Layer** | ⏳ Planned | Database models, repositories, migrations |
+| **D3: Domain Engine** | ⏳ Planned | Stateless domain engines |
+| **D4: Service Layer** | ⏳ Planned | Application services |
+| **D5: Entry & API** | ⏳ Planned | REST, MCP, CLI adapters |
+| **D6: Testing & Stabilization** | ⏳ Planned | Integration, evaluation, regression |
+
+---
+
+## Development
+
+### Coding Standards
+
+- **Linting**: [ruff](https://github.com/astral-sh/ruff) — `ruff check src/ tests/`
+- **Type Checking**: [mypy](https://mypy.readthedocs.io/) in strict mode — `mypy src/`
+- **Formatting**: ruff format — `ruff format src/ tests/`
+- **Testing**: [pytest](https://docs.pytest.org/) — `pytest tests/ -v`
+
+### Review Workflow
+
+All implementation follows the four-level review workflow:
+
+1. **Self Review** — Code style, unit tests, documentation, architecture alignment
+2. **Architecture Review** — Layer boundaries, dependency rules, capability alignment
+3. **Testing Review** — Test quality, coverage, golden datasets, regression suite
+4. **Human Approval** — Design rationale, risk assessment, final sign-off
+
+See `docs/04_Retrieval_Ranking/11_Implementation_Roadmap.md` §7 for details.
+
+---
+
+## License
+
+Proprietary — All rights reserved.

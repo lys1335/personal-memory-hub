@@ -1,0 +1,118 @@
+# Personal Memory Hub — CI Pipeline
+#
+# Per 11_Implementation_Roadmap.md §8 (CI Strategy):
+# - Stage 1: Static Analysis (ruff lint, mypy type-check)
+# - Stage 2: Unit Tests (pytest with in-memory SQLite)
+# - Stage 3: Integration tests — deferred to D2+
+# - Stage 4: Architecture tests — deferred to D2+
+# - Stage 5: Behavioral tests — deferred to D2+
+# - Stage 6: Build verification — deferred to D2+
+# - CD pipeline — intentionally deferred (CI over CD)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # =========================================================================
+  # Stage 1: Static Analysis
+  # =========================================================================
+  static-analysis:
+    name: Static Analysis (ruff + mypy)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.x"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --all-extras
+
+      - name: Run ruff (linting)
+        working-directory: backend
+        run: uv run ruff check src/ tests/
+
+      - name: Run mypy (type checking)
+        working-directory: backend
+        run: uv run mypy src/
+
+  # =========================================================================
+  # Stage 2: Unit Tests
+  # =========================================================================
+  unit-tests:
+    name: Unit Tests (pytest)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.x"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --all-extras
+
+      - name: Run tests
+        working-directory: backend
+        run: uv run pytest tests/ -v --cov=backend --cov-report=term-missing
+
+      - name: Upload coverage (non-blocking)
+        working-directory: backend
+        run: uv run coverage xml || true
+        continue-on-error: true
+
+  # =========================================================================
+  # Build Verification (D1: lightweight)
+  # =========================================================================
+  build:
+    name: Build verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.x"
+
+      - name: Build package
+        working-directory: backend
+        run: uv build
+
+      - name: Verify wheel
+        working-directory: backend/dist
+        run: ls -la *.whl
