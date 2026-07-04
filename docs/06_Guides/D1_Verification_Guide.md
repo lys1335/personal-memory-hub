@@ -2,10 +2,10 @@
 
 > **Phase**: Phase D — Document-Driven Implementation  
 > **Milestone**: D1 — Infrastructure Foundation  
-> **Version**: 1.0  
+> **Version**: 1.1  
 > **Date**: 2026-07-04  
 > **Status**: Final  
-> **Author**: System Architecture Group  
+> **Author**: System Architecture Group
 
 ---
 
@@ -24,7 +24,7 @@
 11. [Database Verification](#11-database-verification)  
 12. [Documentation Verification](#12-documentation-verification)  
 13. [Final Acceptance Checklist](#13-final-acceptance-checklist)  
-14. [Troubleshooting](#14-troubleshooting)  
+14. [Troubleshooting](#14-troubleshooting)
 
 ---
 
@@ -75,11 +75,7 @@ Before beginning verification, ensure the following tools are installed.
 - macOS 12+ (Monterey or later)
 - Ubuntu 20.04+ / Debian 11+ / Fedora 38+
 
-**Platform-specific notes**:
-
-- **Windows**: Use `.venv\Scripts\python` (or `.venv\Scripts\uv.exe`) for commands that reference the virtual environment. Use `copy` or `Copy-Item` instead of `cp`. Use `dir` instead of `ls`. Use `findstr` instead of `grep`.
-- **Linux/macOS**: Use `.venv/bin/python` for virtual environment commands. Use `cp` for file copy. Use `ls` for listing. Use `grep` for searching.
-- All commands in this guide that do **not** reference the virtual environment directly (e.g., `uv run`, `docker compose`) work identically on all platforms.
+**Windows is the default platform for this guide.** Every command section presents the Windows PowerShell command first, followed by the Linux/macOS bash equivalent.
 
 ### 2.2 Python
 
@@ -89,6 +85,14 @@ Before beginning verification, ensure the following tools are installed.
 **Download**: https://www.python.org/downloads/
 
 **Verify installation**:
+
+**Windows (PowerShell)**:
+
+```powershell
+python --version
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 python --version
@@ -123,6 +127,14 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 **Verify installation**:
 
+**Windows (PowerShell)**:
+
+```powershell
+uv --version
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 uv --version
 ```
@@ -141,6 +153,15 @@ uv 0.x.x (xxx...)
 **Download**: https://www.docker.com/products/docker-desktop/
 
 **Verify installation**:
+
+**Windows (PowerShell)**:
+
+```powershell
+docker --version
+docker compose version
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 docker --version
@@ -165,6 +186,14 @@ If Docker Desktop is not installed, Docker-related verification steps (Section 1
 
 **Verify installation**:
 
+**Windows (PowerShell)**:
+
+```powershell
+git --version
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 git --version
 ```
@@ -180,6 +209,15 @@ git version 2.x.x
 ## 3. Repository Preparation
 
 ### 3.1 Clone Repository
+
+**Windows (PowerShell)**:
+
+```powershell
+git clone https://github.com/lys1335/personal-memory-hub.git
+cd personal-memory-hub
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 git clone https://github.com/lys1335/personal-memory-hub.git
@@ -236,6 +274,8 @@ personal-memory-hub/
     │       │   └── __init__.py
     │       ├── repository/
     │       │   └── __init__.py
+    │       ├── scripts/
+    │       │   └── README.md
     │       ├── service/
     │       │   └── __init__.py
     │       ├── shared/
@@ -257,8 +297,6 @@ personal-memory-hub/
     │       │   │       └── __init__.py
     │       │   └── protocols/
     │       │       └── __init__.py
-    │       ├── scripts/
-    │       │   └── README.md
     │       └── tools/
     │           └── README.md
     ├── tests/
@@ -281,7 +319,17 @@ personal-memory-hub/
         └── README.md
 ```
 
-**Verification**: Use the following command to check the structure:
+**Verification**: Use the following command to check the structure.
+
+> **Working directory**: Execute from the repository root (`personal-memory-hub/`).
+
+**Windows (PowerShell)**:
+
+```powershell
+Get-ChildItem -Path backend -Recurse -File -Exclude __pycache__, .venv, .mypy_cache, .pytest_cache, .ruff_cache, dist | Select-Object -ExpandProperty FullName | Sort-Object
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 find backend -type f ! -path "*/.venv/*" ! -path "*/.mypy_cache/*" ! -path "*/.pytest_cache/*" ! -path "*/.ruff_cache/*" ! -path "*/dist/*" ! -path "*/__pycache__/*" | sort
@@ -332,9 +380,20 @@ The table below classifies every file produced by D1. Use it to understand what 
 
 ## 4. Python Environment Verification
 
+> **Working directory**: All `uv` commands in this section must be executed from the `backend/` directory.
+
 ### 4.1 Install Dependencies
 
 Navigate to the backend directory and install all dependencies:
+
+**Windows (PowerShell)**:
+
+```powershell
+cd backend
+uv sync --all-extras
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 cd backend
@@ -345,7 +404,7 @@ uv sync --all-extras
 
 ```
 Resolved XX packages in Xms
-InstallingXX packages...
+Installing XX packages...
  + alembic==1.x.x
  + annotated-types==0.x.x
  + ...
@@ -373,6 +432,14 @@ The exact package count may vary, but you should see:
 
 ### 4.2 Verify Virtual Environment
 
+**Windows (PowerShell)**:
+
+```powershell
+Get-ChildItem -Path .venv -Recurse -Depth 1 | Select-Object Name, Mode
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 ls -la .venv/
 ```
@@ -381,9 +448,14 @@ ls -la .venv/
 
 ### 4.3 Verify Package Installation
 
-```bash
+> **Note**: This section verifies that core packages are importable. For version verification, see Sections 7 and 8 which use CLI commands (`uv run ruff --version`, `uv run mypy --version`).
+
+**Windows (PowerShell)**:
+
+```powershell
+cd backend
 uv run python -c "
-import sqlalchemy, pydantic, alembic, structlog, aiosqlite, pytest, ruff, mypy
+import sqlalchemy, pydantic, alembic, structlog, aiosqlite, pytest
 print('All core packages imported successfully')
 print(f'SQLAlchemy: {sqlalchemy.__version__}')
 print(f'Pydantic: {pydantic.__version__}')
@@ -391,8 +463,22 @@ print(f'Alembic: {alembic.__version__}')
 print(f'structlog: {structlog.__version__}')
 print(f'aiosqlite: {aiosqlite.__version__}')
 print(f'pytest: {pytest.__version__}')
-print(f'ruff: {ruff.__version__}')
-print(f'mypy: {mypy.__version__}')
+"
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+cd backend
+uv run python -c "
+import sqlalchemy, pydantic, alembic, structlog, aiosqlite, pytest
+print('All core packages imported successfully')
+print(f'SQLAlchemy: {sqlalchemy.__version__}')
+print(f'Pydantic: {pydantic.__version__}')
+print(f'Alembic: {alembic.__version__}')
+print(f'structlog: {structlog.__version__}')
+print(f'aiosqlite: {aiosqlite.__version__}')
+print(f'pytest: {pytest.__version__}')
 "
 ```
 
@@ -406,8 +492,6 @@ Alembic: 1.x.x
 structlog: 24.x.x
 aiosqlite: 0.2x.x
 pytest: 8.x.x
-ruff: 0.15.x
-mypy: 1.x.x
 ```
 
 ### 4.4 Common Failures
@@ -423,31 +507,40 @@ mypy: 1.x.x
 
 If verification fails:
 
-1. Delete the virtual environment: `rm -rf .venv`
-2. Clear uv cache: `uv cache clean`
-3. Reinstall: `uv sync --all-extras`
-4. Retry verification
+**Windows (PowerShell)**:
+
+```powershell
+Remove-Item -Recurse -Force .venv
+uv cache clean
+uv sync --all-extras
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+rm -rf .venv
+uv cache clean
+uv sync --all-extras
+```
 
 ---
 
 ## 5. Configuration Verification
 
+> **Working directory**: All commands in this section must be executed from the `backend/` directory.
+
 ### 5.1 Copy .env.example
 
-```bash
-cp .env.example .env
-```
-
-On Windows (PowerShell):
+**Windows (PowerShell)**:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-On Windows (Command Prompt):
+**Linux/macOS (bash)**:
 
-```cmd
-copy .env.example .env
+```bash
+cp .env.example .env
 ```
 
 ### 5.2 Environment Variables
@@ -475,6 +568,23 @@ The `.env.example` file documents all configurable variables. Here is the comple
 | `OPENROUTER_API_KEY` | *(empty)* | OpenRouter API key (deferred to D3+) |
 
 ### 5.3 Verify Configuration Loading
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run python -c "
+from backend.shared.infrastructure.config.settings import get_settings
+s = get_settings()
+print(f'APP_NAME: {s.APP_NAME}')
+print(f'LOG_LEVEL: {s.LOG_LEVEL}')
+print(f'DATABASE_URL: {s.DATABASE_URL[:50]}...')
+print(f'VECTOR_DIMENSION: {s.VECTOR_DIMENSION}')
+print(f'is_supabase: {s.is_supabase}')
+print('Configuration loaded successfully')
+"
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv run python -c "
@@ -512,7 +622,17 @@ Configuration loaded successfully
 
 ## 6. Build Verification
 
+> **Working directory**: All commands in this section must be executed from the `backend/` directory.
+
 ### 6.1 Build the Package
+
+**Windows (PowerShell)**:
+
+```powershell
+uv build
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv build
@@ -529,20 +649,16 @@ Successfully built dist\personal_memory_hub-0.1.0-py3-none-any.whl
 
 ### 6.2 Verify Distribution Files
 
-```bash
-ls -la dist/
-```
-
-On Windows (PowerShell):
+**Windows (PowerShell)**:
 
 ```powershell
-dir dist
+Get-ChildItem -Path dist
 ```
 
-On Windows (Command Prompt):
+**Linux/macOS (bash)**:
 
-```cmd
-dir dist
+```bash
+ls -la dist/
 ```
 
 **Expected**: Two files in the `dist/` directory:
@@ -562,7 +678,17 @@ dir dist
 
 ## 7. Ruff Verification
 
+> **Working directory**: All commands in this section must be executed from the `backend/` directory.
+
 ### 7.1 Run Linting
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run ruff check src/ tests/
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv run ruff check src/ tests/
@@ -576,13 +702,33 @@ All checks passed!
 
 Exit code should be `0`.
 
-### 7.2 What a Successful Result Looks Like
+### 7.2 Verify Ruff Version
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run ruff --version
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+uv run ruff --version
+```
+
+**Expected output**:
+
+```
+ruff 0.15.x
+```
+
+### 7.3 What a Successful Result Looks Like
 
 - Zero violations reported
 - Exit code `0`
 - No warnings
 
-### 7.3 Common Failures
+### 7.4 Common Failures
 
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
@@ -591,9 +737,17 @@ Exit code should be `0`.
 | `I001 import block is un-sorted` | Imports not sorted | Run `uv run ruff check --fix` |
 | `UP035 import from collections.abc` | Using deprecated import location | Change `from typing import X` to `from collections.abc import X` |
 
-### 7.4 Auto-Fix
+### 7.5 Auto-Fix
 
 If ruff reports fixable issues:
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run ruff check --fix src/ tests/
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv run ruff check --fix src/ tests/
@@ -605,7 +759,17 @@ This will automatically resolve issues marked with `[*]`.
 
 ## 8. mypy Verification
 
+> **Working directory**: All commands in this section must be executed from the `backend/` directory.
+
 ### 8.1 Run Type Checking
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run mypy src/
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv run mypy src/
@@ -619,14 +783,34 @@ Success: no issues found in XX source files
 
 Exit code should be `0`.
 
-### 8.2 Expected Behavior
+### 8.2 Verify mypy Version
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run mypy --version
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+uv run mypy --version
+```
+
+**Expected output**:
+
+```
+mypy 1.x.x
+```
+
+### 8.3 Expected Behavior
 
 - All 16 source files should pass type checking
 - No undefined names
 - No type mismatches
 - No missing return type annotations
 
-### 8.3 Failure Diagnosis
+### 8.4 Failure Diagnosis
 
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
@@ -635,7 +819,7 @@ Exit code should be `0`.
 | `error: Function is missing a return type annotation` | Missing return type | Add `-> ReturnType` to the function signature |
 | `note: unused section(s)` | MyPy config sections for modules not yet imported | Harmless — these modules will be imported in D2+ |
 
-### 8.4 Strict Mode
+### 8.5 Strict Mode
 
 The project uses mypy strict mode, which enforces:
 
@@ -648,7 +832,17 @@ The project uses mypy strict mode, which enforces:
 
 ## 9. pytest Verification
 
+> **Working directory**: All commands in this section must be executed from the `backend/` directory.
+
 ### 9.1 Run Tests
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run pytest tests/ -v
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv run pytest tests/ -v
@@ -740,9 +934,19 @@ All 4 tests should pass. Exit code should be `0`.
 
 > **Note**: This section requires Docker Desktop to be installed and running. If Docker is not available, skip this section and note it in the checklist.
 
+> **Working directory**: All Docker commands must be executed from the **repository root** (`personal-memory-hub/`), NOT from `backend/`.
+
 ### 10.1 Start Docker Desktop
 
 Ensure Docker Desktop is running. Verify with:
+
+**Windows (PowerShell)**:
+
+```powershell
+docker info
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 docker info
@@ -771,6 +975,14 @@ Server:
 
 From the repository root:
 
+**Windows (PowerShell)**:
+
+```powershell
+docker compose up -d db
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 docker compose up -d db
 ```
@@ -784,6 +996,14 @@ docker compose up -d db
 ```
 
 ### 10.3 Verify PostgreSQL Container
+
+**Windows (PowerShell)**:
+
+```powershell
+docker compose ps
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 docker compose ps
@@ -802,6 +1022,14 @@ The `db` service should show status `Up (healthy)`.
 
 Connect to the database and check pgvector:
 
+**Windows (PowerShell)**:
+
+```powershell
+docker compose exec db psql -U postgres -d memory_hub -c "SELECT extname FROM pg_extension WHERE extname = 'vector';"
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 docker compose exec db psql -U postgres -d memory_hub -c "SELECT extname FROM pg_extension WHERE extname = 'vector';"
 ```
@@ -817,6 +1045,14 @@ docker compose exec db psql -U postgres -d memory_hub -c "SELECT extname FROM pg
 
 ### 10.5 Verify Network
 
+**Windows (PowerShell)**:
+
+```powershell
+docker network ls | Select-String "memory-hub"
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 docker network ls | grep memory-hub
 ```
@@ -824,6 +1060,14 @@ docker network ls | grep memory-hub
 **Expected**: A network named `personal-memory-hub_default` or similar exists.
 
 ### 10.6 Verify Container Logs
+
+**Windows (PowerShell)**:
+
+```powershell
+docker compose logs db
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 docker compose logs db
@@ -839,6 +1083,14 @@ memory-hub-db  | 2026-07-04 10:00:00.000 UTC [1] LOG:  database system is ready 
 ```
 
 ### 10.7 Shutdown Procedure
+
+**Windows (PowerShell)**:
+
+```powershell
+docker compose down
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 docker compose down
@@ -857,7 +1109,7 @@ docker compose down
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
 | `Cannot connect to the Docker daemon` | Docker Desktop not running | Start Docker Desktop |
-| `port is already allocated` | Port 5432 in use | Change `DB_PORT` in `.env` or stop the conflicting service |
+| `port is already allocated` | Port 5432 in use | See Section 14.10 for port conflict resolution |
 | `pgvector/pgvector:pg15 not found` | Image not pulled | Run `docker pull pgvector/pgvector:pg15` |
 | `permission denied` | Docker socket permissions | Run with sudo (Linux) or check Docker Desktop settings |
 
@@ -865,7 +1117,23 @@ docker compose down
 
 ## 11. Database Verification
 
+> **Working directory**: All commands in this section must be executed from the `backend/` directory.
+
 ### 11.1 Verify DATABASE_URL
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run python -c "
+from backend.shared.infrastructure.config.settings import get_settings
+s = get_settings()
+print(f'DATABASE_URL: {s.DATABASE_URL}')
+print(f'DATABASE_ECHO: {s.DATABASE_ECHO}')
+print(f'VECTOR_DIMENSION: {s.VECTOR_DIMENSION}')
+"
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv run python -c "
@@ -886,6 +1154,20 @@ VECTOR_DIMENSION: 1536
 ```
 
 ### 11.2 Verify SQLAlchemy Initialization
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run python -c "
+from backend.shared.infrastructure.database.engine import Base, get_engine, get_session_factory
+print(f'Base: {Base}')
+print(f'Engine: {get_engine()}')
+print(f'Session factory: {get_session_factory()}')
+print('SQLAlchemy initialized successfully')
+"
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 uv run python -c "
@@ -908,6 +1190,16 @@ SQLAlchemy initialized successfully
 
 ### 11.3 Verify Alembic Environment
 
+> **Working directory**: `backend/`
+
+**Windows (PowerShell)**:
+
+```powershell
+uv run alembic check
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 uv run alembic check
 ```
@@ -927,8 +1219,16 @@ INFO  [alembic.runtime.migration] Will assume transactional DDL.
 **Example expected output (without database)**:
 
 ```
-sqlalchemy.exc.OperationalError: (asyncpg.exceptions.ConnectionDoesNotExistError) ...
+ConnectionRefusedError: [WinError 1225] ...
 ```
+
+or
+
+```
+sqlalchemy.exc.OperationalError: (asyncpg.exceptions.ConnectionRefusedError) connection refused
+```
+
+> **Important**: The error must be a connection error (e.g., `ConnectionRefusedError`, `OperationalError`), NOT a `NoSuchModuleError` or `Can't load plugin: sqlalchemy.dialects:driver` error. If you see the latter, see Section 14.11.
 
 This is **expected and acceptable** for D1. The Alembic environment is correctly configured; it simply cannot connect because no PostgreSQL instance is running locally.
 
@@ -943,6 +1243,14 @@ At D1 completion:
 
 Verify with:
 
+**Windows (PowerShell)**:
+
+```powershell
+uv run alembic history
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
 uv run alembic history
 ```
@@ -956,7 +1264,7 @@ Head (revision): <none>
 Or if no database:
 
 ```
-(sqlalchemy error — expected, no database running)
+(ConnectionRefusedError — expected, no database running)
 ```
 
 ---
@@ -965,7 +1273,15 @@ Or if no database:
 
 ### 12.1 Verify README
 
-Check that `README.md` exists and contains expected sections:
+Check that `README.md` exists and contains expected sections.
+
+**Windows (PowerShell)**:
+
+```powershell
+Get-Content README.md
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 cat README.md
@@ -990,18 +1306,20 @@ The README should reference:
 
 Verify links are not broken by checking that referenced files exist:
 
-```bash
-test -f docs/INDEX.md && echo "INDEX.md exists" || echo "INDEX.md MISSING"
-test -f docs/05_Implementation/README.md && echo "Implementation README exists" || echo "MISSING"
-test -f docs/05_Implementation/D1_Infrastructure_Foundation_Plan.md && echo "D1 Plan exists" || echo "MISSING"
-```
-
-On Windows (PowerShell):
+**Windows (PowerShell)**:
 
 ```powershell
 if (Test-Path docs/INDEX.md) { Write-Output "INDEX.md exists" } else { Write-Output "INDEX.md MISSING" }
 if (Test-Path docs/05_Implementation/README.md) { Write-Output "Implementation README exists" } else { Write-Output "MISSING" }
 if (Test-Path docs/05_Implementation/D1_Infrastructure_Foundation_Plan.md) { Write-Output "D1 Plan exists" } else { Write-Output "MISSING" }
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+test -f docs/INDEX.md && echo "INDEX.md exists" || echo "INDEX.md MISSING"
+test -f docs/05_Implementation/README.md && echo "Implementation README exists" || echo "MISSING"
+test -f docs/05_Implementation/D1_Infrastructure_Foundation_Plan.md && echo "D1 Plan exists" || echo "MISSING"
 ```
 
 **Expected output**:
@@ -1013,6 +1331,14 @@ D1 Plan exists
 ```
 
 ### 12.3 Verify Docs Structure
+
+**Windows (PowerShell)**:
+
+```powershell
+Get-ChildItem -Path docs -Recurse -Filter "*.md" | Sort-Object FullName
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 find docs -type f -name "*.md" | sort
@@ -1063,27 +1389,27 @@ Refer to Section 3.4 for the classification table. Key checks:
 - [ ] All environment variables have correct defaults
 - [ ] `is_supabase` property returns `False` with empty Supabase config
 
-### 13.4 Code Quality
+### 13.5 Code Quality
 
 - [ ] `ruff check src/ tests/` reports zero violations
 - [ ] `mypy src/` reports "Success: no issues found"
 - [ ] All source files pass type checking in strict mode
 
-### 13.5 Testing
+### 13.6 Testing
 
 - [ ] `pytest tests/ -v` collects 4 tests
 - [ ] All 4 tests pass
 - [ ] Test fixtures (settings, container, engine) work correctly
 - [ ] No warnings or errors in test output
 
-### 13.6 Docker (Optional — skip if Docker not available)
+### 13.7 Docker (Optional — skip if Docker not available)
 
 - [ ] `docker compose up -d db` starts PostgreSQL
 - [ ] Container status is `Up (healthy)`
 - [ ] pgvector extension is installed
 - [ ] `docker compose down` shuts down cleanly
 
-### 13.7 Database Infrastructure
+### 13.8 Database Infrastructure
 
 - [ ] SQLAlchemy engine initializes
 - [ ] Session factory is configured
@@ -1091,7 +1417,7 @@ Refer to Section 3.4 for the classification table. Key checks:
 - [ ] Alembic `env.py` imports correctly
 - [ ] Alembic migrations directory exists (empty, as expected)
 
-### 13.8 Documentation
+### 13.9 Documentation
 
 - [ ] `README.md` exists with all expected sections
 - [ ] `backend/README.md` exists
@@ -1099,9 +1425,30 @@ Refer to Section 3.4 for the classification table. Key checks:
 - [ ] All documentation links resolve to existing files
 - [ ] No broken references
 
-### 13.9 Git Readiness
+### 13.10 Git Readiness
 
 Verify `.gitignore` correctly excludes generated files and includes committed files:
+
+**Windows (PowerShell)**:
+
+```powershell
+# Check that uv.lock is NOT ignored
+if (-not (git check-ignore -q backend/uv.lock 2>$null)) { Write-Output "uv.lock is tracked (correct)" } else { Write-Output "uv.lock is ignored (wrong)" }
+
+# Check that dist/ IS ignored
+if (git check-ignore -q backend/dist/ 2>$null) { Write-Output "dist/ is ignored (correct)" } else { Write-Output "dist/ is tracked (wrong)" }
+
+# Check that .venv/ IS ignored
+if (git check-ignore -q backend/.venv/ 2>$null) { Write-Output ".venv/ is ignored (correct)" } else { Write-Output ".venv/ is tracked (wrong)" }
+
+# Check that __pycache__/ IS ignored
+if (git check-ignore -q backend/src/backend/__pycache__/ 2>$null) { Write-Output "__pycache__/ is ignored (correct)" } else { Write-Output "__pycache__/ is tracked (wrong)" }
+
+# Check that .env IS ignored
+if (git check-ignore -q backend/.env 2>$null) { Write-Output ".env is ignored (correct)" } else { Write-Output ".env is tracked (wrong)" }
+```
+
+**Linux/macOS (bash)**:
 
 ```bash
 # Check that uv.lock is NOT ignored
@@ -1122,7 +1469,7 @@ git check-ignore -v backend/.env 2>&1 && echo ".env is ignored (correct)" || ech
 
 **Expected**: `uv.lock` should NOT be ignored; all others should be ignored.
 
-### 13.10 Architecture Compliance
+### 13.11 Architecture Compliance
 
 - [ ] No business logic in `service/`, `engine/`, or `repository/` directories
 - [ ] All empty directories contain `__init__.py` files
@@ -1149,17 +1496,21 @@ git check-ignore -v backend/.env 2>&1 && echo ".env is ignored (correct)" || ech
 
 **Resolution**:
 
-```bash
-# Clear cache
+**Windows (PowerShell)**:
+
+```powershell
 uv cache clean
-
-# Re-sync
 uv sync --all-extras
-
-# If still failing, check Python version
 python --version  # Must be >= 3.10
+Get-Content backend\pyproject.toml -TotalCount 50
+```
 
-# Check pyproject.toml for obvious syntax errors
+**Linux/macOS (bash)**:
+
+```bash
+uv cache clean
+uv sync --all-extras
+python --version  # Must be >= 3.10
 head -50 backend/pyproject.toml
 ```
 
@@ -1179,12 +1530,19 @@ F401 `typing.Any` imported but unused
 
 **Resolution**:
 
-```bash
-# Auto-fix all fixable issues
-uv run ruff check --fix src/ tests/
+**Windows (PowerShell)**:
 
-# For remaining issues, manually edit the source files
+```powershell
+uv run ruff check --fix src/ tests/
 ```
+
+**Linux/macOS (bash)**:
+
+```bash
+uv run ruff check --fix src/ tests/
+```
+
+For remaining issues, manually edit the source files.
 
 ### 14.3 mypy Reports Errors
 
@@ -1203,13 +1561,19 @@ error: Function is missing a return type annotation
 
 **Resolution**:
 
-```bash
-# Run mypy with verbose output for details
-uv run mypy src/ --show-error-codes
+**Windows (PowerShell)**:
 
-# Fix type annotations as needed
-# Remove obsolete type: ignore comments
+```powershell
+uv run mypy src/ --show-error-codes
 ```
+
+**Linux/macOS (bash)**:
+
+```bash
+uv run mypy src/ --show-error-codes
+```
+
+Fix type annotations as needed. Remove obsolete `type: ignore` comments.
 
 ### 14.4 pytest Fails to Collect Tests
 
@@ -1227,14 +1591,19 @@ collected 0 items
 
 **Resolution**:
 
+**Windows (PowerShell)**:
+
+```powershell
+Get-ChildItem tests\test_*.py
+Get-ChildItem tests\conftest.py
+uv run pytest tests/ --collect-only -v
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
-# Verify test files exist
 ls tests/test_*.py
-
-# Verify conftest.py is in tests/
 ls tests/conftest.py
-
-# Run with verbose collection
 uv run pytest tests/ --collect-only -v
 ```
 
@@ -1254,19 +1623,25 @@ ERROR: Cannot connect to the Docker daemon
 
 **Resolution**:
 
-```bash
+**Windows (PowerShell)**:
+
+```powershell
 # Start Docker Desktop (Windows/macOS)
 # Or start Docker service (Linux)
-sudo systemctl start docker
-
-# Check Docker is running
 docker info
 
 # Check for port conflicts
-netstat -an | grep 5432  # Linux/macOS
-netstat -an | findstr 5432  # Windows
+netstat -an | findstr 5432
 
 # If port is in use, change it in docker-compose.yml or .env
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+sudo systemctl start docker
+docker info
+netstat -an | grep 5432
 ```
 
 ### 14.6 Settings Module Fails to Load
@@ -1285,11 +1660,24 @@ pydantic_core.ValidationError: 1 validation error for AppSettings
 
 **Resolution**:
 
-```bash
-# Check .env file
-cat .env
+**Windows (PowerShell)**:
 
-# Verify variable format
+```powershell
+Get-Content .env
+uv run python -c "
+from backend.shared.infrastructure.config.settings import get_settings
+try:
+    s = get_settings()
+    print('OK')
+except Exception as e:
+    print(f'Error: {e}')
+"
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+cat .env
 uv run python -c "
 from backend.shared.infrastructure.config.settings import get_settings
 try:
@@ -1305,6 +1693,12 @@ except Exception as e:
 **Symptoms**:
 
 ```
+ConnectionRefusedError: [WinError 1225] ...
+```
+
+or
+
+```
 sqlalchemy.exc.OperationalError: (asyncpg.exceptions.ConnectionRefusedError) connection refused
 ```
 
@@ -1316,11 +1710,26 @@ sqlalchemy.exc.OperationalError: (asyncpg.exceptions.ConnectionRefusedError) con
 
 **Resolution**:
 
-```bash
-# This is EXPECTED in D1 if no PostgreSQL is running
-# The infrastructure is correctly configured; it simply cannot connect
+> This is **EXPECTED** in D1 if no PostgreSQL is running. The infrastructure is correctly configured; it simply cannot connect.
 
+**Windows (PowerShell)**:
+
+```powershell
 # To verify the configuration is correct (without a running database):
+uv run python -c "
+from backend.shared.infrastructure.config.settings import get_settings
+from backend.shared.infrastructure.database.engine import get_engine
+s = get_settings()
+print(f'DATABASE_URL configured: {s.DATABASE_URL[:50]}...')
+engine = get_engine()
+print(f'Engine created: {type(engine).__name__}')
+print('Configuration is correct — connection failure is expected without running database')
+"
+```
+
+**Linux/macOS (bash)**:
+
+```bash
 uv run python -c "
 from backend.shared.infrastructure.config.settings import get_settings
 from backend.shared.infrastructure.database.engine import get_engine
@@ -1347,14 +1756,19 @@ ModuleNotFoundError: No module named 'backend'
 
 **Resolution**:
 
-```bash
-# Ensure you're in the backend directory
+**Windows (PowerShell)**:
+
+```powershell
 cd backend
+Get-Content tests\conftest.py -TotalCount 15
+uv run pytest tests/ -v
+```
 
-# Verify conftest.py adds src/ to path
+**Linux/macOS (bash)**:
+
+```bash
+cd backend
 head -15 tests/conftest.py
-
-# Run from backend directory
 uv run pytest tests/ -v
 ```
 
@@ -1373,16 +1787,127 @@ ValueError: Error parsing field project.license
 
 **Resolution**:
 
+**Windows (PowerShell)**:
+
+```powershell
+Select-String -Path backend\pyproject.toml -Pattern "license"
+Get-ChildItem backend\README.md
+```
+
+**Linux/macOS (bash)**:
+
 ```bash
-# Check pyproject.toml license field
 grep license backend/pyproject.toml
-
-# Should be a valid SPDX identifier (e.g., "MIT", "Apache-2.0")
-# Or a file path to a LICENSE file
-
-# Verify README.md exists in backend/
 ls backend/README.md
 ```
+
+### 14.10 Docker Port Conflict (Port 5432 Already in Use)
+
+**Symptoms**:
+
+```
+ERROR: for db Cannot start service 'db': driver failed programming external connectivity on endpoint memory-hub-db: Bind for 0.0.0.0:5432 failed: port is already allocated
+```
+
+or
+
+```
+port is already allocated
+```
+
+**Causes**:
+
+- Another PostgreSQL instance is running on the machine (e.g., from a different project, WSL, or a system service)
+- A database management tool has an open connection
+
+**Identify the conflicting process**:
+
+**Windows (PowerShell)**:
+
+```powershell
+netstat -ano | findstr ":5432"
+```
+
+**Linux/macOS (bash)**:
+
+```bash
+netstat -tlnp | grep 5432
+```
+
+This will show the PID of the process using port 5432.
+
+**Resolution Option 1 — Stop the conflicting service**:
+
+If you no longer need the other PostgreSQL instance, stop it. On Windows, check Task Manager for `postgres.exe` or `pgAdmin`. On Linux:
+
+```bash
+sudo systemctl stop postgresql
+```
+
+**Resolution Option 2 — Use a different host port**:
+
+If you need to keep the other PostgreSQL running, change the host port mapping in `docker-compose.yml`:
+
+1. Open `docker-compose.yml`
+2. Find the `ports` section for the `db` service
+3. Change `5432:5432` to `5433:5432` (or another available port)
+
+```yaml
+services:
+  db:
+    ports:
+      - "5433:5432"  # Host port 5433 → container port 5432
+```
+
+4. Update `.env` to reflect the new host port:
+
+```
+DB_HOST=localhost
+DB_PORT=5433
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/memory_hub
+```
+
+5. Restart Docker:
+
+```bash
+docker compose down
+docker compose up -d db
+```
+
+**Resolution Option 3 — Restore default configuration**:
+
+To revert to the default port 5432 after the conflicting service has been stopped:
+
+1. Revert `docker-compose.yml` to use `5432:5432`
+2. Revert `.env` to use port 5432
+3. Restart:
+
+```bash
+docker compose down
+docker compose up -d db
+```
+
+### 14.11 Alembic Shows "driver://" Plugin Error
+
+**Symptoms**:
+
+```
+sqlalchemy.exc.NoSuchModuleError: Can't load plugin: sqlalchemy.dialects:driver
+```
+
+**Cause**:
+
+This error occurs when `alembic.ini` contains the placeholder `sqlalchemy.url = driver://user:pass@localhost/dbname`. The SQLAlchemy dialect parser tries to load a dialect plugin called `driver`, which does not exist.
+
+**Resolution**:
+
+This has been fixed in D1.1. The `alembic.ini` file now has `sqlalchemy.url =` (blank), and `alembic/env.py` populates the URL from the application Settings at runtime. If you encounter this error, ensure your `alembic.ini` line 89 reads:
+
+```ini
+sqlalchemy.url =
+```
+
+(not `driver://user:pass@localhost/dbname`)
 
 ---
 
@@ -1447,10 +1972,14 @@ ls backend/README.md
 
 ## Appendix B: Command Quick Reference
 
-All commands in this appendix are copy-and-paste ready. Execute from the repository root unless noted.
+All commands in this appendix are copy-and-paste ready. Execute from the directory noted below each command.
 
-```bash
-# Navigate to backend
+```powershell
+# === From repository root (personal-memory-hub/) ===
+git clone https://github.com/lys1335/personal-memory-hub.git
+cd personal-memory-hub
+
+# === From backend/ directory ===
 cd backend
 
 # Install dependencies
@@ -1459,8 +1988,14 @@ uv sync --all-extras
 # Run linting
 uv run ruff check src/ tests/
 
+# Verify ruff version
+uv run ruff --version
+
 # Run type checking
 uv run mypy src/
+
+# Verify mypy version
+uv run mypy --version
 
 # Run tests
 uv run pytest tests/ -v
@@ -1483,6 +2018,7 @@ uv run python -c "from backend.shared.infrastructure.di import get_container; fr
 # Run Alembic check (requires running PostgreSQL)
 uv run alembic check
 
+# === From repository root (personal-memory-hub/) ===
 # Docker: start database
 docker compose up -d db
 
@@ -1499,4 +2035,4 @@ docker compose down
 > 
 > **Next milestone**: D2 — Repository Layer (planned)
 > 
-> **Document version**: 1.0 | **Last updated**: 2026-07-04
+> **Document version**: 1.1 | **Last updated**: 2026-07-04 (D1.1 Release Readiness Fix)
