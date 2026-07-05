@@ -15,9 +15,16 @@ Tables defined here:
 - Archive (archives)
 - Tag (tags)
 - TagLink (tag_links)
+- Entity (entities) — D2.3
+- Area (areas) — D2.3
+- Workspace (workspace) — D2.3
+- UserProfile (user_profiles) — D2.3
+- EntityRelationship (relationships) — D2.3
+- MemoryRelationship (memory_relationships) — D2.3
 
 Imported by: MemoryNodeRepository, EvidenceRepository, ArchiveRepository,
-TagRepository, MemoryQueryRepository.
+TagRepository, MemoryQueryRepository, EntityRepository, RelationshipRepository,
+EntityQueryRepository.
 NOT imported by: Service Layer, Engine Layer (boundary rule G-013).
 """
 
@@ -379,11 +386,299 @@ class TagLink(Base):
     __mapper_args__ = {"eager_defaults": True}
 
 
+# ---------------------------------------------------------------------------
+# Entity — 09.4.4
+# ---------------------------------------------------------------------------
+
+class Entity(Base):
+    """ORM model for the entities table (09.4.4).
+
+    Entity identity, canonical_name, aliases, type, metadata, counters.
+    Hierarchical: parent_entity_id self-reference.
+    Unique: (workspace_id, entity_type, canonical_name).
+
+    Entity types: Project, Person, Organization, Tool, Technology,
+    Concept, Event, Location, Object, Agent, Model, Document.
+    """
+
+    __tablename__ = "entities"
+    __table_args__ = (
+        CheckConstraint(
+            "entity_type IN ("
+            "'Project', 'Person', 'Organization', 'Tool', 'Technology',"
+            "'Concept', 'Event', 'Location', 'Object', 'Agent', 'Model', 'Document'"
+            ")",
+            name="chk_entity_type",
+        ),
+        UniqueConstraint(
+            "workspace_id", "entity_type", "canonical_name", name="uk_entities_type_name"
+        ),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    area_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+    )
+    parent_entity_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
+    )
+    user_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.user_profiles.id", ondelete="SET NULL")
+    )
+
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    aliases: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
+    description: Mapped[str | None] = mapped_column(Text)
+    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    observation_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    belief_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    pattern_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    relationship_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    # Relationships
+    parent: Mapped[Any | None] = relationship(
+        "Entity", remote_side=[id], lazy="select"
+    )
+    children: Mapped[list["Entity"]] = relationship(
+        "Entity", backref="parent_entity", lazy="selectin"
+    )
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
+# Area — 09.4.3
+# ---------------------------------------------------------------------------
+
+class Area(Base):
+    """ORM model for the areas table (09.4.3).
+
+    Domain area classification (hierarchical via parent_area_id).
+    """
+
+    __tablename__ = "areas"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "name", name="uk_areas_workspace_name"),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    parent_area_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+    )
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    color: Mapped[str | None] = mapped_column(String(7))
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    # Relationships
+    parent_area: Mapped[Any | None] = relationship(
+        "Area", remote_side=[id], lazy="select"
+    )
+    child_areas: Mapped[list["Area"]] = relationship(
+        "Area", backref="parent_area_ref", lazy="selectin"
+    )
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
+# Workspace — 09.4.1
+# ---------------------------------------------------------------------------
+
+class Workspace(Base):
+    """ORM model for the workspace table (09.4.1).
+
+    Top-level container (singleton, seeded on init).
+    """
+
+    __tablename__ = "workspace"
+    __table_args__ = (
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
+# UserProfile — 09.4.2
+# ---------------------------------------------------------------------------
+
+class UserProfile(Base):
+    """ORM model for the user_profiles table (09.4.2).
+
+    User identity and metadata.
+    """
+
+    __tablename__ = "user_profiles"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "external_user_id", name="uk_user_profiles_external"),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    external_user_id: Mapped[str | None] = mapped_column(String(255))
+    display_name: Mapped[str | None] = mapped_column(String(255))
+    email: Mapped[str | None] = mapped_column(String(255))
+    avatar_url: Mapped[str | None] = mapped_column(Text)
+    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
+# EntityRelationship — 09.4.8
+# ---------------------------------------------------------------------------
+
+class EntityRelationship(Base):
+    """ORM model for the relationships table (09.4.8).
+
+    Entity-to-entity relationships (10 core types).
+    Multiple relationships per entity pair are allowed (different types).
+    No uniqueness constraint on (source_id, target_id) alone.
+    """
+
+    __tablename__ = "relationships"
+    __table_args__ = (
+        CheckConstraint(
+            "relationship_type IN ("
+            "'belongs_to', 'part_of', 'uses', 'depends_on', 'related_to',"
+            "'affects', 'derived_from', 'owns', 'created_by', 'about'"
+            ")",
+            name="chk_relationship_type",
+        ),
+        CheckConstraint("source_id != target_id", name="chk_no_self_relationship"),
+        CheckConstraint("strength >= 0.0 AND strength <= 1.0", name="chk_strength_range"),
+        UniqueConstraint(
+            "source_id", "target_id", "relationship_type", name="uk_relationship_direction"
+        ),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    source_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+    )
+    target_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+    )
+
+    relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    strength: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
+# MemoryRelationship — 09.4.14
+# ---------------------------------------------------------------------------
+
+class MemoryRelationship(Base):
+    """ORM model for the memory_relationships table (09.4.14).
+
+    MemoryNode-to-MemoryNode relationships.
+    Relationship types: supports, derived_from, contradicts, attenuates.
+    """
+
+    __tablename__ = "memory_relationships"
+    __table_args__ = (
+        CheckConstraint(
+            "relationship_type IN ('supports', 'derived_from', 'contradicts', 'attenuates')",
+            name="chk_memory_relationship_type",
+        ),
+        CheckConstraint(
+            "source_node_id != target_node_id", name="chk_no_self_memory_rel"
+        ),
+        CheckConstraint(
+            "contribution_weight >= 0.0 AND contribution_weight <= 1.0",
+            name="chk_memory_rel_weight_range",
+        ),
+        UniqueConstraint(
+            "source_node_id", "target_node_id", "relationship_type",
+            name="uk_memory_relationship_direction",
+        ),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    source_node_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
+    )
+    target_node_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
+    )
+
+    relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    contribution_weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
 __all__ = [
     "Archive",
+    "Area",
+    "Entity",
+    "EntityRelationship",
     "Evidence",
     "MemoryEvidence",
     "MemoryNode",
+    "MemoryRelationship",
     "Tag",
     "TagLink",
+    "UserProfile",
+    "Workspace",
 ]

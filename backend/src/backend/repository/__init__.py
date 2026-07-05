@@ -1,29 +1,34 @@
-"""Repository Layer — Shared Infrastructure (D2.1) + Memory Domain (D2.2).
+"""Repository Layer — Shared Infrastructure (D2.1) + Memory Domain (D2.2) + Entity Domain (D2.3).
 
 This module provides the shared persistence foundation for all Repository
 implementations in the Personal Memory Hub.
 
 D2.1 Shared Infrastructure:
-- BaseRepository: Abstract base with standard CRUD, transaction support,
-  workspace isolation, and exception mapping
-- QueryRepository: Read-only base for complex multi-table queries
-- Pagination: CursorPage and OffsetPage for paginated result sets
-- Exceptions: Domain-specific repository exceptions
-- Types: Shared typing definitions (PrimaryKey, FilterMap, etc.)
-- Workspace: WorkspaceIsolationMixin for multi-tenancy enforcement
+\- BaseRepository: Abstract base with standard CRUD, transaction support,
+ workspace isolation, and exception mapping
+\- QueryRepository: Read-only base for complex multi-table queries
+\- Pagination: CursorPage and OffsetPage for paginated result sets
+\- Exceptions: Domain-specific repository exceptions
+\- Types: Shared typing definitions (PrimaryKey, FilterMap, etc.)
+\- Workspace: WorkspaceIsolationMixin for multi-tenancy enforcement
 
 D2.2 Memory Domain Repositories:
-- MemoryNodeRepository: CRUD for memory_nodes + memory_evidences
-- EvidenceRepository: Immutable evidence CRUD
-- ArchiveRepository: CRUD for archives + tag_links (archive)
-- TagRepository: CRUD for tags + tag_links (many-to-many)
-- MemoryQueryRepository: Read-only complex queries (multi-table JOIN)
+\- MemoryNodeRepository: CRUD for memory\_nodes + memory\_evidences
+\- EvidenceRepository: Immutable evidence CRUD
+\- ArchiveRepository: CRUD for archives + tag\_links (archive)
+\- TagRepository: CRUD for tags + tag\_links (many-to-many)
+\- MemoryQueryRepository: Read-only complex queries (multi-table JOIN)
 
-Boundary Rules (per G-013, G-014, 10_9 §5.2):
-- Repository Layer may depend only on: SQLAlchemy, Database infrastructure, Shared infrastructure
-- Repository Layer must NOT depend on: Service Layer, Engine Layer, other Repository implementations
+D2.3 Entity Domain Repositories:
+\- EntityRepository: CRUD for entities + areas + workspace + user\_profiles
+\- RelationshipRepository: CRUD for relationships + memory\_relationships
+\- EntityQueryRepository: Read-only graph queries (entity traversal prep)
 
-Per 10_9 §6: This infrastructure supports all 12 Repositories:
+Boundary Rules (per G-013, G-014, 10\_9 §5.2):
+\- Repository Layer may depend only on: SQLAlchemy, Database infrastructure, Shared infrastructure
+\- Repository Layer must NOT depend on: Service Layer, Engine Layer, other Repository implementations
+
+Per 10\_9 §6: This infrastructure supports all 12 Repositories:
 9 Core Repositories (Entity, MemoryNode, Evidence, Relationship,
  VectorDoc, Archive, Tag, Task, Candidate) +
 3 QueryRepositories (MemoryQuery, EntityQuery, VectorQuery).
@@ -61,6 +66,11 @@ from backend.repository.memory_node_repository import MemoryNodeRepository
 from backend.repository.memory_query_repository import MemoryQueryRepository
 from backend.repository.tag_repository import TagRepository
 
+# D2.3 Entity Domain Repositories
+from backend.repository.entity_repository import EntityRepository
+from backend.repository.entity_query_repository import EntityQueryRepository
+from backend.repository.relationship_repository import RelationshipRepository
+
 __all__ = [
     # D2.1 Shared Infrastructure — Base Classes
     "BaseRepository",
@@ -91,4 +101,8 @@ __all__ = [
     "ArchiveRepository",
     "TagRepository",
     "MemoryQueryRepository",
+    # D2.3 Entity Domain Repositories
+    "EntityRepository",
+    "RelationshipRepository",
+    "EntityQueryRepository",
 ]
