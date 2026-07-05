@@ -12,10 +12,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
+from backend.shared.infrastructure.uuid import generate_uuid
 from sqlalchemy import (
     String, Text, Float, Integer, select, union_all, func, text,
 )
@@ -244,7 +245,7 @@ class _TEntityRepo(BaseRepository):
         result = await self.session.execute(stmt)
         ws = result.scalar_one_or_none()
         if ws is None:
-            ws = _TWorkspace(id=str(uuid4()), name=name)
+            ws = _TWorkspace(id=str(generate_uuid()), name=name)
             self.session.add(ws)
             await self.session.flush()
         return ws
@@ -574,7 +575,7 @@ async def session(test_engine):
 
 @pytest_asyncio.fixture
 async def workspace_id(session):
-    ws = _TWorkspace(id=str(uuid4()), name="test-workspace")
+    ws = _TWorkspace(id=str(generate_uuid()), name="test-workspace")
     session.add(ws)
     await session.flush()
     return ws.id
@@ -582,7 +583,7 @@ async def workspace_id(session):
 
 @pytest_asyncio.fixture
 async def sample_entity(session, workspace_id):
-    eid = str(uuid4())
+    eid = str(generate_uuid())
     entity = _TEntity(
         id=eid, workspace_id=str(workspace_id),
         entity_type="Project", canonical_name="Test Project",
@@ -598,7 +599,7 @@ async def sample_entity(session, workspace_id):
 
 @pytest_asyncio.fixture
 async def sample_area(session, workspace_id):
-    aid = str(uuid4())
+    aid = str(generate_uuid())
     area = _TArea(
         id=aid, workspace_id=str(workspace_id),
         name="Test Area", sort_order=1,
@@ -611,7 +612,7 @@ async def sample_area(session, workspace_id):
 
 @pytest_asyncio.fixture
 async def sample_user_profile(session, workspace_id):
-    uid = str(uuid4())
+    uid = str(generate_uuid())
     profile = _TUserProfile(
         id=uid, workspace_id=str(workspace_id),
         external_user_id="ext-user-001", display_name="Test User",
@@ -645,7 +646,7 @@ async def test_entity_query_repo(session, workspace_id):
 class TestEntityRepository:
     @pytest.mark.asyncio
     async def test_create_entity(self, test_entity_repo, workspace_id):
-        eid = str(uuid4())
+        eid = str(generate_uuid())
         entity = _TEntity(
             id=eid, workspace_id=str(workspace_id),
             entity_type="Project", canonical_name="New Project",
@@ -663,13 +664,13 @@ class TestEntityRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_id_not_found(self, test_entity_repo):
-        found = await test_entity_repo.find_by_id(str(uuid4()))
+        found = await test_entity_repo.find_by_id(str(generate_uuid()))
         assert found is None
 
     @pytest.mark.asyncio
     async def test_find_by_workspace(self, test_entity_repo, workspace_id):
         for i in range(3):
-            eid = str(uuid4())
+            eid = str(generate_uuid())
             e = _TEntity(
                 id=eid, workspace_id=str(workspace_id),
                 entity_type="Person", canonical_name=f"Person {i}",
@@ -685,7 +686,7 @@ class TestEntityRepository:
     @pytest.mark.asyncio
     async def test_find_by_workspace_type_filter(self, test_entity_repo, workspace_id):
         for etype in ["Project", "Person", "Tool"]:
-            eid = str(uuid4())
+            eid = str(generate_uuid())
             e = _TEntity(
                 id=eid, workspace_id=str(workspace_id),
                 entity_type=etype, canonical_name=f"{etype} Entity",
@@ -708,7 +709,7 @@ class TestEntityRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_name_with_type_filter(self, test_entity_repo, workspace_id):
-        eid = str(uuid4())
+        eid = str(generate_uuid())
         e = _TEntity(
             id=eid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="John Doe",
@@ -734,7 +735,7 @@ class TestEntityRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_area(self, test_entity_repo, workspace_id, sample_area):
-        eid = str(uuid4())
+        eid = str(generate_uuid())
         e = _TEntity(
             id=eid, workspace_id=str(workspace_id),
             entity_type="Project", canonical_name="Area Entity",
@@ -749,7 +750,7 @@ class TestEntityRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_parent(self, test_entity_repo, workspace_id, sample_entity):
-        cid = str(uuid4())
+        cid = str(generate_uuid())
         child = _TEntity(
             id=cid, workspace_id=str(workspace_id),
             entity_type="Concept", canonical_name="Child Entity",
@@ -770,7 +771,7 @@ class TestEntityRepository:
 
     @pytest.mark.asyncio
     async def test_create_area(self, test_entity_repo, workspace_id):
-        aid = str(uuid4())
+        aid = str(generate_uuid())
         area = _TArea(
             id=aid, workspace_id=str(workspace_id),
             name="New Area", sort_order=2,
@@ -788,7 +789,7 @@ class TestEntityRepository:
 
     @pytest.mark.asyncio
     async def test_create_user_profile(self, test_entity_repo, workspace_id):
-        uid = str(uuid4())
+        uid = str(generate_uuid())
         profile = _TUserProfile(
             id=uid, workspace_id=str(workspace_id),
             external_user_id="test-ext-id", display_name="Test User",
@@ -811,7 +812,7 @@ class TestEntityRepository:
     @pytest.mark.asyncio
     async def test_pagination(self, test_entity_repo, workspace_id):
         for i in range(5):
-            eid = str(uuid4())
+            eid = str(generate_uuid())
             e = _TEntity(
                 id=eid, workspace_id=str(workspace_id),
                 entity_type="Concept", canonical_name=f"Concept {i}",
@@ -839,7 +840,7 @@ class TestEntityRepository:
 class TestRelationshipRepository:
     @pytest.mark.asyncio
     async def test_find_by_source(self, test_rel_repo, workspace_id, sample_entity):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Target Person",
@@ -848,7 +849,7 @@ class TestRelationshipRepository:
         test_rel_repo.session.add(target)
         await test_rel_repo.session.flush()
         rel = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="created_by", strength=1.0,
             meta=_to_json({}),
@@ -862,7 +863,7 @@ class TestRelationshipRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_source_type_filter(self, test_rel_repo, workspace_id, sample_entity):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Target",
@@ -871,7 +872,7 @@ class TestRelationshipRepository:
         test_rel_repo.session.add(target)
         await test_rel_repo.session.flush()
         rel = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="uses", strength=0.5,
             meta=_to_json({}),
@@ -886,7 +887,7 @@ class TestRelationshipRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_target(self, test_rel_repo, workspace_id, sample_entity):
-        sid = str(uuid4())
+        sid = str(generate_uuid())
         source = _TEntity(
             id=sid, workspace_id=str(workspace_id),
             entity_type="Project", canonical_name="Source Project",
@@ -895,7 +896,7 @@ class TestRelationshipRepository:
         test_rel_repo.session.add(source)
         await test_rel_repo.session.flush()
         rel = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sid, target_id=sample_entity.id,
             relationship_type="created_by", strength=1.0,
             meta=_to_json({}),
@@ -909,7 +910,7 @@ class TestRelationshipRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_type(self, test_rel_repo, workspace_id, sample_entity):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Target",
@@ -919,7 +920,7 @@ class TestRelationshipRepository:
         await test_rel_repo.session.flush()
         for i in range(3):
             rel = _TEntityRelationship(
-                id=str(uuid4()), workspace_id=str(workspace_id),
+                id=str(generate_uuid()), workspace_id=str(workspace_id),
                 source_id=sample_entity.id, target_id=tid,
                 relationship_type="related_to", strength=float(i + 1) / 4,
                 meta=_to_json({}),
@@ -933,7 +934,7 @@ class TestRelationshipRepository:
 
     @pytest.mark.asyncio
     async def test_find_connections(self, test_rel_repo, workspace_id, sample_entity):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Target",
@@ -942,13 +943,13 @@ class TestRelationshipRepository:
         test_rel_repo.session.add(target)
         await test_rel_repo.session.flush()
         rel1 = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="created_by", strength=1.0,
             meta=_to_json({}),
         )
         test_rel_repo.session.add(rel1)
-        sid = str(uuid4())
+        sid = str(generate_uuid())
         source = _TEntity(
             id=sid, workspace_id=str(workspace_id),
             entity_type="Project", canonical_name="Source",
@@ -957,7 +958,7 @@ class TestRelationshipRepository:
         test_rel_repo.session.add(source)
         await test_rel_repo.session.flush()
         rel2 = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sid, target_id=sample_entity.id,
             relationship_type="uses", strength=0.8,
             meta=_to_json({}),
@@ -973,7 +974,7 @@ class TestRelationshipRepository:
     async def test_multiple_relationships_same_pair(
         self, test_rel_repo, workspace_id, sample_entity
     ):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Target",
@@ -982,13 +983,13 @@ class TestRelationshipRepository:
         test_rel_repo.session.add(target)
         await test_rel_repo.session.flush()
         rel1 = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="created_by", strength=1.0,
             meta=_to_json({}),
         )
         rel2 = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="related_to", strength=0.5,
             meta=_to_json({}),
@@ -1005,8 +1006,8 @@ class TestRelationshipRepository:
     @pytest.mark.asyncio
     async def test_create_memory_relationship(self, test_rel_repo, workspace_id):
         mem_rel = _TMemoryRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
-            source_node_id=str(uuid4()), target_node_id=str(uuid4()),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
+            source_node_id=str(generate_uuid()), target_node_id=str(generate_uuid()),
             relationship_type="supports", contribution_weight=0.9,
             meta=_to_json({}),
         )
@@ -1015,10 +1016,10 @@ class TestRelationshipRepository:
 
     @pytest.mark.asyncio
     async def test_find_memory_by_source(self, test_rel_repo, workspace_id):
-        src_id = str(uuid4())
+        src_id = str(generate_uuid())
         mem_rel = _TMemoryRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
-            source_node_id=src_id, target_node_id=str(uuid4()),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
+            source_node_id=src_id, target_node_id=str(generate_uuid()),
             relationship_type="supports", contribution_weight=0.8,
             meta=_to_json({}),
         )
@@ -1031,10 +1032,10 @@ class TestRelationshipRepository:
 
     @pytest.mark.asyncio
     async def test_find_memory_by_target(self, test_rel_repo, workspace_id):
-        tgt_id = str(uuid4())
+        tgt_id = str(generate_uuid())
         mem_rel = _TMemoryRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
-            source_node_id=str(uuid4()), target_node_id=tgt_id,
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
+            source_node_id=str(generate_uuid()), target_node_id=tgt_id,
             relationship_type="contradicts", contribution_weight=0.6,
             meta=_to_json({}),
         )
@@ -1049,8 +1050,8 @@ class TestRelationshipRepository:
     async def test_pagination(self, test_rel_repo, workspace_id, sample_entity):
         for i in range(5):
             rel = _TEntityRelationship(
-                id=str(uuid4()), workspace_id=str(workspace_id),
-                source_id=sample_entity.id, target_id=str(uuid4()),
+                id=str(generate_uuid()), workspace_id=str(workspace_id),
+                source_id=sample_entity.id, target_id=str(generate_uuid()),
                 relationship_type="related_to", strength=0.5,
                 meta=_to_json({}),
             )
@@ -1085,7 +1086,7 @@ class TestEntityQueryRepository:
 
     @pytest.mark.asyncio
     async def test_find_by_type(self, test_entity_query_repo, workspace_id, sample_entity):
-        eid = str(uuid4())
+        eid = str(generate_uuid())
         e2 = _TEntity(
             id=eid, workspace_id=str(workspace_id),
             entity_type="Project", canonical_name="Another Project",
@@ -1100,7 +1101,7 @@ class TestEntityQueryRepository:
 
     @pytest.mark.asyncio
     async def test_count_by_type(self, test_entity_query_repo, workspace_id, sample_entity):
-        eid = str(uuid4())
+        eid = str(generate_uuid())
         e2 = _TEntity(
             id=eid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Another Person",
@@ -1120,7 +1121,7 @@ class TestEntityQueryRepository:
     async def test_find_related_entities_outgoing(
         self, test_entity_query_repo, workspace_id, sample_entity
     ):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Related Person",
@@ -1129,7 +1130,7 @@ class TestEntityQueryRepository:
         test_entity_query_repo.session.add(target)
         await test_entity_query_repo.session.flush()
         rel = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="created_by", strength=1.0,
             meta=_to_json({}),
@@ -1146,7 +1147,7 @@ class TestEntityQueryRepository:
     async def test_find_related_entities_incoming(
         self, test_entity_query_repo, workspace_id, sample_entity
     ):
-        sid = str(uuid4())
+        sid = str(generate_uuid())
         source = _TEntity(
             id=sid, workspace_id=str(workspace_id),
             entity_type="Project", canonical_name="Source Project",
@@ -1155,7 +1156,7 @@ class TestEntityQueryRepository:
         test_entity_query_repo.session.add(source)
         await test_entity_query_repo.session.flush()
         rel = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sid, target_id=sample_entity.id,
             relationship_type="uses", strength=0.8,
             meta=_to_json({}),
@@ -1172,7 +1173,7 @@ class TestEntityQueryRepository:
     async def test_find_relationships_for_entity(
         self, test_entity_query_repo, workspace_id, sample_entity
     ):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Target",
@@ -1181,7 +1182,7 @@ class TestEntityQueryRepository:
         test_entity_query_repo.session.add(target)
         await test_entity_query_repo.session.flush()
         rel = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="created_by", strength=1.0,
             meta=_to_json({}),
@@ -1195,7 +1196,7 @@ class TestEntityQueryRepository:
 
     @pytest.mark.asyncio
     async def test_find_filtered_by_type(self, test_entity_query_repo, workspace_id, sample_entity):
-        eid = str(uuid4())
+        eid = str(generate_uuid())
         e2 = _TEntity(
             id=eid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Another Person",
@@ -1220,7 +1221,7 @@ class TestEntityQueryRepository:
     @pytest.mark.asyncio
     async def test_pagination(self, test_entity_query_repo, workspace_id, sample_entity):
         for i in range(4):
-            eid = str(uuid4())
+            eid = str(generate_uuid())
             e = _TEntity(
                 id=eid, workspace_id=str(workspace_id),
                 entity_type="Concept", canonical_name=f"Concept {i}",
@@ -1237,7 +1238,7 @@ class TestEntityQueryRepository:
 
     @pytest.mark.asyncio
     async def test_get_entity_graph(self, test_entity_query_repo, workspace_id, sample_entity):
-        tid = str(uuid4())
+        tid = str(generate_uuid())
         target = _TEntity(
             id=tid, workspace_id=str(workspace_id),
             entity_type="Person", canonical_name="Neighbor",
@@ -1246,7 +1247,7 @@ class TestEntityQueryRepository:
         test_entity_query_repo.session.add(target)
         await test_entity_query_repo.session.flush()
         rel = _TEntityRelationship(
-            id=str(uuid4()), workspace_id=str(workspace_id),
+            id=str(generate_uuid()), workspace_id=str(workspace_id),
             source_id=sample_entity.id, target_id=tid,
             relationship_type="related_to", strength=0.7,
             meta=_to_json({}),
@@ -1262,7 +1263,7 @@ class TestEntityQueryRepository:
 
     @pytest.mark.asyncio
     async def test_get_entity_count(self, test_entity_query_repo, workspace_id, sample_entity):
-        eid = str(uuid4())
+        eid = str(generate_uuid())
         e2 = _TEntity(
             id=eid, workspace_id=str(workspace_id),
             entity_type="Project", canonical_name="Another Project",

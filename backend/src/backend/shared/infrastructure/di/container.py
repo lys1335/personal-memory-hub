@@ -23,6 +23,7 @@ from backend.shared.infrastructure.database.engine import (
     get_session_factory,
 )
 from backend.shared.infrastructure.logging import get_logger
+from backend.shared.infrastructure.uuid import generate_uuid
 
 
 class Container:
@@ -105,6 +106,7 @@ def get_container() -> Container:
         _container.register(type(get_engine()), get_engine)
         _container.register(type(get_session_factory()), get_session_factory)
         _container.register(type(get_async_session()), get_async_session)
+        _container.register(generate_uuid, generate_uuid)
     return _container
 
 
