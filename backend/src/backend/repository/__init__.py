@@ -24,6 +24,9 @@ D2.3 Entity Domain Repositories:
 \- RelationshipRepository: CRUD for relationships + memory\_relationships
 \- EntityQueryRepository: Read-only graph queries (entity traversal prep)
 
+D2.4 Reflection Domain Repositories:
+\- CandidateRepository: CRUD for candidates (reflection pipeline work objects)
+
 Boundary Rules (per G-013, G-014, 10\_9 §5.2):
 \- Repository Layer may depend only on: SQLAlchemy, Database infrastructure, Shared infrastructure
 \- Repository Layer must NOT depend on: Service Layer, Engine Layer, other Repository implementations
@@ -32,6 +35,8 @@ Per 10\_9 §6: This infrastructure supports all 12 Repositories:
 9 Core Repositories (Entity, MemoryNode, Evidence, Relationship,
  VectorDoc, Archive, Tag, Task, Candidate) +
 3 QueryRepositories (MemoryQuery, EntityQuery, VectorQuery).
+
+Note: CandidateRepository is registered in D2.4.
 """
 
 from __future__ import annotations
@@ -71,6 +76,9 @@ from backend.repository.entity_repository import EntityRepository
 from backend.repository.entity_query_repository import EntityQueryRepository
 from backend.repository.relationship_repository import RelationshipRepository
 
+# D2.4 Reflection Domain Repositories
+from backend.repository.candidate_repository import CandidateRepository
+
 __all__ = [
     # D2.1 Shared Infrastructure — Base Classes
     "BaseRepository",
@@ -105,4 +113,6 @@ __all__ = [
     "EntityRepository",
     "RelationshipRepository",
     "EntityQueryRepository",
+    # D2.4 Reflection Domain Repositories
+    "CandidateRepository",
 ]

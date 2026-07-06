@@ -21,10 +21,11 @@ Tables defined here:
 - UserProfile (user_profiles) — D2.3
 - EntityRelationship (relationships) — D2.3
 - MemoryRelationship (memory_relationships) — D2.3
+- Candidate (candidates) — D2.4
 
 Imported by: MemoryNodeRepository, EvidenceRepository, ArchiveRepository,
 TagRepository, MemoryQueryRepository, EntityRepository, RelationshipRepository,
-EntityQueryRepository.
+EntityQueryRepository, CandidateRepository.
 NOT imported by: Service Layer, Engine Layer (boundary rule G-013).
 """
 
@@ -668,9 +669,89 @@ class MemoryRelationship(Base):
     __mapper_args__ = {"eager_defaults": True}
 
 
+# ---------------------------------------------------------------------------
+# Candidate — 09.4.13
+# ---------------------------------------------------------------------------
+
+
+class Candidate(Base):
+    """ORM model for the candidates table (09.4.13).
+
+    Reflection work object — pattern or belief awaiting promotion
+    to a formal MemoryNode. Self-contained aggregate with its own
+    metadata and evidence snapshot.
+
+    Candidate types: pattern, belief
+    Status: candidate, confirmed, archived, orphaned
+    Evidence-based: evidence_count >= 1, evidence_chain not empty
+    Ingested by: ingestion_pipeline only
+    Verified by: rule_engine / reflection_engine only
+    """
+
+    __tablename__ = "candidates"
+    __table_args__ = (
+        CheckConstraint(
+            "candidate_type IN ('pattern', 'belief')",
+            name="chk_candidate_type",
+        ),
+        CheckConstraint(
+            "evidence_count >= 1",
+            name="chk_candidate_has_evidence",
+        ),
+        CheckConstraint(
+            "evidence_strength >= 0.0 AND evidence_strength <= 1.0",
+            name="chk_candidate_evidence_strength",
+        ),
+        CheckConstraint(
+            "jsonb_array_length(evidence_chain) > 0",
+            name="chk_candidate_evidence_chain_not_empty",
+        ),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    entity_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+    )
+    area_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+    )
+
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    candidate_type: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    evidence_source: Mapped[str] = mapped_column(String(50), nullable=False, default="observation")
+    evidence_id: Mapped[Any | None] = mapped_column()
+    evidence_chain: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    evidence_strength: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="candidate")
+
+    ingested_by: Mapped[str] = mapped_column(String(50), nullable=False, default="ingestion_pipeline")
+    ingestion_timestamp: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    verified_at: Mapped[Any | None] = mapped_column()
+    verified_by: Mapped[str | None] = mapped_column(String(50))
+
+    modified_by: Mapped[str | None] = mapped_column(String(50))
+    modification_reason: Mapped[str | None] = mapped_column(Text)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
 __all__ = [
     "Archive",
     "Area",
+    "Candidate",
     "Entity",
     "EntityRelationship",
     "Evidence",
