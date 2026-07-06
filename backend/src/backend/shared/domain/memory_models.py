@@ -27,7 +27,8 @@ Tables defined here:
 
 Imported by: MemoryNodeRepository, EvidenceRepository, ArchiveRepository,
 TagRepository, MemoryQueryRepository, EntityRepository, RelationshipRepository,
-EntityQueryRepository, CandidateRepository, TaskRepository, VectorDocRepository.
+EntityQueryRepository, CandidateRepository, TaskRepository, VectorDocRepository,
+VectorQueryRepository.
 NOT imported by: Service Layer, Engine Layer (boundary rule G-013).
 """
 

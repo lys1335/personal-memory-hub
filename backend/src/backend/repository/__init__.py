@@ -33,6 +33,9 @@ D2.5 Runtime Domain Repositories:
 D2.6 Vector Domain Repositories:
 \- VectorDocRepository: CRUD for vector docs (independent vector layer)
 
+D2.7 Vector Query Repositories:
+\- VectorQueryRepository: Read-only vector-aware queries (similarity, hybrid, filter)
+
 Boundary Rules (per G-013, G-014, 10\_9 §5.2):
 \- Repository Layer may depend only on: SQLAlchemy, Database infrastructure, Shared infrastructure
 \- Repository Layer must NOT depend on: Service Layer, Engine Layer, other Repository implementations
@@ -91,6 +94,9 @@ from backend.repository.task_repository import TaskRepository
 # D2.6 Vector Domain Repositories
 from backend.repository.vector_doc_repository import VectorDocRepository
 
+# D2.7 Vector Query Repositories
+from backend.repository.vector_query_repository import VectorQueryRepository
+
 __all__ = [
     # D2.1 Shared Infrastructure — Base Classes
     "BaseRepository",
@@ -131,4 +137,6 @@ __all__ = [
     "TaskRepository",
     # D2.6 Vector Domain Repositories
     "VectorDocRepository",
+    # D2.7 Vector Query Repositories
+    "VectorQueryRepository",
 ]
