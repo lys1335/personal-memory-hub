@@ -27,6 +27,9 @@ D2.3 Entity Domain Repositories:
 D2.4 Reflection Domain Repositories:
 \- CandidateRepository: CRUD for candidates (reflection pipeline work objects)
 
+D2.5 Runtime Domain Repositories:
+\- TaskRepository: CRUD for tasks (unified work queue)
+
 Boundary Rules (per G-013, G-014, 10\_9 §5.2):
 \- Repository Layer may depend only on: SQLAlchemy, Database infrastructure, Shared infrastructure
 \- Repository Layer must NOT depend on: Service Layer, Engine Layer, other Repository implementations
@@ -79,6 +82,9 @@ from backend.repository.relationship_repository import RelationshipRepository
 # D2.4 Reflection Domain Repositories
 from backend.repository.candidate_repository import CandidateRepository
 
+# D2.5 Runtime Domain Repositories
+from backend.repository.task_repository import TaskRepository
+
 __all__ = [
     # D2.1 Shared Infrastructure — Base Classes
     "BaseRepository",
@@ -115,4 +121,6 @@ __all__ = [
     "EntityQueryRepository",
     # D2.4 Reflection Domain Repositories
     "CandidateRepository",
+    # D2.5 Runtime Domain Repositories
+    "TaskRepository",
 ]

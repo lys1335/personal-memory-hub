@@ -22,10 +22,11 @@ Tables defined here:
 - EntityRelationship (relationships) — D2.3
 - MemoryRelationship (memory_relationships) — D2.3
 - Candidate (candidates) — D2.4
+- Task (tasks) — D2.5
 
 Imported by: MemoryNodeRepository, EvidenceRepository, ArchiveRepository,
 TagRepository, MemoryQueryRepository, EntityRepository, RelationshipRepository,
-EntityQueryRepository, CandidateRepository.
+EntityQueryRepository, CandidateRepository, TaskRepository.
 NOT imported by: Service Layer, Engine Layer (boundary rule G-013).
 """
 
@@ -748,6 +749,78 @@ class Candidate(Base):
     __mapper_args__ = {"eager_defaults": True}
 
 
+# ---------------------------------------------------------------------------
+# Task — 09.4.15
+# ---------------------------------------------------------------------------
+
+
+class Task(Base):
+    """ORM model for the tasks table (09.4.15).
+
+    Unified task queue for the Personal Memory Hub. All task types
+    (INGESTION, REFLECTION, ACTIVATION, ARCHIVE) share this table.
+
+    Task types: INGESTION, REFLECTION, ACTIVATION, ARCHIVE
+    Status: pending, running, completed, failed, dead_letter
+    Debounce: UNIQUE (workspace_id, task_type, debounce_key) WHERE status IN ('pending', 'running')
+    Retry: retry_count, max_retries, exponential backoff
+    Payload: JSONB (Task Runtime does not parse)
+
+    Foreign Keys:
+    - workspace_id → CASCADE
+    - entity_id → SET NULL
+    - area_id → SET NULL
+    """
+
+    __tablename__ = "tasks"
+    __table_args__ = (
+        CheckConstraint(
+            "task_type IN ('INGESTION', 'REFLECTION', 'ACTIVATION', 'ARCHIVE')",
+            name="chk_task_type",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'running', 'completed', 'failed', 'dead_letter')",
+            name="chk_task_status",
+        ),
+        UniqueConstraint(
+            "workspace_id", "task_type", "debounce_key",
+            name="uk_tasks_debounce",
+            postgresql_where=text("status IN ('pending', 'running')"),
+        ),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    entity_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
+    )
+    area_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+    )
+
+    task_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+
+    evidence_driven: Mapped[bool] = mapped_column(nullable=False, default=True)
+    debounce_key: Mapped[str | None] = mapped_column(String(255))
+
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_retries: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    completed_at: Mapped[Any | None] = mapped_column()
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
 __all__ = [
     "Archive",
     "Area",
@@ -760,6 +833,7 @@ __all__ = [
     "MemoryRelationship",
     "Tag",
     "TagLink",
+    "Task",
     "UserProfile",
     "Workspace",
 ]
