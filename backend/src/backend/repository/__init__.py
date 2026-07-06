@@ -30,6 +30,9 @@ D2.4 Reflection Domain Repositories:
 D2.5 Runtime Domain Repositories:
 \- TaskRepository: CRUD for tasks (unified work queue)
 
+D2.6 Vector Domain Repositories:
+\- VectorDocRepository: CRUD for vector docs (independent vector layer)
+
 Boundary Rules (per G-013, G-014, 10\_9 §5.2):
 \- Repository Layer may depend only on: SQLAlchemy, Database infrastructure, Shared infrastructure
 \- Repository Layer must NOT depend on: Service Layer, Engine Layer, other Repository implementations
@@ -85,6 +88,9 @@ from backend.repository.candidate_repository import CandidateRepository
 # D2.5 Runtime Domain Repositories
 from backend.repository.task_repository import TaskRepository
 
+# D2.6 Vector Domain Repositories
+from backend.repository.vector_doc_repository import VectorDocRepository
+
 __all__ = [
     # D2.1 Shared Infrastructure — Base Classes
     "BaseRepository",
@@ -123,4 +129,6 @@ __all__ = [
     "CandidateRepository",
     # D2.5 Runtime Domain Repositories
     "TaskRepository",
+    # D2.6 Vector Domain Repositories
+    "VectorDocRepository",
 ]

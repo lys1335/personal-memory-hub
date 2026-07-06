@@ -23,10 +23,11 @@ Tables defined here:
 - MemoryRelationship (memory_relationships) — D2.3
 - Candidate (candidates) — D2.4
 - Task (tasks) — D2.5
+- VectorDoc (vector_documents) — D2.6
 
 Imported by: MemoryNodeRepository, EvidenceRepository, ArchiveRepository,
 TagRepository, MemoryQueryRepository, EntityRepository, RelationshipRepository,
-EntityQueryRepository, CandidateRepository, TaskRepository.
+EntityQueryRepository, CandidateRepository, TaskRepository, VectorDocRepository.
 NOT imported by: Service Layer, Engine Layer (boundary rule G-013).
 """
 
@@ -821,6 +822,74 @@ class Task(Base):
     __mapper_args__ = {"eager_defaults": True}
 
 
+# ---------------------------------------------------------------------------
+# VectorDoc — 09.4.9
+# ---------------------------------------------------------------------------
+
+
+class VectorDoc(Base):
+    """ORM model for the vector_documents table (09.4.9).
+
+    Independent vector layer storing embeddings for high-value content.
+    Each VectorDoc belongs to exactly one source (MemoryNode, Archive,
+    or EntitySummary) via source_id + source_type.
+
+    Source types: memory_node, archive, entity_summary
+    Memory levels: 1 (Observation), 2 (Pattern), 3 (Belief), 4 (State marker)
+    Importance score: 0.0–1.0
+    Embedding: VECTOR(1536) stored as text (pgvector extension at DB level)
+
+    Foreign Keys:
+    - workspace_id → CASCADE
+    - area_id → SET NULL
+    - entity_id → SET NULL
+    """
+
+    __tablename__ = "vector_documents"
+    __table_args__ = (
+        CheckConstraint(
+            "source_type IN ('memory_node', 'archive', 'entity_summary')",
+            name="chk_vector_doc_source_type",
+        ),
+        CheckConstraint(
+            "memory_level IN (1, 2, 3, 4)",
+            name="chk_vector_doc_memory_level",
+        ),
+        CheckConstraint(
+            "importance_score >= 0.0 AND importance_score <= 1.0",
+            name="chk_vector_doc_importance_score",
+        ),
+        {
+            "schema": "memory_hub",
+        },
+    )
+
+    id: Mapped[Any] = mapped_column(primary_key=True)
+    workspace_id: Mapped[Any] = mapped_column(
+        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    source_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_id: Mapped[Any] = mapped_column(nullable=False)
+    area_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+    )
+    entity_id: Mapped[Any | None] = mapped_column(
+        ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
+    )
+
+    memory_level: Mapped[int | None] = mapped_column(Integer)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    importance_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    # Embedding stored as text representation (e.g., '[0.1,0.2,...]').
+    # The pgvector extension is enabled at DB level via engine.py.
+    embedding: Mapped[str | None] = mapped_column(String)
+
+    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
 __all__ = [
     "Archive",
     "Area",
@@ -835,5 +904,6 @@ __all__ = [
     "TagLink",
     "Task",
     "UserProfile",
+    "VectorDoc",
     "Workspace",
 ]
