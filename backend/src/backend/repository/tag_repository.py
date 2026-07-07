@@ -32,7 +32,7 @@ from backend.repository.exceptions import (
 from backend.repository.pagination import Page
 
 
-class TagRepository(BaseRepository):
+class TagRepository(BaseRepository):  # type: ignore[type-arg]
     """Repository for the Tag aggregate."""
 
     _model_class: type[Any]
@@ -76,7 +76,7 @@ class TagRepository(BaseRepository):
                 )
             return UUID(entity_id) if not isinstance(entity_id, UUID) else entity_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -212,9 +212,9 @@ class TagRepository(BaseRepository):
         try:
             self.session.add(tag_link)
             await self.session.flush()
-            return tag_link.id  # type: ignore[return-value]
+            return tag_link.id  # type: ignore[no-any-return]
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -303,7 +303,7 @@ class TagRepository(BaseRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,

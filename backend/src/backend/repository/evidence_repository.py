@@ -32,7 +32,7 @@ from backend.repository.exceptions import (
 from backend.repository.pagination import Page
 
 
-class EvidenceRepository(BaseRepository):
+class EvidenceRepository(BaseRepository):  # type: ignore[type-arg]
     """Repository for the Evidence aggregate.
 
     Evidence is IMMUTABLE: no update or soft_delete.
@@ -129,7 +129,7 @@ class EvidenceRepository(BaseRepository):
                 )
             return UUID(entity_id) if not isinstance(entity_id, UUID) else entity_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover — _raise_integrity_error always raises
 
@@ -229,7 +229,7 @@ class EvidenceRepository(BaseRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,

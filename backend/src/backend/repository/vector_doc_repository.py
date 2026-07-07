@@ -62,7 +62,7 @@ from backend.repository.exceptions import (
 from backend.repository.pagination import Page
 
 
-class VectorDocRepository(BaseRepository):
+class VectorDocRepository(BaseRepository):  # type: ignore[type-arg]
     """Repository for the VectorDoc aggregate.
 
     Manages VectorDoc persistence only. VectorDocs are the independent
@@ -112,7 +112,7 @@ class VectorDocRepository(BaseRepository):
                 )
             return UUID(doc_id) if not isinstance(doc_id, UUID) else doc_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -134,11 +134,11 @@ class VectorDocRepository(BaseRepository):
                 self.session.add(entity)
             await self.session.flush()
             return [
-                getattr(e, "id", None)
+                getattr(e, "id", None)  # type: ignore[misc]
                 for e in entities
             ]
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -189,7 +189,7 @@ class VectorDocRepository(BaseRepository):
             await self.session.delete(entity)
             await self.session.flush()
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -429,7 +429,7 @@ class VectorDocRepository(BaseRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,

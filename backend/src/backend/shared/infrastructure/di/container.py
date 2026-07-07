@@ -106,7 +106,7 @@ def get_container() -> Container:
         _container.register(type(get_engine()), get_engine)
         _container.register(type(get_session_factory()), get_session_factory)
         _container.register(type(get_async_session()), get_async_session)
-        _container.register(generate_uuid, generate_uuid)
+        _container.register(generate_uuid, generate_uuid)  # type: ignore[arg-type]
     return _container
 
 

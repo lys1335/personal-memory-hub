@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     pass
 
 
-class EntityQueryRepository(QueryRepository):
+class EntityQueryRepository(QueryRepository):  # type: ignore[type-arg]
     """Read-only query repository for Entity graph queries.
 
     Handles complex multi-table JOIN queries for entity
@@ -139,7 +139,7 @@ class EntityQueryRepository(QueryRepository):
 
         stmt = select(Entity).where(
             Entity.workspace_id == str(workspace_id),
-            Entity.aliases.any(partial),  # ARRAY partial match
+            Entity.aliases.any(partial),  # type: ignore[arg-type]  # ARRAY partial match
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -379,7 +379,7 @@ class EntityQueryRepository(QueryRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,

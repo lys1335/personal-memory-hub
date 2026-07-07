@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     pass
 
 
-class VectorQueryRepository(QueryRepository):
+class VectorQueryRepository(QueryRepository):  # type: ignore[type-arg]
     """Read-only query repository for Vector domain complex queries.
 
     Handles multi-table JOIN queries for vector document

@@ -10,7 +10,7 @@ for all 12 Repositories.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -58,7 +58,7 @@ class WorkspaceIsolationMixin(Generic[T]):
         """Return the current workspace scope, or None if not set."""
         return getattr(self, "_workspace_id", None)
 
-    def _apply_workspace_filter(self, stmt: Select) -> Select:
+    def _apply_workspace_filter(self, stmt: Select[Any]) -> Select[Any]:
         """Apply workspace_id WHERE clause to a SELECT statement.
 
         Args:
@@ -92,7 +92,7 @@ class WorkspaceIsolationMixin(Generic[T]):
                 workspace_id="",
                 requested_workspace="any",
             )
-        return ws
+        return ws  # type: ignore[no-any-return]
 
     @staticmethod
     def build_workspace_filter(workspace_id: UUID) -> FilterMap:

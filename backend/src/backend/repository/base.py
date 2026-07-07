@@ -97,10 +97,10 @@ class BaseRepository(WorkspaceIsolationMixin[T], ABC, Generic[T]):
                 raise RepositoryError(f"Created entity has no id attribute: {self._table_name}")
             return UUID(entity_id) if not isinstance(entity_id, UUID) else entity_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             raise self._map_integrity_error(exc) from exc
         except OperationalError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             raise RepositoryError(
                 f"Database operational error during create: {exc}",
                 entity_type=self._table_name,
@@ -152,16 +152,16 @@ class BaseRepository(WorkspaceIsolationMixin[T], ABC, Generic[T]):
         if filters:
             for col_name, value in filters.items():
                 if hasattr(self._model_class, col_name):
-                    col = getattr(self._model_class, col_name)  # type: ignore[attr-defined]
+                    col = getattr(self._model_class, col_name)
                     if isinstance(value, list):
-                        stmt = stmt.where(col.in_(value))  # type: ignore[union-attr]
+                        stmt = stmt.where(col.in_(value))
                     else:
-                        stmt = stmt.where(col == value)  # type: ignore[union-attr]
+                        stmt = stmt.where(col == value)
 
         # Ordering
         if order_by and hasattr(self._model_class, order_by):
-            order_col = getattr(self._model_class, order_by)  # type: ignore[attr-defined]
-            stmt = stmt.order_by(order_col.desc() if descending else order_col.asc())  # type: ignore[union-attr]
+            order_col = getattr(self._model_class, order_by)
+            stmt = stmt.order_by(order_col.desc() if descending else order_col.asc())
 
         # Pagination
         stmt = stmt.offset(offset).limit(limit)
@@ -187,10 +187,10 @@ class BaseRepository(WorkspaceIsolationMixin[T], ABC, Generic[T]):
             await self.session.flush()
             return entity
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             raise self._map_integrity_error(exc) from exc
         except OperationalError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             raise RepositoryError(
                 f"Database operational error during update: {exc}",
                 entity_type=self._table_name,
@@ -234,6 +234,7 @@ class BaseRepository(WorkspaceIsolationMixin[T], ABC, Generic[T]):
         page_size: int = 20,
         order_by: str | None = None,
         descending: bool = False,
+        **extra_filters: Any,
     ) -> Page[T]:
         """Find entities with pagination, returning a Page object.
 
@@ -244,6 +245,7 @@ class BaseRepository(WorkspaceIsolationMixin[T], ABC, Generic[T]):
             page_size: Number of items per page.
             order_by: Column name to order by.
             descending: Descending order flag.
+            **extra_filters: Additional domain-specific filter parameters.
 
         Returns:
             A Page object containing the results and pagination metadata.

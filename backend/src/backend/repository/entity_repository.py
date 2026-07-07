@@ -54,7 +54,7 @@ from backend.repository.exceptions import (
 from backend.repository.pagination import Page
 
 
-class EntityRepository(BaseRepository):
+class EntityRepository(BaseRepository):  # type: ignore[type-arg]
     """Repository for the Entity aggregate.
 
     Manages Entity, Area, Workspace, and UserProfile within the
@@ -104,7 +104,7 @@ class EntityRepository(BaseRepository):
                 )
             return UUID(entity_id) if not isinstance(entity_id, UUID) else entity_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -262,7 +262,7 @@ class EntityRepository(BaseRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,

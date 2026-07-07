@@ -46,7 +46,7 @@ class WorkspaceScoped(Protocol):
 # Utility: Column extraction
 # ---------------------------------------------------------------------------
 
-def get_table_columns(model_class: type[DeclarativeBase]) -> dict[str, Column]:
+def get_table_columns(model_class: type[DeclarativeBase]) -> dict[str, Column[Any]]:
     """Extract column names and Column objects from a SQLAlchemy model class.
 
     Args:
@@ -55,10 +55,10 @@ def get_table_columns(model_class: type[DeclarativeBase]) -> dict[str, Column]:
     Returns:
         Dict mapping column names to Column objects.
     """
-    return {col.name: col for col in model_class.__table__.columns}  # type: ignore[attr-defined]
+    return {col.name: col for col in model_class.__table__.columns}  # type: ignore[misc]
 
 
-def get_primary_key_column(model_class: type[DeclarativeBase]) -> Column | None:
+def get_primary_key_column(model_class: type[DeclarativeBase]) -> Column[Any] | None:
     """Get the primary key column from a SQLAlchemy model class.
 
     Args:
@@ -70,5 +70,5 @@ def get_primary_key_column(model_class: type[DeclarativeBase]) -> Column | None:
     if hasattr(model_class, "__table__"):
         pk_cols = list(model_class.__table__.primary_key.columns)  # type: ignore[attr-defined]
         if pk_cols:
-            return pk_cols[0]
+            return pk_cols[0]  # type: ignore[no-any-return]
     return None

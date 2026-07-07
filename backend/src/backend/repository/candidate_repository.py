@@ -55,7 +55,7 @@ from backend.repository.exceptions import (
 from backend.repository.pagination import Page
 
 
-class CandidateRepository(BaseRepository):
+class CandidateRepository(BaseRepository):  # type: ignore[type-arg]
     """Repository for the Candidate aggregate.
 
     Manages Candidate persistence only. Candidates are Reflection pipeline
@@ -105,7 +105,7 @@ class CandidateRepository(BaseRepository):
                 )
             return UUID(candidate_id) if not isinstance(candidate_id, UUID) else candidate_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -296,7 +296,7 @@ class CandidateRepository(BaseRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,

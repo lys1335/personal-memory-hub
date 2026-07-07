@@ -29,7 +29,7 @@ from backend.repository.pagination import Page
 from backend.repository.query import QueryRepository
 
 
-class MemoryQueryRepository(QueryRepository):
+class MemoryQueryRepository(QueryRepository):  # type: ignore[type-arg]
     """Read-only query repository for Memory Domain complex queries."""
 
     _model_class: type[Any]

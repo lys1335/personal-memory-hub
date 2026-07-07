@@ -111,15 +111,15 @@ class QueryRepository(WorkspaceIsolationMixin[T], ABC, Generic[T]):
         if filters:
             for col_name, value in filters.items():
                 if hasattr(self._model_class, col_name):
-                    col = getattr(self._model_class, col_name)  # type: ignore[attr-defined]
+                    col = getattr(self._model_class, col_name)
                     if isinstance(value, list):
-                        stmt = stmt.where(col.in_(value))  # type: ignore[union-attr]
+                        stmt = stmt.where(col.in_(value))
                     else:
-                        stmt = stmt.where(col == value)  # type: ignore[union-attr]
+                        stmt = stmt.where(col == value)
 
         if order_by and hasattr(self._model_class, order_by):
-            order_col = getattr(self._model_class, order_by)  # type: ignore[attr-defined]
-            stmt = stmt.order_by(order_col.desc() if descending else order_col.asc())  # type: ignore[union-attr]
+            order_col = getattr(self._model_class, order_by)
+            stmt = stmt.order_by(order_col.desc() if descending else order_col.asc())
 
         stmt = stmt.offset(offset).limit(limit)
 

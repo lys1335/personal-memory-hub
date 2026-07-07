@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from uuid_extensions import uuid7
+from uuid_extensions import uuid7  # type: ignore[import-untyped]
 
 
 def generate_uuid() -> UUID:
@@ -33,4 +33,4 @@ def generate_uuid() -> UUID:
     Returns:
         A UUIDv7 instance (time-sorted, version 7).
     """
-    return uuid7()
+    return uuid7()  # type: ignore[no-any-return]

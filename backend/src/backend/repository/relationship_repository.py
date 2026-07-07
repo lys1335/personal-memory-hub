@@ -49,7 +49,7 @@ from backend.repository.exceptions import (
 from backend.repository.pagination import Page
 
 
-class RelationshipRepository(BaseRepository):
+class RelationshipRepository(BaseRepository):  # type: ignore[type-arg]
     """Repository for the Relationship aggregate.
 
     Manages both EntityRelationship and MemoryRelationship.
@@ -101,7 +101,7 @@ class RelationshipRepository(BaseRepository):
                 )
             return UUID(rel_id) if not isinstance(rel_id, UUID) else rel_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -216,7 +216,7 @@ class RelationshipRepository(BaseRepository):
         stmt = select(self._model_class).where(
             self._model_class.workspace_id == str(workspace_id),
             self._model_class.source_id == str(entity_id),
-        ) | select(self._model_class).where(
+        ) | select(self._model_class).where(  # type: ignore[operator]
             self._model_class.workspace_id == str(workspace_id),
             self._model_class.target_id == str(entity_id),
         )
@@ -337,7 +337,7 @@ class RelationshipRepository(BaseRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,

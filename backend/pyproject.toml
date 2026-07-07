@@ -95,27 +95,7 @@ disallow_untyped_decorators = true
 no_implicit_optional = true
 
 [[tool.mypy.overrides]]
-module = "alembic.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
 module = "structlog.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "uuid7.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pytest.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pytest_cov.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "coverage.*"
 ignore_missing_imports = true
 
 # Pytest

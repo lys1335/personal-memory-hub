@@ -57,7 +57,7 @@ from backend.repository.exceptions import (
 from backend.repository.pagination import Page
 
 
-class TaskRepository(BaseRepository):
+class TaskRepository(BaseRepository):  # type: ignore[type-arg]
     """Repository for the Task aggregate.
 
     Manages Task persistence only. Tasks are the unified work queue
@@ -108,7 +108,7 @@ class TaskRepository(BaseRepository):
                 )
             return UUID(task_id) if not isinstance(task_id, UUID) else task_id
         except IntegrityError as exc:
-            self.session.rollback()
+            await self.session.rollback()
             self._raise_integrity_error(exc)
             raise  # pragma: no cover
 
@@ -374,7 +374,7 @@ class TaskRepository(BaseRepository):
     # Pagination
     # ------------------------------------------------------------------
 
-    async def find_page(
+    async def find_page(  # type: ignore[override]
         self,
         *,
         workspace_id: UUID,
