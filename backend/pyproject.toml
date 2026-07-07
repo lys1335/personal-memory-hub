@@ -61,7 +61,22 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
-ignore = []
+ignore = [
+    # RUF012: __mapper_args__ = {"eager_defaults": True} is SQLAlchemy declarative pattern
+    "RUF012",
+    # SIM108: ternary suggestions — readability preference, not a bug
+    "SIM108",
+    # RUF002: EN DASH in docstrings — acceptable for technical documentation
+    "RUF002",
+    # RUF022: __all__ grouping by category is intentional, not alphabetical
+    "RUF022",
+    # E402: module level import not at top — intentional in test files (sys.path.insert)
+    "E402",
+    # SIM105: try/except/pass is clearer than contextlib.suppress for async close
+    "SIM105",
+    # E501: test function signatures naturally long with type hints
+    "E501",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["backend"]

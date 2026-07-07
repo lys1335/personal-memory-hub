@@ -19,29 +19,24 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import String, Text, Date, Float, Integer, select
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Date, Float, Integer, String, Text, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import Mapped, mapped_column
 
 # Ensure src/ is on the Python path
 _src = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(_src))
 
-from backend.repository.base import BaseRepository  # noqa: E402
-from backend.repository.exceptions import (  # noqa: E402
-    DuplicateError,
-    IntegrityError as DomainIntegrityError,
-    NotFoundError,
-)
-from backend.repository.pagination import Page  # noqa: E402
-from backend.repository.workspace import WorkspaceIsolationMixin  # noqa: E402
-
-
 # ---------------------------------------------------------------------------
 # Test Models (minimal SQLAlchemy models — mirrors real schema)
 # ---------------------------------------------------------------------------
+from sqlalchemy.orm import DeclarativeBase
 
-from sqlalchemy.orm import DeclarativeBase  # noqa: E402
+from backend.repository.base import BaseRepository
+from backend.repository.exceptions import (
+    IntegrityError as DomainIntegrityError,
+)
+from backend.repository.pagination import Page
 
 
 class _TestBase(DeclarativeBase):
@@ -348,7 +343,7 @@ async def test_db() -> AsyncSession:
     async with engine.begin() as conn:
         await conn.run_sync(_TestBase.metadata.create_all)
 
-    from sqlalchemy.ext.asyncio import async_sessionmaker  # noqa: PLC0415
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
     factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
     session: AsyncSession = factory()
@@ -834,15 +829,15 @@ class TestImportBoundaries:
 
     def test_no_service_imports(self) -> None:
         """Verify repository modules don't import from service layer."""
-        import backend.repository.evidence_repository  # noqa: F401
-        import backend.repository.memory_node_repository  # noqa: F401
-        import backend.repository.archive_repository  # noqa: F401
+        import backend.repository.archive_repository
+        import backend.repository.evidence_repository
+        import backend.repository.memory_node_repository
+        import backend.repository.memory_query_repository
         import backend.repository.tag_repository  # noqa: F401
-        import backend.repository.memory_query_repository  # noqa: F401
         assert True
 
     def test_no_engine_imports(self) -> None:
         """Verify repository modules don't import from engine layer."""
-        import backend.repository.evidence_repository  # noqa: F401
+        import backend.repository.evidence_repository
         import backend.repository.memory_node_repository  # noqa: F401
         assert True

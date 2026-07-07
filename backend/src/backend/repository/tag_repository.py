@@ -24,8 +24,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
     DuplicateError,
-    IntegrityError as DomainIntegrityError,
     NotFoundError,
+)
+from backend.repository.exceptions import (
+    IntegrityError as DomainIntegrityError,
 )
 from backend.repository.pagination import Page
 
@@ -43,7 +45,7 @@ class TagRepository(BaseRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import Tag  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Tag
 
         self._model_class = Tag
 
@@ -167,7 +169,7 @@ class TagRepository(BaseRepository):
             DuplicateError: If the tag-link already exists.
             NotFoundError: If the tag does not exist.
         """
-        from backend.shared.domain.memory_models import TagLink  # noqa: PLC0415
+        from backend.shared.domain.memory_models import TagLink
 
         # Verify tag exists
         tag = await self.find_by_id(tag_id)
@@ -233,7 +235,7 @@ class TagRepository(BaseRepository):
         Raises:
             NotFoundError: If the link does not exist.
         """
-        from backend.shared.domain.memory_models import TagLink  # noqa: PLC0415
+        from backend.shared.domain.memory_models import TagLink
 
         stmt = select(TagLink).where(
             TagLink.tag_id == tag_id,
@@ -265,7 +267,7 @@ class TagRepository(BaseRepository):
         Returns:
             List of TagLink records.
         """
-        from backend.shared.domain.memory_models import TagLink  # noqa: PLC0415
+        from backend.shared.domain.memory_models import TagLink
 
         stmt = select(TagLink).where(
             TagLink.tag_id == tag_id,
@@ -288,7 +290,7 @@ class TagRepository(BaseRepository):
         Returns:
             List of TagLink records.
         """
-        from backend.shared.domain.memory_models import TagLink  # noqa: PLC0415
+        from backend.shared.domain.memory_models import TagLink
 
         stmt = select(TagLink).where(
             TagLink.target_type == target_type,

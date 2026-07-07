@@ -16,42 +16,35 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import Mapped, mapped_column
 
 # Ensure src/ is on the Python path
 _src = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(_src))
 
-from backend.repository.base import BaseRepository  # noqa: E402
-from backend.repository.exceptions import (  # noqa: E402
+# ---------------------------------------------------------------------------
+# Test Models (minimal SQLAlchemy models for testing)
+# ---------------------------------------------------------------------------
+from sqlalchemy.orm import DeclarativeBase
+
+from backend.repository.base import BaseRepository
+from backend.repository.exceptions import (
     DuplicateError,
     IntegrityError,
     NotFoundError,
     ReadOnlyError,
-    RepositoryError,
     WorkspaceIsolationError,
-)  # noqa: E402
-from backend.repository.pagination import CursorPage, OffsetPage, Page  # noqa: E402
-from backend.repository.query import QueryRepository  # noqa: E402
-from backend.repository.types import (  # noqa: E402
-    FilterMap,
-    FilterValue,
+)
+from backend.repository.pagination import CursorPage, OffsetPage, Page
+from backend.repository.query import QueryRepository
+from backend.repository.types import (
     PrimaryKey,
-    SortSpec,
-    WorkspaceScoped,
     get_primary_key_column,
     get_table_columns,
-)  # noqa: E402
-from backend.repository.workspace import WorkspaceIsolationMixin  # noqa: E402
-
-
-# ---------------------------------------------------------------------------
-# Test Models (minimal SQLAlchemy models for testing)
-# ---------------------------------------------------------------------------
-
-from sqlalchemy.orm import DeclarativeBase  # noqa: E402
+)
+from backend.repository.workspace import WorkspaceIsolationMixin
 
 
 class _TestBase(DeclarativeBase):
@@ -141,9 +134,8 @@ async def test_db() -> AsyncGenerator[tuple[AsyncSession, AsyncSession], None]:
 
     factory = async_sessionmaker(bind=engine, expire_on_commit=False)
 
-    async with factory() as s1:
-        async with factory() as s2:
-            yield s1, s2
+    async with factory() as s1, factory() as s2:
+        yield s1, s2
 
 
 @pytest.fixture

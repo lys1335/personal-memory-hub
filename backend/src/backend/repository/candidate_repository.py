@@ -48,8 +48,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
     DuplicateError,
-    DomainIntegrityError,
-    NotFoundError,
+)
+from backend.repository.exceptions import (
+    IntegrityError as DomainIntegrityError,
 )
 from backend.repository.pagination import Page
 
@@ -71,7 +72,7 @@ class CandidateRepository(BaseRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import Candidate  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Candidate
 
         self._model_class = Candidate
 

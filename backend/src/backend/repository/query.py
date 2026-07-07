@@ -19,11 +19,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.repository.exceptions import ReadOnlyError
-from backend.repository.pagination import Page, CursorPage, OffsetPage
+from backend.repository.pagination import Page
 from backend.repository.workspace import WorkspaceIsolationMixin
 
 if TYPE_CHECKING:
-    from backend.repository.types import FilterMap
+    pass
 
 T = TypeVar("T")
 

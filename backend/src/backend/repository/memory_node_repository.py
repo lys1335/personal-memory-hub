@@ -29,6 +29,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
     IntegrityError as DomainIntegrityError,
+)
+from backend.repository.exceptions import (
     NotFoundError,
 )
 from backend.repository.pagination import Page
@@ -51,7 +53,7 @@ class MemoryNodeRepository(BaseRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import MemoryNode  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryNode
 
         self._model_class = MemoryNode
 
@@ -162,7 +164,7 @@ class MemoryNodeRepository(BaseRepository):
             NotFoundError: If memory_node or evidence not found.
             DomainIntegrityError: If relationship_type or weight invalid.
         """
-        from backend.shared.domain.memory_models import MemoryEvidence  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryEvidence
 
         # Verify memory node exists
         mn = await self.find_by_id(memory_node_id)
@@ -172,8 +174,7 @@ class MemoryNodeRepository(BaseRepository):
                 entity_id=str(memory_node_id),
             )
 
-        # Verify evidence exists
-        stmt = select(self._model_class.__class__ if hasattr(self._model_class, '__class__') else type('Dummy', (), {'id': evidence_id}))
+        # Verify evidence exists — FK constraint will catch missing evidence
         # Simpler: just insert and let FK constraint handle it
         evidence_record = MemoryEvidence(
             id=UUID(int=hash((str(workspace_id), str(memory_node_id), str(evidence_id))) % (2**128)),
@@ -223,7 +224,7 @@ class MemoryNodeRepository(BaseRepository):
         Raises:
             NotFoundError: If the link does not exist.
         """
-        from backend.shared.domain.memory_models import MemoryEvidence  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryEvidence
 
         stmt = select(MemoryEvidence).where(
             MemoryEvidence.memory_node_id == memory_node_id,
@@ -254,7 +255,7 @@ class MemoryNodeRepository(BaseRepository):
         Returns:
             List of MemoryEvidence records.
         """
-        from backend.shared.domain.memory_models import MemoryEvidence  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryEvidence
 
         stmt = select(MemoryEvidence).where(
             MemoryEvidence.memory_node_id == memory_node_id
@@ -400,7 +401,7 @@ class MemoryNodeRepository(BaseRepository):
         Raises:
             NotFoundError: If the memory node does not exist.
         """
-        from backend.shared.domain.memory_models import MemoryEvidence  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryEvidence
 
         node = await self.find_by_id(memory_node_id)
         if node is None:
@@ -419,11 +420,8 @@ class MemoryNodeRepository(BaseRepository):
         # Build evidence chain
         evidence_chain = []
         for link in evidence_links:
-            evidence_stmt2 = select(self._model_class.__class__ if hasattr(self._model_class, '__class__') else type('X', (), {}))
             # Fetch the actual evidence
-            ev_stmt = select(type('', (), {'id': link.evidence_id})())  # placeholder
-            # Simpler approach: use the Evidence model directly
-            from backend.shared.domain.memory_models import Evidence  # noqa: PLC0415
+            from backend.shared.domain.memory_models import Evidence
 
             ev_result = await self.session.execute(
                 select(Evidence).where(Evidence.id == link.evidence_id)

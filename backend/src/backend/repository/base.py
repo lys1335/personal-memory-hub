@@ -21,19 +21,19 @@ logic, no Engine calls, no Service calls, no Repository-to-Repository calls.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.repository.exceptions import (
     DuplicateError,
-    IntegrityError as DomainIntegrityError,
-    NotFoundError,
     RepositoryError,
-    WorkspaceIsolationError,
+)
+from backend.repository.exceptions import (
+    IntegrityError as DomainIntegrityError,
 )
 from backend.repository.pagination import Page
 from backend.repository.workspace import WorkspaceIsolationMixin

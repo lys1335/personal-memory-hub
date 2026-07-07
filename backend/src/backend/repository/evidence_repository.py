@@ -24,11 +24,10 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
-    DuplicateError,
     IntegrityError as DomainIntegrityError,
-    NotFoundError,
 )
 from backend.repository.pagination import Page
 
@@ -51,7 +50,7 @@ class EvidenceRepository(BaseRepository):
         """
         super().__init__(session)
         # Import here to avoid circular dependency
-        from backend.shared.domain.memory_models import Evidence  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Evidence
 
         self._model_class = Evidence
 

@@ -10,11 +10,10 @@ for all 12 Repositories.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 from uuid import UUID
 
-from sqlalchemy import Select, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Select
 
 from backend.repository.exceptions import WorkspaceIsolationError
 

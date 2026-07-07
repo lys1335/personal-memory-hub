@@ -14,7 +14,6 @@ from uuid import UUID
 from sqlalchemy import Column
 from sqlalchemy.orm import DeclarativeBase
 
-
 # ---------------------------------------------------------------------------
 # Type aliases
 # ---------------------------------------------------------------------------

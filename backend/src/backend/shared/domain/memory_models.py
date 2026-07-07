@@ -43,7 +43,6 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
-    Select,
     String,
     Text,
     UniqueConstraint,
@@ -53,7 +52,6 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.shared.infrastructure.database.engine import Base
-
 
 # ---------------------------------------------------------------------------
 # Evidence — 09.4.6
@@ -106,7 +104,7 @@ class Evidence(Base):
     updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
-    memory_evidences: Mapped[list["MemoryEvidence"]] = relationship(
+    memory_evidences: Mapped[list[MemoryEvidence]] = relationship(
         "MemoryEvidence", back_populates="evidence", lazy="selectin"
     )
 
@@ -130,11 +128,15 @@ class MemoryNode(Base):
     __tablename__ = "memory_nodes"
     __table_args__ = (
         CheckConstraint(
-            "(level = 1 AND observation_type IN ('activity', 'decision', 'preference', 'fact', 'goal', 'problem', 'event')) OR level != 1",
+            "(level = 1 AND observation_type IN ("
+            "'activity', 'decision', 'preference', 'fact', "
+            "'goal', 'problem', 'event')) OR level != 1",
             name="chk_observation_type",
         ),
         CheckConstraint(
-            "(level = 1 AND node_type = 'Observation') OR (level = 2 AND node_type = 'Pattern') OR (level = 3 AND node_type = 'Belief')",
+            "(level = 1 AND node_type = 'Observation') OR "
+            "(level = 2 AND node_type = 'Pattern') OR "
+            "(level = 3 AND node_type = 'Belief')",
             name="chk_level_type_consistency",
         ),
         CheckConstraint("confidence >= 0.0 AND confidence <= 1.0", name="chk_confidence_range"),
@@ -198,13 +200,13 @@ class MemoryNode(Base):
     updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
-    memory_evidences: Mapped[list["MemoryEvidence"]] = relationship(
+    memory_evidences: Mapped[list[MemoryEvidence]] = relationship(
         "MemoryEvidence", back_populates="memory_node", lazy="selectin"
     )
     parent: Mapped[Any | None] = relationship(
         "MemoryNode", remote_side=[id], lazy="select"
     )
-    children: Mapped[list["MemoryNode"]] = relationship(
+    children: Mapped[list[MemoryNode]] = relationship(
         "MemoryNode", back_populates="parent", lazy="selectin"
     )
 
@@ -303,7 +305,7 @@ class Archive(Base):
     parent_archive: Mapped[Any | None] = relationship(
         "Archive", remote_side=[id], lazy="select"
     )
-    child_archives: Mapped[list["Archive"]] = relationship(
+    child_archives: Mapped[list[Archive]] = relationship(
         "Archive", back_populates="parent_archive", lazy="selectin"
     )
 
@@ -342,7 +344,7 @@ class Tag(Base):
     created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
-    tag_links: Mapped[list["TagLink"]] = relationship(
+    tag_links: Mapped[list[TagLink]] = relationship(
         "TagLink", back_populates="tag", lazy="selectin"
     )
 
@@ -454,7 +456,7 @@ class Entity(Base):
     parent: Mapped[Any | None] = relationship(
         "Entity", remote_side=[id], lazy="select"
     )
-    children: Mapped[list["Entity"]] = relationship(
+    children: Mapped[list[Entity]] = relationship(
         "Entity", backref="parent_entity", lazy="selectin"
     )
 
@@ -499,7 +501,7 @@ class Area(Base):
     parent_area: Mapped[Any | None] = relationship(
         "Area", remote_side=[id], lazy="select"
     )
-    child_areas: Mapped[list["Area"]] = relationship(
+    child_areas: Mapped[list[Area]] = relationship(
         "Area", backref="parent_area_ref", lazy="selectin"
     )
 

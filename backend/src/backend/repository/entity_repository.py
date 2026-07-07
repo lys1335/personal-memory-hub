@@ -47,8 +47,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
     DuplicateError,
+)
+from backend.repository.exceptions import (
     IntegrityError as DomainIntegrityError,
-    NotFoundError,
 )
 from backend.repository.pagination import Page
 
@@ -70,7 +71,7 @@ class EntityRepository(BaseRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import Entity  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Entity
 
         self._model_class = Entity
 
@@ -389,7 +390,7 @@ class EntityRepository(BaseRepository):
         Returns:
             The Area if found, None otherwise.
         """
-        from backend.shared.domain.memory_models import Area  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Area
 
         stmt = select(Area).where(
             Area.workspace_id == str(workspace_id),
@@ -413,7 +414,7 @@ class EntityRepository(BaseRepository):
         Returns:
             List of child Area objects.
         """
-        from backend.shared.domain.memory_models import Area  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Area
 
         stmt = select(Area).where(
             Area.workspace_id == str(workspace_id),
@@ -441,7 +442,7 @@ class EntityRepository(BaseRepository):
         Returns:
             The Workspace object.
         """
-        from backend.shared.domain.memory_models import Workspace  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Workspace
 
         stmt = select(Workspace).limit(1)
         result = await self.session.execute(stmt)
@@ -497,7 +498,7 @@ class EntityRepository(BaseRepository):
         Returns:
             The UserProfile if found, None otherwise.
         """
-        from backend.shared.domain.memory_models import UserProfile  # noqa: PLC0415
+        from backend.shared.domain.memory_models import UserProfile
 
         stmt = select(UserProfile).where(
             UserProfile.workspace_id == str(workspace_id),
@@ -521,7 +522,7 @@ class EntityRepository(BaseRepository):
         Returns:
             The UserProfile if found, None otherwise.
         """
-        from backend.shared.domain.memory_models import UserProfile  # noqa: PLC0415
+        from backend.shared.domain.memory_models import UserProfile
 
         stmt = select(UserProfile).where(
             UserProfile.workspace_id == str(workspace_id),

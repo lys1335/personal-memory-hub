@@ -25,12 +25,12 @@ from sqlalchemy.ext.asyncio import (
 _src = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(_src))
 
-from backend.shared.infrastructure.config.settings import (  # noqa: E402
+from backend.shared.infrastructure.config.settings import (
     AppSettings,
     get_settings,
 )
-from backend.shared.infrastructure.di import get_container  # noqa: E402
-from backend.shared.infrastructure.logging import (  # noqa: E402
+from backend.shared.infrastructure.di import get_container
+from backend.shared.infrastructure.logging import (
     configure_logging,
     get_logger,
 )

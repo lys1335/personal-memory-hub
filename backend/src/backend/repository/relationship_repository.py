@@ -42,8 +42,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
     DuplicateError,
+)
+from backend.repository.exceptions import (
     IntegrityError as DomainIntegrityError,
-    NotFoundError,
 )
 from backend.repository.pagination import Page
 
@@ -64,7 +65,7 @@ class RelationshipRepository(BaseRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import (  # noqa: PLC0415
+        from backend.shared.domain.memory_models import (
             EntityRelationship,
         )
 
@@ -220,7 +221,7 @@ class RelationshipRepository(BaseRepository):
             self._model_class.target_id == str(entity_id),
         )
         # Use union for proper SQL
-        from sqlalchemy import union_all  # noqa: PLC0415
+        from sqlalchemy import union_all
 
         stmt = union_all(
             select(self._model_class).where(
@@ -278,7 +279,6 @@ class RelationshipRepository(BaseRepository):
         Returns:
             The UUID of the created relationship.
         """
-        from backend.shared.domain.memory_models import MemoryRelationship  # noqa: PLC0415
 
         self.session.add(relationship)
         await self.session.flush()
@@ -300,7 +300,7 @@ class RelationshipRepository(BaseRepository):
         Returns:
             List of matching MemoryRelationship objects.
         """
-        from backend.shared.domain.memory_models import MemoryRelationship  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryRelationship
 
         stmt = select(MemoryRelationship).where(
             MemoryRelationship.workspace_id == str(workspace_id),
@@ -324,7 +324,7 @@ class RelationshipRepository(BaseRepository):
         Returns:
             List of matching MemoryRelationship objects.
         """
-        from backend.shared.domain.memory_models import MemoryRelationship  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryRelationship
 
         stmt = select(MemoryRelationship).where(
             MemoryRelationship.workspace_id == str(workspace_id),

@@ -42,7 +42,7 @@ class MemoryQueryRepository(QueryRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import MemoryNode  # noqa: PLC0415
+        from backend.shared.domain.memory_models import MemoryNode
 
         self._model_class = MemoryNode
 
@@ -69,7 +69,7 @@ class MemoryQueryRepository(QueryRepository):
         Raises:
             NotFoundError: If the memory node does not exist.
         """
-        from backend.shared.domain.memory_models import MemoryEvidence, Evidence  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Evidence, MemoryEvidence
 
         # Fetch the memory node
         node_stmt = select(self._model_class).where(
@@ -79,7 +79,7 @@ class MemoryQueryRepository(QueryRepository):
         node = node_result.scalar_one_or_none()
 
         if node is None:
-            from backend.repository.exceptions import NotFoundError  # noqa: PLC0415
+            from backend.repository.exceptions import NotFoundError
 
             raise NotFoundError(
                 entity_type="memory_node",

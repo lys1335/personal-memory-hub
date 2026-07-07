@@ -16,25 +16,29 @@ from uuid import UUID
 
 import pytest
 import pytest_asyncio
-from backend.shared.infrastructure.uuid import generate_uuid
 from sqlalchemy import (
-    String, Text, Float, Integer, select, union_all, func, text,
+    Float,
+    Integer,
+    String,
+    Text,
+    func,
+    select,
+    union_all,
 )
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from backend.shared.infrastructure.uuid import generate_uuid
 
 _src = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(_src))
 
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
-    DuplicateError,
     IntegrityError as DomainIntegrityError,
 )
 from backend.repository.pagination import Page
 from backend.repository.query import QueryRepository
-
 
 # ===========================================================================
 # Test Models — all IDs are str to avoid SQLite UUID binding issues
@@ -811,11 +815,11 @@ class TestEntityRepository:
 
     @pytest.mark.asyncio
     async def test_pagination(self, test_entity_repo, workspace_id):
-        for i in range(5):
+        for idx in range(5):
             eid = str(generate_uuid())
             e = _TEntity(
                 id=eid, workspace_id=str(workspace_id),
-                entity_type="Concept", canonical_name=f"Concept {i}",
+                entity_type="Concept", canonical_name=f"Concept {idx}",
                 meta=_to_json({}),
             )
             test_entity_repo.session.add(e)
@@ -1048,7 +1052,7 @@ class TestRelationshipRepository:
 
     @pytest.mark.asyncio
     async def test_pagination(self, test_rel_repo, workspace_id, sample_entity):
-        for i in range(5):
+        for _i in range(5):
             rel = _TEntityRelationship(
                 id=str(generate_uuid()), workspace_id=str(workspace_id),
                 source_id=sample_entity.id, target_id=str(generate_uuid()),

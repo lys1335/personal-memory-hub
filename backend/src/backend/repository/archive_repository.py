@@ -26,8 +26,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.repository.base import BaseRepository
 from backend.repository.exceptions import (
     DuplicateError,
-    IntegrityError as DomainIntegrityError,
     NotFoundError,
+)
+from backend.repository.exceptions import (
+    IntegrityError as DomainIntegrityError,
 )
 from backend.repository.pagination import Page
 
@@ -45,7 +47,7 @@ class ArchiveRepository(BaseRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import Archive  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Archive
 
         self._model_class = Archive
 
@@ -199,7 +201,7 @@ class ArchiveRepository(BaseRepository):
         Raises:
             DuplicateError: If the tag-link already exists.
         """
-        from backend.shared.domain.memory_models import TagLink  # noqa: PLC0415
+        from backend.shared.domain.memory_models import TagLink
 
         # Verify archive exists
         archive = await self.find_by_id(archive_id)
@@ -255,7 +257,7 @@ class ArchiveRepository(BaseRepository):
         Raises:
             NotFoundError: If the link does not exist.
         """
-        from backend.shared.domain.memory_models import TagLink  # noqa: PLC0415
+        from backend.shared.domain.memory_models import TagLink
 
         stmt = select(TagLink).where(
             TagLink.tag_id == tag_id,
@@ -287,7 +289,7 @@ class ArchiveRepository(BaseRepository):
         Returns:
             List of TagLink records.
         """
-        from backend.shared.domain.memory_models import TagLink  # noqa: PLC0415
+        from backend.shared.domain.memory_models import TagLink
 
         stmt = select(TagLink).where(
             TagLink.target_type == "archive",

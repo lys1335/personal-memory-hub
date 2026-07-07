@@ -35,11 +35,11 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.repository.query import QueryRepository
 from backend.repository.pagination import Page
+from backend.repository.query import QueryRepository
 
 if TYPE_CHECKING:
-    from backend.repository.types import FilterMap
+    pass
 
 
 class EntityQueryRepository(QueryRepository):
@@ -60,7 +60,7 @@ class EntityQueryRepository(QueryRepository):
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
-        from backend.shared.domain.memory_models import Entity  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Entity
 
         self._model_class = Entity
 
@@ -135,7 +135,7 @@ class EntityQueryRepository(QueryRepository):
         Returns:
             List of matching Entity objects.
         """
-        from backend.shared.domain.memory_models import Entity  # noqa: PLC0415
+        from backend.shared.domain.memory_models import Entity
 
         stmt = select(Entity).where(
             Entity.workspace_id == str(workspace_id),
@@ -220,7 +220,7 @@ class EntityQueryRepository(QueryRepository):
         Returns:
             List of dicts with 'entity', 'relationship', 'direction' keys.
         """
-        from backend.shared.domain.memory_models import (  # noqa: PLC0415
+        from backend.shared.domain.memory_models import (
             Entity,
             EntityRelationship,
         )
@@ -292,9 +292,9 @@ class EntityQueryRepository(QueryRepository):
         Returns:
             List of EntityRelationship objects.
         """
-        from backend.shared.domain.memory_models import EntityRelationship  # noqa: PLC0415
+        from sqlalchemy import union_all
 
-        from sqlalchemy import union_all  # noqa: PLC0415
+        from backend.shared.domain.memory_models import EntityRelationship
 
         stmt = union_all(
             select(EntityRelationship).where(

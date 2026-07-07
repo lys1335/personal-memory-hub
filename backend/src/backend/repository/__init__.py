@@ -1,4 +1,4 @@
-"""Repository Layer — Shared Infrastructure (D2.1) + Memory Domain (D2.2) + Entity Domain (D2.3).
+r"""Repository Layer — Shared Infrastructure (D2.1) + Memory Domain (D2.2) + Entity Domain (D2.3).
 
 This module provides the shared persistence foundation for all Repository
 implementations in the Personal Memory Hub.
@@ -50,8 +50,19 @@ Note: CandidateRepository is registered in D2.4.
 
 from __future__ import annotations
 
+# D2.2 Memory Domain Repositories
+from backend.repository.archive_repository import ArchiveRepository
+
 # D2.1 Shared Infrastructure
 from backend.repository.base import BaseRepository
+
+# D2.4 Reflection Domain Repositories
+from backend.repository.candidate_repository import CandidateRepository
+from backend.repository.entity_query_repository import EntityQueryRepository
+
+# D2.3 Entity Domain Repositories
+from backend.repository.entity_repository import EntityRepository
+from backend.repository.evidence_repository import EvidenceRepository
 from backend.repository.exceptions import (
     DuplicateError,
     IntegrityError,
@@ -60,8 +71,15 @@ from backend.repository.exceptions import (
     RepositoryError,
     WorkspaceIsolationError,
 )
+from backend.repository.memory_node_repository import MemoryNodeRepository
+from backend.repository.memory_query_repository import MemoryQueryRepository
 from backend.repository.pagination import CursorPage, OffsetPage, Page
 from backend.repository.query import QueryRepository
+from backend.repository.relationship_repository import RelationshipRepository
+from backend.repository.tag_repository import TagRepository
+
+# D2.5 Runtime Domain Repositories
+from backend.repository.task_repository import TaskRepository
 from backend.repository.types import (
     FilterMap,
     FilterValue,
@@ -71,31 +89,13 @@ from backend.repository.types import (
     get_primary_key_column,
     get_table_columns,
 )
-from backend.repository.workspace import WorkspaceIsolationMixin
-
-# D2.2 Memory Domain Repositories
-from backend.repository.archive_repository import ArchiveRepository
-from backend.repository.evidence_repository import EvidenceRepository
-from backend.repository.memory_node_repository import MemoryNodeRepository
-from backend.repository.memory_query_repository import MemoryQueryRepository
-from backend.repository.tag_repository import TagRepository
-
-# D2.3 Entity Domain Repositories
-from backend.repository.entity_repository import EntityRepository
-from backend.repository.entity_query_repository import EntityQueryRepository
-from backend.repository.relationship_repository import RelationshipRepository
-
-# D2.4 Reflection Domain Repositories
-from backend.repository.candidate_repository import CandidateRepository
-
-# D2.5 Runtime Domain Repositories
-from backend.repository.task_repository import TaskRepository
 
 # D2.6 Vector Domain Repositories
 from backend.repository.vector_doc_repository import VectorDocRepository
 
 # D2.7 Vector Query Repositories
 from backend.repository.vector_query_repository import VectorQueryRepository
+from backend.repository.workspace import WorkspaceIsolationMixin
 
 __all__ = [
     # D2.1 Shared Infrastructure — Base Classes
