@@ -728,6 +728,70 @@ The Repository Layer is complete **only** when ALL of the following criteria are
 
 ---
 
+## 10. Architecture Debt — Repository Contract vs BaseRepository Signature Alignment
+
+> **Severity**: Low (Design Debt)
+> **Triggered by**: D2.8 Type Safety Stabilization
+
+### Current State
+
+All 12 Repository implementations use domain-specific `find_page()` signatures that intentionally differ from `BaseRepository.find_page()`:
+
+| Aspect | BaseRepository | Subclasses |
+|--------|---------------|------------|
+| `workspace_id` | `UUID \| None` (optional) | `UUID` (required) |
+| `filters` | `dict[str, Any] \| None` | Domain-specific params (e.g. `entity_types`, `status`, `level`) |
+| `order_by` | `str \| None` | `str` (required) |
+| `descending` | `bool` | Varies (some omit) |
+
+Mypy compatibility is currently maintained via targeted:
+```python
+async def find_page(...) -> Page[T]:  # type: ignore[override]
+```
+
+Total suppression count: **10** `# type: ignore[override]` comments across 10 repository files.
+
+### Why This Is Intentional
+
+Domain-specific `find_page()` signatures are a deliberate design choice:
+- Each repository has a well-defined set of query parameters relevant to its aggregate
+- Generic `filters: dict[str, Any]` is type-unsafe and undocumented
+- Required `workspace_id` (not optional) enforces multi-tenancy at the call site
+- Explicit parameters enable IDE autocomplete and static analysis for callers
+
+### Future Review Criteria
+
+This debt should be revisited during a future architecture review to determine:
+
+1. **Option A**: Make `BaseRepository.find_page()` more generic
+   - Accept `**kwargs: Any` for domain-specific filters
+   - Allow subclasses to narrow required parameters via `@overload`
+   
+2. **Option B**: Standardize Repository contracts further
+   - Define a `FindPageParams` TypedDict hierarchy
+   - Use protocol-based typing for flexible signatures
+   
+3. **Option C**: Keep current approach
+   - Accept that `# type: ignore[override]` is the correct trade-off
+   - Document the rationale formally
+
+### Impact
+
+- **Current**: Zero functional impact. All 98 tests pass. Mypy passes with 10 targeted suppressions.
+- **Risk**: Low. This is an engineering improvement, not a bug.
+- **Recommendation**: Defer to post-MVP architecture review.
+
+### Metadata
+
+| Field | Value |
+|-------|-------|
+| Status | Deferred |
+| Priority | Low |
+| Suggested Milestone | Post-MVP Architecture Review |
+| Related | D2.8 Type Safety Stabilization, 12 `# type: ignore[override]` suppressions |
+
+---
+
 *This document is derived from the approved architecture. It introduces no architectural changes. All Repository definitions match the approved design in 10_1 §5, 09, and related Phase B documents.*
 
-*Last Updated: 2026-07-06*
+*Last Updated: 2026-07-07*
