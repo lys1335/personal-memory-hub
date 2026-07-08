@@ -156,11 +156,47 @@ class VectorDocRepository(BaseRepository):  # type: ignore[type-arg]
         return result.scalar_one_or_none()
 
     # ------------------------------------------------------------------
-    # Soft Delete — BaseRepository Contract
+    # Soft Delete — VectorDoc is Replace-only (physical delete via impl)
     # ------------------------------------------------------------------
 
+    async def update(self, entity: Any) -> Any:
+        """VectorDoc is replace-only: update is prohibited.
+
+        VectorDocs are regenerable computational artifacts (embeddings).
+        Updates should be done via delete + recreate (delete old doc, create new).
+
+        Raises:
+            DomainIntegrityError: Always, because VectorDocs are replace-only.
+        """
+        raise DomainIntegrityError(
+            entity_type="vector_doc",
+            constraint="VectorDocs are replace-only - use delete+recreate",
+        )
+
+    async def soft_delete(self, id: UUID) -> None:
+        """Contract Mapping: soft_delete() → physical DELETE.
+
+        This method exists to satisfy the BaseRepository[T] interface contract.
+        It does NOT perform a logical/soft delete.
+
+        VectorDocs are transient pipeline outputs with no deleted_at column.
+        The BaseRepository.soft_delete() contract is fulfilled here by delegating
+        to soft_delete_impl(), which performs a PHYSICAL DELETE from the database.
+
+        IMPORTANT FOR MAINTAINERS:
+        Do NOT interpret this as a logical/soft-delete operation.
+        The row is permanently removed from the database.
+        If you need to "disable" a VectorDoc, do not use soft_delete().
+        Instead, regenerate the VectorDoc (delete old + create new).
+        This is consistent with VectorDoc's Replace-only capability model.
+
+        Args:
+            id: The UUID of the VectorDoc to physically delete.
+        """
+        await self.soft_delete_impl(id)
+
     async def soft_delete_impl(self, id: UUID) -> None:
-        """Physically delete a VectorDoc by its primary key.
+        """Physical DELETE for VectorDoc.
 
         VectorDoc is a regenerable computational artifact (embedding,
         chunk, importance score). It has no soft-delete columns in the
@@ -171,6 +207,9 @@ class VectorDocRepository(BaseRepository):  # type: ignore[type-arg]
         This is intentional and documented: unlike MemoryNode (immutable)
         or Entity (never deleted), VectorDocs are transient pipeline
         outputs that are safely removed rather than soft-deleted.
+
+        This method implements the Contract Mapping:
+        BaseRepository.soft_delete() → VectorDoc.physical_delete()
 
         Args:
             id: The UUID primary key of the VectorDoc to delete.

@@ -236,6 +236,8 @@ git checkout main
 
 ### 3.3 Verify Repository Synchronization
 
+> **Working directory**: Project Root (execute from repository root, NOT `backend/`).
+
 **Windows (PowerShell)**:
 
 ```powershell
@@ -244,7 +246,7 @@ echo "---"
 git log --oneline -1
 echo "---"
 git rev-parse HEAD
-git rev-parse @{u} 2>&1
+git rev-parse '@{u}' 2>&1
 ```
 
 **Linux/macOS (bash)**:
@@ -255,7 +257,7 @@ echo "---"
 git log --oneline -1
 echo "---"
 git rev-parse HEAD
-git rev-parse @{u} 2>&1
+git rev-parse '@{u}' 2>&1
 ```
 
 **Expected output**:
@@ -519,6 +521,8 @@ The project uses mypy strict mode, which enforces:
 
 ## 8. pytest Verification
 
+> **Working directory**: Project Root (execute from repository root).
+
 ### 8.1 Run Tests
 
 **Windows (PowerShell)**:
@@ -592,6 +596,8 @@ All 98 tests should pass. Exit code should be `0`.
 ---
 
 ## 9. Repository Inventory Verification
+
+> **Working directory**: Project Root (execute from repository root).
 
 ### 9.1 Verify Repository Files Exist
 
@@ -694,17 +700,55 @@ The D2 Repository Layer consists of **12 repositories** organized into two categ
 
 ## 10. Repository Contract Verification
 
-### 10.1 Verify CRUD Repositories Have Write Operations
+> **Working directory**: Project Root (execute from repository root).
 
-Each CRUD repository should implement write operations: `create`, `update`, `soft_delete`, and `delete`.
+### 10.1 Verify Repository Capability Compliance
+
+Each repository's capabilities are determined by its domain model, not a uniform CRUD template. The following table defines the expected capability for each repository based on architecture documents (`10_9_Repository_Inventory.md`, `D2_Repository_Layer_Plan.md`):
+
+| # | Repository | Capability Model | Required Methods | Prohibited Methods |
+|---|-----------|-----------------|------------------|--------------------|
+| 1 | EntityRepository | Identity (mutable attributes) | `create` + find methods | No soft_delete on identity |
+| 2 | MemoryNodeRepository | **Immutable / Append-only** | `create` + link evidence | `update()`, `soft_delete()` must raise |
+| 3 | EvidenceRepository | **Immutable** | `create` only | `update()`, `soft_delete()` must raise |
+| 4 | RelationshipRepository | Immutable relationship | `create` + find methods | No update/soft_delete |
+| 5 | VectorDocRepository | Replace-only (delete + recreate) | `create` + find methods | No update |
+| 6 | ArchiveRepository | Immutable archive | `create` + find methods | No update/soft_delete |
+| 7 | TagRepository | Mutable tag definition | `create` + find methods | — |
+| 8 | TaskRepository | State machine | `create` + status transitions | No generic `update()` |
+| 9 | CandidateRepository | State machine | `create` + status transitions | No generic `update()` |
+| 10 | MemoryQueryRepository | Read-only query | Find/query methods | Any write method |
+| 11 | EntityQueryRepository | Read-only query | Find/query methods | Any write method |
+| 12 | VectorQueryRepository | Read-only query | Find/query methods | Any write method |
+
+**Verification principle**: Each repository is verified against its own capability model, not a one-size-fits-all CRUD template.
+
+#### Immutable Repositories (MemoryNode, Evidence)
+
+These repositories inherit from `BaseRepository` but override `update()` and `soft_delete()` to raise `DomainIntegrityError`. This is intentional — the methods exist as interface contracts but are enforced as prohibited at runtime.
 
 **Windows (PowerShell)**:
 
 ```powershell
+# Immutable repos: verify update() and soft_delete() raise errors
+$immutable_repos = @(
+    @{ Name="memory_node_repository.py"; Label="MemoryNode" },
+    @{ Name="evidence_repository.py"; Label="Evidence" }
+)
+foreach ($r in $immutable_repos) {
+    $content = Get-Content "src\backend\repository\$($r.Name)" -Raw
+    $has_update_override = $content -match "async def update\(.*\) -> .*:\s+.*raise DomainIntegrityError" -or ($content -match "async def update\(" -and $content -match "immutable")
+    $has_soft_delete_override = $content -match "async def soft_delete\(.*\) -> .*:\s+.*raise DomainIntegrityError" -or ($content -match "async def soft_delete\(" -and $content -match "immutable")
+    if ($has_update_override -and $has_soft_delete_override) {
+        Write-Output "IMMUTABLE OK: $($r.Label) (update blocked, soft_delete blocked)"
+    } else {
+        Write-Output "VIOLATION: $($r.Label) (update=$has_update_override, soft_delete=$has_soft_delete_override)"
+    }
+}
+
+# Other CRUD repos: verify create exists
 $crud_repos = @(
     "entity_repository.py",
-    "memory_node_repository.py",
-    "evidence_repository.py",
     "relationship_repository.py",
     "vector_doc_repository.py",
     "archive_repository.py",
@@ -715,23 +759,51 @@ $crud_repos = @(
 foreach ($repo in $crud_repos) {
     $content = Get-Content "src\backend\repository\$repo" -Raw
     $has_create = $content -match "async def create\("
-    $has_update = $content -match "async def update\("
-    $has_soft_delete = $content -match "async def soft_delete\("
-    $status = if ($has_create -and $has_update -and $has_soft_delete) { "CRUD OK" } else { "INCOMPLETE" }
-    Write-Output "$status: $repo (create=$has_create, update=$has_update, soft_delete=$has_soft_delete)"
+    $status = if ($has_create) { "CREATE OK" } else { "MISSING CREATE" }
+    Write-Output "${status}: $repo"
 }
 ```
 
 **Linux/macOS (bash)**:
 
 ```bash
-for f in entity_repository memory_node_repository evidence_repository relationship_repository vector_doc_repository archive_repository tag_repository task_repository candidate_repository; do
-  content=$(grep -c "async def create\|async def update\|async def soft_delete" "src/backend/repository/${f}_repository.py" 2>/dev/null || echo 0)
-  echo "${content}/3 methods found: ${f}_repository.py"
+# Immutable repos: verify update() and soft_delete() raise errors
+for f in memory_node_repository evidence_repository; do
+  if grep -q "async def update(" "src/backend/repository/${f}_repository.py" 2>/dev/null && \
+     grep -q "immutable" "src/backend/repository/${f}_repository.py" 2>/dev/null && \
+     grep -q "async def soft_delete(" "src/backend/repository/${f}_repository.py" 2>/dev/null; then
+    echo "IMMUTABLE OK: ${f}_repository.py (update blocked, soft_delete blocked)"
+  else
+    echo "VIOLATION: ${f}_repository.py"
+  fi
+done
+
+# Other CRUD repos: verify create exists
+for f in entity_repository relationship_repository vector_doc_repository archive_repository tag_repository task_repository candidate_repository; do
+  if grep -q "async def create(" "src/backend/repository/${f}_repository.py" 2>/dev/null; then
+    echo "CREATE OK: ${f}_repository.py"
+  else
+    echo "MISSING CREATE: ${f}_repository.py"
+  fi
 done
 ```
 
-**Expected output**: Each CRUD repository should show 3/3 methods found.
+**Expected output**:
+```
+IMMUTABLE OK: MemoryNode (update blocked, soft_delete blocked)
+IMMUTABLE OK: Evidence (update blocked, soft_delete blocked)
+CREATE OK: entity_repository.py
+CREATE OK: relationship_repository.py
+CREATE OK: vector_doc_repository.py
+CREATE OK: archive_repository.py
+CREATE OK: tag_repository.py
+CREATE OK: task_repository.py
+CREATE OK: candidate_repository.py
+```
+
+**Expected Result**: Each repository implements exactly the operations its domain model requires. Immutable repositories enforce immutability at runtime. All repositories implement `create`.
+
+**If Failed**: Check that the repository files have not been modified incorrectly. Immutable repositories should always raise `DomainIntegrityError` for write attempts.
 
 ### 10.2 Verify Query Repositories Are Read-Only
 
@@ -749,7 +821,7 @@ foreach ($repo in $query_repos) {
     $content = Get-Content "src\backend\repository\$repo" -Raw
     $has_write = $content -match "async def (create|update|soft_delete|delete)\("
     $status = if ($has_write) { "VIOLATION" } else { "READ-ONLY OK" }
-    Write-Output "$status: $repo"
+    Write-Output "${status}: $repo"
 }
 ```
 
@@ -774,6 +846,8 @@ done
 ---
 
 ## 11. Architecture Boundary Verification
+
+> **Working directory**: Project Root (execute from repository root).
 
 ### 11.1 Verify Repository Never Calls Repository
 
@@ -896,6 +970,8 @@ fi
 
 ## 12. Release Blocker Verification
 
+> **Working directory**: Project Root (execute from repository root).
+
 ### 12.1 Verify Documentation Contains Release Blocker
 
 The Release Blocker for Native pgvector Support must be documented in the Repository Inventory.
@@ -978,6 +1054,8 @@ done
 
 ## 13. Architecture Debt Verification
 
+> **Working directory**: Project Root (execute from repository root).
+
 ### 13.1 Verify Architecture Debt Is Documented
 
 The Architecture Debt for Repository Contract vs BaseRepository Signature Alignment must be documented.
@@ -1057,6 +1135,8 @@ done
 
 ## 14. Repository Freeze Confirmation
 
+> **Working directory**: Project Root (execute from repository root).
+
 ### 14.1 Verify Repository Layer Is Frozen
 
 The Repository Layer is officially frozen after D2.8 Type Safety Stabilization. Changes are restricted to:
@@ -1077,23 +1157,25 @@ The Repository Layer is officially frozen after D2.8 Type Safety Stabilization. 
 
 ### 14.2 Verify Freeze Is Documented
 
+The Repository Layer freeze is documented in `D2_Repository_Layer_Plan.md` (Section 15 — Closing Confirmation). This is the authoritative record, not the Repository Inventory.
+
 **Windows (PowerShell)**:
 
 ```powershell
-if (Select-String -Path docs\04_Retrieval_Ranking\10_9_Repository_Inventory.md -Pattern "Frozen" -Quiet) {
-    Write-Output "Repository freeze documented"
+if (Select-String -Path docs\05_Implementation\D2_Repository_Layer_Plan.md -Pattern "Closing Confirmation" -Quiet) {
+    Write-Output "Freeze documented in D2 Plan §15"
 } else {
-    Write-Output "Repository freeze NOT documented"
+    Write-Output "Freeze NOT documented"
 }
 ```
 
 **Linux/macOS (bash)**:
 
 ```bash
-if grep -q "Frozen" docs/04_Retrieval_Ranking/10_9_Repository_Inventory.md; then
-  echo "Repository freeze documented"
+if grep -q "Closing Confirmation" docs/05_Implementation/D2_Repository_Layer_Plan.md; then
+  echo "Freeze documented in D2 Plan §15"
 else
-  echo "Repository freeze NOT documented"
+  echo "Freeze NOT documented"
 fi
 ```
 
@@ -1164,8 +1246,11 @@ Use this checklist to confirm D2 completion. Mark each item as complete (✓) or
 
 ### 15.6 Repository Contracts
 
-- [ ] All 9 CRUD repositories have write operations (create, update, soft_delete)
+- [ ] Immutable repositories (MemoryNode, Evidence) enforce immutability — `update()` and `soft_delete()` raise `DomainIntegrityError`
+- [ ] All other CRUD repositories implement `create`
 - [ ] All 3 Query repositories are read-only (no create/update/soft_delete)
+- [ ] Repository capabilities match their domain model (see §10.1 Capability Matrix)
+- [ ] Repository responsibilities match architecture
 - [ ] Repository responsibilities match architecture
 
 ### 15.7 Architecture Boundaries
@@ -1196,10 +1281,11 @@ Use this checklist to confirm D2 completion. Mark each item as complete (✓) or
 
 ### 15.10 Repository Freeze
 
-- [ ] Repository Layer freeze documented
+- [ ] Repository Layer freeze documented in `D2_Repository_Layer_Plan.md` §15
 - [ ] D2.8 Type Safety Stabilization documented as final D2 activity
 - [ ] Allowed changes listed (bug fixes, security, framework, ADR)
 - [ ] Prohibited changes listed (redesign, aggregate boundaries, contracts)
+- [ ] Future contract changes require ADR
 
 ### 15.11 Acceptance Criteria
 
@@ -1211,11 +1297,12 @@ Use this checklist to confirm D2 completion. Mark each item as complete (✓) or
 4. ✅ `mypy src/` passes with zero errors
 5. ✅ `pytest tests/ -v` reports 98 passed, 0 failed
 6. ✅ 12 repositories present and verified
-7. ✅ CRUD repos have write operations; Query repos are read-only
-8. ✅ No cross-layer dependencies (service, engine, runtime)
-9. ✅ Release Blocker documented
-10. ✅ Architecture Debt documented
-11. ✅ Repository Freeze confirmed
+7. ✅ Immutable repos enforce immutability; other CRUD repos have create
+8. ✅ Query repos are read-only
+9. ✅ No cross-layer dependencies (service, engine, runtime)
+10. ✅ Release Blocker documented
+11. ✅ Architecture Debt documented
+12. ✅ Repository Freeze confirmed in D2 Plan §15
 
 **If any item above fails, Phase D2 is NOT verified.**
 

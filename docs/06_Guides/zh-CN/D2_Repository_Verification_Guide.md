@@ -694,17 +694,55 @@ D2 仓库层由 **12 个仓库** 组成，分为两个类别：
 
 ## 10. 仓库合同验证
 
-### 10.1 验证 CRUD 仓库具有写操作
+> **工作目录**: 项目根目录（从仓库根目录执行，非 `backend/`）。
 
-每个 CRUD 仓库应实现写操作：`create`、`update`、`soft_delete` 和 `delete`。
+### 10.1 验证仓库能力合规性
+
+每个仓库的能力由其领域模型决定，而非统一的 CRUD 模板。下表基于架构文档（`10_9_Repository_Inventory.md`、`D2_Repository_Layer_Plan.md`）定义了各仓库的预期能力：
+
+| # | 仓库 | 能力模型 | 必需方法 | 禁止方法 |
+|---|-----|---------|---------|---------|
+| 1 | EntityRepository | 身份（可变属性） | `create` + 查询方法 | 身份不可软删除 |
+| 2 | MemoryNodeRepository | **不可变 / 追加只写** | `create` + 链接证据 | `update()`、`soft_delete()` 必须抛出异常 |
+| 3 | EvidenceRepository | **不可变** | 仅 `create` | `update()`、`soft_delete()` 必须抛出异常 |
+| 4 | RelationshipRepository | 不可变关系 | `create` + 查询方法 | 无 update/soft_delete |
+| 5 | VectorDocRepository | 替换式（删除+重建） | `create` + 查询方法 | 无 update |
+| 6 | ArchiveRepository | 不可变归档 | `create` + 查询方法 | 无 update/soft_delete |
+| 7 | TagRepository | 可变标签定义 | `create` + 查询方法 | — |
+| 8 | TaskRepository | 状态机 | `create` + 状态转换 | 无通用 `update()` |
+| 9 | CandidateRepository | 状态机 | `create` + 状态转换 | 无通用 `update()` |
+| 10 | MemoryQueryRepository | 只读查询 | 查询方法 | 任何写方法 |
+| 11 | EntityQueryRepository | 只读查询 | 查询方法 | 任何写方法 |
+| 12 | VectorQueryRepository | 只读查询 | 查询方法 | 任何写方法 |
+
+**验证原则**：每个仓库按其自身能力模型验证，而非一刀切的 CRUD 模板。
+
+#### 不可变仓库（MemoryNode、Evidence）
+
+这些仓库继承自 `BaseRepository`，但覆写了 `update()` 和 `soft_delete()` 以抛出 `DomainIntegrityError`。这是有意为之——方法作为接口契约存在，但在运行时被禁止。
 
 **Windows (PowerShell)**:
 
 ```powershell
+# 不可变仓库：验证 update() 和 soft_delete() 抛出异常
+$immutable_repos = @(
+    @{ Name="memory_node_repository.py"; Label="MemoryNode" },
+    @{ Name="evidence_repository.py"; Label="Evidence" }
+)
+foreach ($r in $immutable_repos) {
+    $content = Get-Content "src\backend\repository\$($r.Name)" -Raw
+    $has_update_override = $content -match "async def update\(.*\) -> .*:\s+.*raise DomainIntegrityError" -or ($content -match "async def update\(" -and $content -match "immutable")
+    $has_soft_delete_override = $content -match "async def soft_delete\(.*\) -> .*:\s+.*raise DomainIntegrityError" -or ($content -match "async def soft_delete\(" -and $content -match "immutable")
+    if ($has_update_override -and $has_soft_delete_override) {
+        Write-Output "不可变 OK: $($r.Label) (update 已阻止, soft_delete 已阻止)"
+    } else {
+        Write-Output "违规: $($r.Label) (update=$has_update_override, soft_delete=$has_soft_delete_override)"
+    }
+}
+
+# 其他 CRUD 仓库：验证 create 存在
 $crud_repos = @(
     "entity_repository.py",
-    "memory_node_repository.py",
-    "evidence_repository.py",
     "relationship_repository.py",
     "vector_doc_repository.py",
     "archive_repository.py",
@@ -715,23 +753,51 @@ $crud_repos = @(
 foreach ($repo in $crud_repos) {
     $content = Get-Content "src\backend\repository\$repo" -Raw
     $has_create = $content -match "async def create\("
-    $has_update = $content -match "async def update\("
-    $has_soft_delete = $content -match "async def soft_delete\("
-    $status = if ($has_create -and $has_update -and $has_soft_delete) { "CRUD OK" } else { "INCOMPLETE" }
-    Write-Output "$status: $repo (create=$has_create, update=$has_update, soft_delete=$has_soft_delete)"
+    $status = if ($has_create) { "CREATE OK" } else { "缺少 CREATE" }
+    Write-Output "${status}: $repo"
 }
 ```
 
 **Linux/macOS (bash)**:
 
 ```bash
-for f in entity_repository memory_node_repository evidence_repository relationship_repository vector_doc_repository archive_repository tag_repository task_repository candidate_repository; do
-  content=$(grep -c "async def create\|async def update\|async def soft_delete" "src/backend/repository/${f}_repository.py" 2>/dev/null || echo 0)
-  echo "${content}/3 methods found: ${f}_repository.py"
+# 不可变仓库：验证 update() 和 soft_delete() 抛出异常
+for f in memory_node_repository evidence_repository; do
+  if grep -q "async def update(" "src/backend/repository/${f}_repository.py" 2>/dev/null && \
+     grep -q "immutable" "src/backend/repository/${f}_repository.py" 2>/dev/null && \
+     grep -q "async def soft_delete(" "src/backend/repository/${f}_repository.py" 2>/dev/null; then
+    echo "不可变 OK: ${f}_repository.py (update 已阻止, soft_delete 已阻止)"
+  else
+    echo "违规: ${f}_repository.py"
+  fi
+done
+
+# 其他 CRUD 仓库：验证 create 存在
+for f in entity_repository relationship_repository vector_doc_repository archive_repository tag_repository task_repository candidate_repository; do
+  if grep -q "async def create(" "src/backend/repository/${f}_repository.py" 2>/dev/null; then
+    echo "CREATE OK: ${f}_repository.py"
+  else
+    echo "缺少 CREATE: ${f}_repository.py"
+  fi
 done
 ```
 
-**预期输出**: 每个 CRUD 仓库应显示 3/3 方法找到。
+**预期输出**:
+```
+不可变 OK: MemoryNode (update 已阻止, soft_delete 已阻止)
+不可变 OK: Evidence (update 已阻止, soft_delete 已阻止)
+CREATE OK: entity_repository.py
+CREATE OK: relationship_repository.py
+CREATE OK: vector_doc_repository.py
+CREATE OK: archive_repository.py
+CREATE OK: tag_repository.py
+CREATE OK: task_repository.py
+CREATE OK: candidate_repository.py
+```
+
+**预期结果**: 每个仓库实现其领域模型所需的精确操作。不可变仓库在运行时强制执行不可变性。所有仓库都实现 `create`。
+
+**如果失败**: 检查仓库文件是否被错误修改。不可变仓库应始终对写操作尝试抛出 `DomainIntegrityError`。
 
 ### 10.2 验证查询仓库是只读的
 
@@ -1077,23 +1143,25 @@ D2.8 类型安全稳定化之后，仓库层正式冻结。变更仅限于：
 
 ### 14.2 验证冻结已记录
 
+仓库层冻结记录在 `D2_Repository_Layer_Plan.md`（第15节 — 关闭确认）中。这是权威记录，而非仓库清单。
+
 **Windows (PowerShell)**:
 
 ```powershell
-if (Select-String -Path docs\04_Retrieval_Ranking\10_9_Repository_Inventory.md -Pattern "Frozen" -Quiet) {
-    Write-Output "仓库冻结已记录"
+if (Select-String -Path docs\05_Implementation\D2_Repository_Layer_Plan.md -Pattern "Closing Confirmation" -Quiet) {
+    Write-Output "冻结已在 D2 Plan §15 中记录"
 } else {
-    Write-Output "仓库冻结未记录"
+    Write-Output "冻结未记录"
 }
 ```
 
 **Linux/macOS (bash)**:
 
 ```bash
-if grep -q "Frozen" docs/04_Retrieval_Ranking/10_9_Repository_Inventory.md; then
-  echo "仓库冻结已记录"
+if grep -q "Closing Confirmation" docs/05_Implementation/D2_Repository_Layer_Plan.md; then
+  echo "冻结已在 D2 Plan §15 中记录"
 else
-  echo "仓库冻结未记录"
+  echo "冻结未记录"
 fi
 ```
 
@@ -1164,8 +1232,10 @@ fi
 
 ### 15.6 仓库合同
 
-- [ ] 所有 9 个 CRUD 仓库有写操作（create、update、soft_delete）
+- [ ] 不可变仓库（MemoryNode、Evidence）强制执行不可变性 — `update()` 和 `soft_delete()` 抛出 `DomainIntegrityError`
+- [ ] 所有其他 CRUD 仓库实现 `create`
 - [ ] 所有 3 个查询仓库是只读的（无 create/update/soft_delete）
+- [ ] 仓库能力符合其领域模型（见 §10.1 能力矩阵）
 - [ ] 仓库职责符合架构
 
 ### 15.7 架构边界
@@ -1196,10 +1266,11 @@ fi
 
 ### 15.10 仓库冻结
 
-- [ ] 仓库层冻结已记录
+- [ ] 仓库层冻结记录在 `D2_Repository_Layer_Plan.md` §15
 - [ ] D2.8 类型安全稳定化已记录为最终 D2 活动
 - [ ] 允许的变更已列出（bug 修复、安全、框架、ADR）
 - [ ] 禁止的变更已列出（重新设计、聚合边界、合同）
+- [ ] 未来合同变更需通过 ADR
 
 ### 15.11 验收标准
 
@@ -1211,11 +1282,12 @@ fi
 4. ✅ `mypy src/` 零错误通过
 5. ✅ `pytest tests/ -v` 报告 98 通过，0 失败
 6. ✅ 12 个仓库存在且已验证
-7. ✅ CRUD 仓库有写操作；查询仓库是只读的
-8. ✅ 无跨层依赖（service、engine、runtime）
-9. ✅ 发布阻塞项已记录
-10. ✅ 架构债务已记录
-11. ✅ 仓库冻结已确认
+7. ✅ 不可变仓库强制执行不可变性；其他 CRUD 仓库有 create
+8. ✅ 查询仓库是只读的
+9. ✅ 无跨层依赖（service、engine、runtime）
+10. ✅ 发布阻塞项已记录
+11. ✅ 架构债务已记录
+12. ✅ 仓库冻结已在 D2 Plan §15 中确认
 
 **如果上述任何一项失败，Phase D2 未经验证。**
 

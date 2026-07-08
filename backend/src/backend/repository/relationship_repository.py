@@ -411,6 +411,31 @@ class RelationshipRepository(BaseRepository):  # type: ignore[type-arg]
     # Soft Delete — Relationships are never deleted
     # ------------------------------------------------------------------
 
+    async def update(self, entity: Any) -> Any:
+        """Relationships are immutable: update is prohibited.
+
+        Relationship direction uniqueness (source_id, target_id, relationship_type)
+        prevents modification. To change a relationship, delete and recreate.
+
+        Raises:
+            DomainIntegrityError: Always, because relationships cannot be modified.
+        """
+        raise DomainIntegrityError(
+            entity_type="relationship",
+            constraint="Relationships are immutable - use delete+recreate for changes",
+        )
+
+    async def soft_delete(self, id: UUID) -> None:
+        """Relationships are immutable: soft_delete is prohibited.
+
+        Raises:
+            DomainIntegrityError: Always, because relationships cannot be deleted.
+        """
+        raise DomainIntegrityError(
+            entity_type="relationship",
+            constraint="Relationships are immutable - no DELETE allowed",
+        )
+
     async def soft_delete_impl(self, id: UUID) -> None:
         """Relationships are never soft-deleted.
 

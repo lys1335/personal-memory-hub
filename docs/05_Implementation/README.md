@@ -1,9 +1,9 @@
 # Implementation Phase
 
 > **Phase**: Phase D — Document-Driven Implementation
-> **Status**: D1 Infrastructure Foundation — ✅ Complete
-> **Next**: D2 Repository Layer (planned)
-> **Last Updated**: 2026-07-04
+> **Status**: D1 ✅ · D2 ✅ · D3 ⏳ Planned
+> **Next**: D3 Service Layer (planning)
+> **Last Updated**: 2026-07-08
 
 ---
 
@@ -22,9 +22,9 @@ Implementation follows the coding order defined in `../04_Retrieval_Ranking/11_I
 | Milestone | Phase | Status | Document |
 |-----------|-------|--------|----------|
 | **D1: Infrastructure Foundation** | D1 | ✅ Complete | `D1_Infrastructure_Foundation_Plan.md` |
-| **D2: Repository Layer** | D2 | ⏳ Planned | — |
-| **D3: Domain Engine** | D3 | ⏳ Planned | — |
-| **D4: Service Layer** | D4 | ⏳ Planned | — |
+| **D2: Repository Layer** | D2 | ✅ Complete | `D2_Repository_Layer_Plan.md` |
+| **D3: Service Layer** | D3 | ⏳ Planned | `D3_Service_Layer_Plan.md` |
+| **D4: Domain Engine** | D4 | ⏳ Planned | — |
 | **D5: Entry & API** | D5 | ⏳ Planned | — |
 | **D6: Testing & Stabilization** | D6 | ⏳ Planned | — |
 
@@ -37,9 +37,9 @@ D1 Infrastructure
     ↓
 D2 Repository Layer
     ↓
-D3 Domain Engine
+D3 Service Layer
     ↓
-D4 Service Layer
+D4 Domain Engine
     ↓
 D5 Entry & API
     ↓

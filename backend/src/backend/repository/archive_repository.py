@@ -380,6 +380,32 @@ class ArchiveRepository(BaseRepository):  # type: ignore[type-arg]
         return list(result.scalars().all())
 
     # ------------------------------------------------------------------
+    # Soft Delete — Archives are immutable (no update/soft_delete)
+    # ------------------------------------------------------------------
+
+    async def update(self, entity: Any) -> Any:
+        """Archives are immutable: update is prohibited.
+
+        Raises:
+            DomainIntegrityError: Always, because archives cannot be modified.
+        """
+        raise DomainIntegrityError(
+            entity_type="archive",
+            constraint="Archives are immutable - no UPDATE allowed",
+        )
+
+    async def soft_delete(self, id: UUID) -> None:
+        """Archives are immutable: soft_delete is prohibited.
+
+        Raises:
+            DomainIntegrityError: Always, because archives cannot be deleted.
+        """
+        raise DomainIntegrityError(
+            entity_type="archive",
+            constraint="Archives are immutable - no DELETE allowed",
+        )
+
+    # ------------------------------------------------------------------
     # Internal Helpers
     # ------------------------------------------------------------------
 
