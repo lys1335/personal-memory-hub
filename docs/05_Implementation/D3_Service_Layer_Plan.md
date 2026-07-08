@@ -1,10 +1,10 @@
 # Personal Memory Hub — D3 Service Layer Plan
 
-> **Version**: 1.0
+> **Version**: 2.0 (Post-Human-Review)
 > **Date**: 2026-07-08
 > **Phase**: Phase D — Document-Driven Implementation
 > **Stage**: D3 — Service Layer
-> **Status**: Planning (awaiting human approval)
+> **Status**: Approved — Human review completed, decisions integrated
 > **Author**: System Architecture Group
 
 ---
@@ -63,6 +63,10 @@ The following outputs are expected upon D3 completion:
 | 9 | DTO Models | `backend/src/backend/service/dto.py` | Entry DTOs, internal result models, query result models |
 | 10 | Test Suite | `backend/tests/` | Service unit tests, integration tests, capability compliance tests |
 | 11 | Verification Guide Update | `docs/06_Guides/` | Updated verification guide for D3 |
+| 12 | Exception Mapping Matrix | `docs/07_Architecture_Contracts/` | Architecture specification: Repository→Service→Entry exception mapping |
+| 13 | Logging Schema Specification | `docs/07_Architecture_Contracts/` | Architecture specification: structured logging contract |
+
+**Note**: Items 12–13 are architecture specifications, not implementation deliverables. They define version-controlled contracts for exception mapping and logging schema.
 
 ---
 
@@ -79,20 +83,56 @@ The following outputs are expected upon D3 completion:
 - `backend/src/backend/service/base.py` — `BaseService` class with:
   - Repository access pattern (diagonal access: Service → Repository directly)
   - Workspace context propagation (workspace_id through repository calls)
-  - Transaction helpers (`commit()`, `rollback()`)
   - Error translation pattern (`RepositoryError` → `DomainIntegrityError` → `EntrySafeError`)
   - Capability-oriented method signatures (no CRUD-style methods)
+  - Transaction context helper (internal, not exposed as public commit()/rollback())
+  - Exception translation helper
+  - Workspace/context helper
+  - Common non-domain utilities
 
 - `backend/src/backend/service/__init__.py` — Service container/wiring:
-  - DI registration for all Services
+  - Constructor DI registration for all Services
   - Repository bindings (each Service receives its required Repositories)
   - Engine bindings (placeholder for D4 Engine implementations)
+
+**Architecture Principles** (approved by human review):
+
+1. **Thin BaseService Principle**: BaseService exists only for shared infrastructure concerns. Explicitly prohibited: business workflow, domain logic, Repository registry, Service locator, cache, event bus, CRUD implementation, authorization, validation, factory behavior.
+
+2. **Explicit Dependency Principle**: Constructor Injection only. No Service Locator, Property Injection, or Runtime dependency lookup.
+
+3. **Inject What You Use**: Inject only the repositories actually required by each Service. Do NOT introduce Repository Registry.
+
+4. **Infrastructure Independence**: Infrastructure dependencies (Logger, Transaction Manager, Metrics, Tracing) may be shared. Domain dependencies remain owned by each concrete Service.
+
+5. **Stateless Service Principle**: All Services are Stateless. Services keep dependencies only. Never retain: workspace, request, transaction, user state, cache of mutable business objects.
+
+6. **Singleton by Design**: Services are singleton instances managed by DI container.
+
+7. **Context Belongs to Invocation**: Workspace Context belongs to each invocation. It never becomes Service state.
+
+8. **No Lazy Mutable Initialization**: Services must not lazily initialize mutable state.
+
+9. **Service Transaction Ownership**: Transaction belongs only to Application Service. Repositories never begin, commit or rollback transactions.
+
+10. **Repository Transaction Neutrality**: Repositories are transaction-neutral. They operate within the transaction context provided by the Service.
+
+11. **Engine Transaction Neutrality**: Engines remain transaction-neutral.
+
+12. **One Use Case One Transaction**: Each public Service method defines one transaction boundary unless explicitly documented otherwise.
+
+13. **No Hidden Transaction Boundary**: Transaction boundaries are explicit and documented.
+
+14. **Single Translation Responsibility**: Each layer translates once into the exception model of the next layer. Preserve Root Cause.
+
+15. **Stable Exception Taxonomy**: Exception types are version-controlled architecture contracts.
 
 **Constraints**:
 - Services must NOT contain business logic that belongs in Engines (Engines are D4)
 - Services coordinate Repository reads/writes but do NOT implement domain algorithms
 - All Services use the same error translation pattern
 - All Services respect workspace isolation
+- BaseService does NOT expose commit()/rollback() as public helpers
 
 **Engineering decisions referenced**:
 - 10_1 §4.2: Service Responsibilities (orchestration, transaction, coordination)
@@ -481,11 +521,40 @@ TaskService
   - Internal Results: `CaptureResult`, `SearchResult`, `ImportReport`, `MergeResult`, `ReflectionExecutionResult`, `TaskInfo`
   - Query Results: `QueryResult[T]`, `MemoryView`, `EntityView`, `RankedMemoryView`
 
+- **Exception Mapping Matrix** (architecture specification, not implementation):
+  ```
+  Repository Exception
+    ↓
+  Service Exception
+    ↓
+  HTTP / MCP / CLI
+  ```
+  Documented as a version-controlled architecture contract.
+
+- **Logging Schema Specification** (architecture specification, not implementation):
+  - Structured Logging adopted
+  - Never log: Memory Content, Reflection Content, Embeddings, Prompts, Secrets, API Keys, Tokens
+  - Prefer logging identifiers
+  - Introduce Correlation ID
+  - Define standard log levels
+  - Logging belongs to Service layer
+  - Repository logs persistence
+  - Entry logs protocol/access
+
+**Layer Responsibilities**:
+- **Repository**: Repository Exception only
+- **Service**: Domain Exception only
+- **Entry**: Entry-safe Exception only
+- **Exception translation responsibility belongs to Service**
+
 **Constraints**:
 - No ORM Model leakage to Entry layer
 - No Entry DTO propagation between Services
 - Entry DTO ↔ Domain Model ↔ Repository ORM Model (three distinct layers)
 - All error codes are protocol-agnostic (Entry layer maps to HTTP/MCP/CLI codes)
+- Single Translation Responsibility: Each layer translates once into the exception model of the next layer
+- Preserve Root Cause in exception chaining
+- Stable Exception Taxonomy as version-controlled architecture contract
 
 **Engineering decisions referenced**:
 - 10_1 §3.3: Call direction rules (Entry → Service → Engine/Repository)
@@ -502,6 +571,28 @@ TaskService
 **Purpose**: Implement comprehensive tests for all Services.
 
 **Dependencies**: D3.1–D3.7 (all Services and infrastructure implemented).
+
+**Verification Strategy** (expanded by human review):
+
+Include the following test categories:
+- Unit Test
+- Transaction Verification
+- Boundary Verification
+- Dependency Verification
+- Exception Contract Verification
+- Logging Contract Verification
+- Capability Verification
+- Architecture Compliance Test
+
+**Architecture tests should verify**:
+- Layer Dependency
+- Service DAG
+- Engine DAG
+- Repository Frozen
+- Stateless Service
+- DTO Boundary
+- Exception Mapping
+- Logging Contract
 
 **Expected outputs**:
 
@@ -666,7 +757,16 @@ Upon D3 completion, update the following documents:
 | **Error handling** | Consistent exception hierarchy across all Services | Engines raise the same exceptions |
 | **DTO boundaries** | Three-layer DTO/Domain/ORM separation enforced | Engines receive Domain Models, return Domain Models |
 
-### 7.2 What D4 Must NOT Assume
+### 7.2 D3 ↔ D4 Boundary
+
+**Strengthened boundary definition**:
+
+- **D3 prepares stable Application Workflows**: D3 delivers fully functional Service Layer with capability-oriented APIs, transaction management, and error handling.
+- **D4 fills Domain Engine capabilities**: D4 implements the shared domain Engines that D3 Services coordinate through interfaces.
+- **D4 should not require restructuring D3**: Once D3 is complete, the Service Layer is frozen. D4 implementation must adapt to existing Service contracts.
+- **Avoid misleading wording**: D4 does NOT move large portions of Service logic. D3 Services already contain the orchestration logic; D4 provides the domain computation logic through Engines.
+
+### 7.3 What D4 Must NOT Assume
 
 | Item | Reason |
 |------|--------|
@@ -696,6 +796,21 @@ During D3 implementation, the following principles govern all decisions:
 | **Minimum Service Guarantee** | IR-017 | Raw factual memories always retrievable even if Reflection fails |
 | **Deterministic-by-Default** | 10_8 §5.1 | All Service tests are deterministic |
 | **Human Decides, AI Executes** | 11 §13.2 | This plan requires human approval before coding |
+| **Thin BaseService Principle** | D3.1 Human Decision | BaseService exists only for shared infrastructure concerns |
+| **Explicit Dependency Principle** | D3.1 Human Decision | Constructor Injection only |
+| **Inject What You Use** | D3.1 Human Decision | Inject only required Repositories, no Registry |
+| **Infrastructure Independence** | D3.1 Human Decision | Shared infrastructure, owned domain dependencies |
+| **Stateless Service Principle** | D3.1 Human Decision | Services keep dependencies only, never retain state |
+| **Singleton by Design** | D3.1 Human Decision | Services are singleton instances |
+| **Context Belongs to Invocation** | D3.1 Human Decision | Workspace Context per invocation, not Service state |
+| **No Lazy Mutable Initialization** | D3.1 Human Decision | No lazy initialization of mutable state |
+| **Service Transaction Ownership** | D3.1 Human Decision | Transaction belongs only to Application Service |
+| **Repository Transaction Neutrality** | D3.1 Human Decision | Repositories never begin/commit/rollback transactions |
+| **Engine Transaction Neutrality** | D3.1 Human Decision | Engines remain transaction-neutral |
+| **One Use Case One Transaction** | D3.1 Human Decision | Each public method defines one transaction boundary |
+| **No Hidden Transaction Boundary** | D3.1 Human Decision | Transaction boundaries are explicit and documented |
+| **Single Translation Responsibility** | D3.1 Human Decision | Each layer translates once into next layer's exception model |
+| **Stable Exception Taxonomy** | D3.1 Human Decision | Exception types are version-controlled architecture contracts |
 
 ---
 
@@ -757,24 +872,34 @@ The recommended implementation order follows dependency resolution:
 
 ## 15. Closing Confirmation
 
-> **Status**: Closed
+> **Status**: Document Updated — Human review decisions integrated
 > **Date**: 2026-07-08
-> **Verified by**: Human verification (D3 Verification Guide, §1–14)
+> **Reviewed by**: Human review completed
+> **Changes**: 10 human decisions approved and integrated into D3.1
 
-### 15.1 D3 Service Layer Completed
+### 15.1 Human Review Decisions Integrated
 
-All D3 deliverables have been implemented and verified:
+The following decisions from human review have been integrated into this document:
 
-| # | Deliverable | Status |
-|---|-------------|--------|
-| 1 | 5 Services (Memory, Query, Entity, Reflection, Task) | ✅ Implemented |
-| 2 | Service Base Infrastructure | ✅ Implemented |
-| 3 | DI Wiring / Container | ✅ Implemented |
-| 4 | Error Handling & DTO Models | ✅ Implemented |
-| 5 | Service Test Suite | ✅ All passing |
-| 6 | Verification Guide | ✅ Complete |
+1. **Thin BaseService Principle** — BaseService remains intentionally minimal
+2. **Dependency Injection Strategy** — Constructor Injection only, no Service Locator
+3. **Lifecycle & Stateless Rules** — All Services are Stateless, Singleton by Design
+4. **Transaction Ownership** — Transaction belongs only to Application Service
+5. **Exception Convention** — Clear layer responsibilities (Repository/Service/Entry)
+6. **Exception Mapping Matrix** — Added as architecture specification
+7. **Logging Strategy** — Structured Logging, Correlation ID, never log sensitive content
+8. **Service Verification Strategy** — Expanded to include 8 test categories
+9. **D3 ↔ D4 Boundary** — Strengthened wording, D4 should not restructure D3
+10. **Documentation Assets** — Exception Mapping Matrix and Logging Schema added
 
-### 15.2 Service Layer Frozen
+### 15.2 Document Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-07-08 | Initial D3 Service Layer Plan |
+| 2.0 | 2026-07-08 | Human review decisions integrated (10 principles, transaction ownership, exception convention, logging strategy, verification expansion) |
+
+### 15.3 Service Layer Frozen
 
 The Service Layer is officially frozen after D3 completion.
 
@@ -790,11 +915,11 @@ The Service Layer is officially frozen after D3 completion.
 - Adding new Services
 - Modifying Service dependencies (DAG edges)
 
-### 15.3 Service Contract Frozen
+### 15.4 Service Contract Frozen
 
 The Service interface contract defined in `10_2~10_6` is frozen. Any future changes to the contract require an Architecture Decision Record (ADR).
 
-### 15.4 Handoff to D4
+### 15.5 Handoff to D4
 
 D3 has completed all planned work and passed verification. The Service Layer is ready for D4 (Domain Engine Layer) implementation.
 
