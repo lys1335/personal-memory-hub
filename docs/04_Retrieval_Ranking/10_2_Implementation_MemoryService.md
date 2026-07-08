@@ -1,9 +1,9 @@
 # Personal AI Memory Hub — 10_2 Implementation MemoryService
 
-> **版本**: 1.0
-> **日期**: 2026-06-27
+> **版本**: 2.0 (Post-Human-Review D3.2)
+> **日期**: 2026-07-08
 > **阶段**: Phase B — 实现设计（第二部分）
-> **状态**: 已确认
+> **状态**: 已确认（D3.2 人类审查决策已集成）
 > **作者**: 系统架构组
 
 ---
@@ -37,7 +37,26 @@ MemoryService 表示 **Memory Domain**，不是 Memory CRUD。
 
 它编排 MemoryEngine、ArchiveEngine、EvidenceEngine、RelationshipEngine 等 Domain Engine，完成记忆领域的业务逻辑。
 
-### 2.2 明确禁止
+### 2.2 MemoryService 边界（Human Review Approved）
+
+MemoryService 是 Memory 唯一的写向业务服务。职责包括：
+
+- Capture（捕获）
+- Import（导入）
+- Merge（合并）
+- Archive（归档）
+- Restore（恢复）
+- Lifecycle coordination（生命周期协调）
+- Export（导出）
+
+MemoryService **不拥有**：
+
+- Query（查询）— 属于 QueryService
+- Reflection execution（反射执行）— 属于 ReflectionService
+- Task execution（任务执行）— 属于 TaskService
+- Runtime scheduling（运行时调度）— 属于 Task Runtime
+
+### 2.3 明确禁止
 
 MemoryService **不得**暴露以下接口：
 
@@ -48,8 +67,12 @@ MemoryService **不得**暴露以下接口：
 | `delete()` | Memory 不可删除，只有 Archive |
 | `find()` / `get()` | Query 职责，属于 QueryService |
 | `list()` | Query 职责 |
+| `search()` | Query 职责 |
+| `browse()` | Query 职责 |
 
-### 2.3 正确定位
+**Query Separation Principle**: MemoryService 不得暴露 Memory 查询 API。所有读端能力属于 QueryService。严格遵守 Command / Query 分离。
+
+### 2.4 正确定位
 
 MemoryService 的公开接口按 **Capability** 组织，而非按 **持久化操作** 组织。
 
@@ -81,6 +104,20 @@ MemoryService
 └── Restore Capability
     └── restoreArchivedMemory()
 ```
+
+### 2.5 Task Ownership（Human Review Approved）
+
+**所有权模型澄清**：
+
+MemoryService 可以请求后台工作，但不拥有任务执行。
+
+| 组件 | 拥有职责 |
+|------|----------|
+| **TaskService** | 任务注册、任务状态、任务重试、任务取消 |
+| **Task Runtime** | 轮询、分发、执行、处理器选择 |
+| **Domain Engine** | 执行业务工作 |
+
+**TaskService 不执行业务逻辑**。MemoryService 通过 `TaskService.submit()` 请求后台工作，TaskService 负责任务生命周期管理，Task Runtime 负责执行调度，Domain Engine 执行实际业务运算。
 
 ---
 
@@ -290,7 +327,63 @@ Memory N → Transaction → Commit
 | 天然支持断点恢复 | 可从失败位置继续 |
 | 支持超大规模导入 | 无长事务锁表风险 |
 
-### 6.2 TransactionPolicy 可扩展设计
+### 6.2 Runtime Flow（Human Review Approved）
+
+**Capture 事务流程**：
+
+```
+Entry
+  → MemoryService
+    → Repository Coordination
+      → Commit
+        → TaskService.submit_task()
+          → Return
+```
+
+**后台执行流程**（完全独立事务）：
+
+```
+Task Runtime
+  → Poll Pending Task
+    → OPEN NEW TRANSACTION
+      → Task Handler
+        → Domain Engine
+          → Repository
+            → Commit
+```
+
+**关键原则**：执行事务与捕获事务完全独立。
+
+### 6.3 Transaction Isolation Principle（Human Review Approved）
+
+**背景任务隔离原则**：
+
+后台任务执行始终启动一个**完全独立的新事务**。MemoryService 创建的不得被任何异步任务继承。Reflection、Embedding、Archive、Export、索引重建均遵循此规则。
+
+### 6.4 Background Failure Isolation Principle（Human Review Approved）
+
+**后台故障隔离原则**：
+
+一旦主 Memory 事务已提交，后台任务失败**绝不应**使已提交的 Memory 失效。失败仅影响：
+
+- 任务状态
+- 重试调度
+
+**绝不回滚已提交的 Memory**。
+
+### 6.5 Minimum Service Guarantee（Human Review Approved）
+
+**最小服务保障**：
+
+Memory 持久化成功即满足最小服务保障。Reflection 是增强功能。Embedding 是增强功能。后台处理是增强功能。**增强功能失败绝不会使已成功存储的原始证据失效**。
+
+### 6.6 Raw Evidence Preservation Principle（Human Review Approved）
+
+**原始证据保留原则**：
+
+无论所有下游后台任务是否失败，原始证据必须始终保持可检索。
+
+### 6.7 TransactionPolicy 可扩展设计
 
 | 策略 | 说明 | 适用场景 | 状态 |
 |------|------|----------|------|
@@ -300,7 +393,11 @@ Memory N → Transaction → Commit
 
 **MVP 默认采用 PerMemory**。未来如有性能需求，可增加 PerChunk（例如每 100 条一个事务），而无需修改 MemoryService 的整体流程。
 
-### 6.3 事务控制边界
+### 6.8 Repository Coordination（Human Review Approved）
+
+**Repositories 从不互相协调**。MemoryService 协调多个 Repositories。Repository 保持仅持久化角色。
+
+### 6.9 事务控制边界
 
 MemoryService **不负责数据库事务控制**。
 
@@ -489,6 +586,28 @@ MemoryService **不耦合** TaskRuntime 的具体实现。
 
 MemoryService **不耦合** TaskRuntime 的具体实现。
 
+### 9.4 Export Boundary（Human Review Approved）
+
+**Export 保持在 MemoryService 内**。不引入 ExportService。
+
+**执行模式不改变所有权**。支持两种执行模式：
+
+- 同步导出
+- 异步导出任务
+
+选择由调用方（Entry / Agent / User）决定，不由 MemoryService 根据数据大小自动选择。
+
+### 9.5 Import Job Boundary（Human Review Approved）
+
+**Import 统一与 Task 生命周期管理**。
+
+| 组件 | 职责 |
+|------|------|
+| **MemoryService** | `create_import_job()` |
+| **TaskService** | `get_task()`, `retry_task()`, `cancel_task()` |
+
+Import Job 应与 Reflection、Archive 等其他后台任务遵循相同的生命周期管理模式。
+
 ```
 MemoryService.createImportJob(source, file)
     ↓
@@ -645,8 +764,16 @@ DomainEvent
 | MemoryService | ReflectionService | ⚠️ | Event / Job Dispatch | 触发 Reflection，不直接调用 |
 | MemoryService | QueryService | ❌ | N/A | 防止 Command → Query 耦合，CQRS 分离 |
 | MemoryService | ContextService | ❌ | N/A | Context 构建属于 Query 侧 |
-| MemoryService | TaskRuntime | ✅ | Job Dispatch | 提交 Import/Reflection Job，通过 Task Registry 路由 |
+| MemoryService | TaskService | ✅ | Job Dispatch | 提交 Import/Reflection/Archive/Export Job |
+| MemoryService | TaskRuntime | ⚠️ | Job Dispatch Only | 仅通过 TaskService 提交，不直接耦合 |
 | MemoryService | Repository | ❌ | N/A | 无层跳跃，通过 Engine 间接访问 |
+
+**Key clarifications (Human Review)**:
+- MemoryService → QueryService: **禁止**（Query Separation Principle）
+- MemoryService → TaskService: **允许**，但 TaskService 仅负责任务注册/状态/重试/取消，不执行业务逻辑
+- MemoryService → TaskRuntime: **仅限 Job Dispatch**，不耦合具体实现
+- Export 归属 MemoryService（不引入 ExportService）
+- Import Job 生命周期与 TaskService 统一管理
 
 ### 13.2 矩阵解读
 
@@ -718,6 +845,7 @@ Complete Service Dependency Graph
 | 1.0 | 2026-06-27 | 初始版本，确认 MemoryService 全部设计要素 | ✅ 已确认 |
 | 1.2 | 2026-06-27 | Phase B-3 修订：(1) 新增与 10_4 的交叉引用（Service Independence、Shared Domain Engine、Semantic Uniqueness、L0 Protection）(2) Decision Summary 补充 16~20 (3) 回溯更新表补充 10_4 | ✅ 已确认 |
 | 1.3 | 2026-06-28 | Phase B-5 修订：(1) 补充 MemoryService 编排 EntityEngine 的角色（与 10_5 对齐）(2) Decision Summary 补充 21 | ✅ 已确认 |
+| 2.0 | 2026-07-08 | D3.2 人类审查决策集成：(1) §2.2 新增 MemoryService 边界定义（职责/非职责清单）(2) §2.3 新增禁止 API 清单（search/browse）(3) §2.5 新增 Task Ownership 模型（TaskService/Task Runtime/Domain Engine 职责分离）(4) §6.2 新增 Runtime Flow（Capture 事务 vs 后台执行事务完全独立）(5) §6.3 新增 Transaction Isolation Principle（背景任务隔离）(6) §6.4 新增 Background Failure Isolation Principle（后台故障隔离）(7) §6.5 新增 Minimum Service Guarantee（Memory 持久化成功即满足最小保障）(8) §6.6 新增 Raw Evidence Preservation Principle（原始证据始终可检索）(9) §6.8 新增 Repository Coordination 澄清（Repositories 从不互相协调）(10) §9.4 新增 Export Boundary（Export 留在 MemoryService，执行模式由调用方决定）(11) §9.5 新增 Import Job Boundary（Import 统一 Task 生命周期管理）(12) §13.1 协作矩阵更新（新增 TaskService 行，TaskRuntime 标注 Job Dispatch Only）(13) 新增 Key clarifications 注释 | ✅ 已确认 |
 
 ---
 

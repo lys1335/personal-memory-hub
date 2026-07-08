@@ -207,9 +207,16 @@ MemoryService
 
 **Constraints**:
 - Command Returns Identity: `capture_memory()` returns `MemoryId`, not full Memory entity
-- No Query responsibilities: all Memory data reading goes through QueryService
+- No Query responsibilities: all Memory data reading goes through QueryService (Query Separation Principle)
 - No direct Engine calls: Engine implementations are D4; Service coordinates Repositories directly
 - Raw Evidence Preservation: raw evidence must never be lost due to downstream processing failure
+- Task Ownership: MemoryService requests background work via TaskService.submit(), TaskService owns task registration/status/retry/cancellation, Task Runtime owns polling/dispatching/execution/handler selection, Domain Engine performs actual business work
+- Export Boundary: Export stays within MemoryService (no ExportService). Execution mode (sync/async) determined by caller, not MemoryService
+- Import Job Boundary: Import unified with Task lifecycle — MemoryService creates_import_job(), TaskService manages get_task/retry_task/cancel_task
+- Repository Coordination: Repositories never coordinate each other. MemoryService coordinates multiple repositories. Repository remains persistence-only.
+- Transaction Isolation: Background task execution always starts a completely new transaction. No async task may continue the transaction created by MemoryService.
+- Background Failure Isolation: Once primary Memory transaction committed, background task failure never invalidates committed Memory. Failure only affects Task status and Retry scheduling.
+- Minimum Service Guarantee: Successful Memory persistence satisfies Minimum Service Guarantee. Reflection/Embedding/Background processing are enhancements. Enhancement failure never invalidates successfully stored Raw Evidence.
 
 **Engineering decisions referenced**:
 - 10_2: MemoryService design (Capability taxonomy, Import pipeline, Transaction policy)
@@ -220,7 +227,7 @@ MemoryService
 - IR-011: Direct Job Dispatch (MemoryService → TaskService.submit())
 - IR-012: Idempotent Import (batch-level uniqueness)
 
-**Verification**: All 6 Capability groups have implemented methods. Command methods return Identity. Query methods are absent. Repository access respects workspace isolation.
+**Verification**: All 6 Capability groups have implemented methods. Command methods return Identity. Query methods are absent. Repository access respects workspace isolation. Capability verification, Repository coordination verification, Transaction boundary verification, Background failure isolation verification, Exception mapping verification, Workspace isolation verification, Raw Evidence Preservation verification, Minimum Service Guarantee verification, Service resilience verification.
 
 ---
 
