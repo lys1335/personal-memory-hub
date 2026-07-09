@@ -77,7 +77,7 @@ Implementation Service Layer — layered architecture, service classification, e
 
 ### 10_3_Implementation_QueryService.md
 
-QueryService — Domain Service design, five Query Capabilities (Retrieval/Search/Browse/Projection/Analytics), Query Pipeline with Planner, Engine interaction, Service Independence, Consumer-Agnostic Interface, Stable Result Contract.
+QueryService — Domain Service design, five Query Capabilities (Retrieval/Search/Browse/Projection/Analytics), Unified Read Workflow (Validation→Planning→Repository Coordination→Domain Processing→Projection→Result Assembly), Read Pipeline Principles, Repository Coordination rules, Projection Three-Level Boundary, Query Purity, Capability Composition, Transaction Strategy, Error Mapping, Language Preservation, Query Idempotence, Observational Consistency, Consumer-Agnostic Interface, Stable Result Contract, Verification Strategy.
 
 ### 10_4_Implementation_ReflectionService.md
 
@@ -93,7 +93,7 @@ Task Runtime — Generic task execution infrastructure, domain-agnostic task mod
 
 ### 13_Architecture_Guidelines.md
 
-Living Guideline — 65 numbered guidelines (G-001~G-065) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Reflection & Memory Evolution, Entity Identity, Task Runtime, API Entry Layer, Testing, Review Rules, Evolution Rules.
+Living Guideline — 80 numbered guidelines (G-001~G-080) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Language Preservation, Reflection & Memory Evolution, Entity Identity, Task Runtime, API Entry Layer, Testing, Review Rules, Evolution Rules.
 
 ### 10_8_Implementation_Testing.md
 

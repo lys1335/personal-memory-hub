@@ -4,7 +4,7 @@
 > **日期**: 2026-07-01  
 > **阶段**: Phase B — 工程规范（Living Guideline）  
 > **状态**: 已确认  
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-070。
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-080。
 
 ---
 
@@ -578,6 +578,141 @@
 
 ---
 
+## 8. QueryService Guidelines
+
+### G-071: Query Purity Principle
+
+> QueryService shall not produce any business side effects other than allowed infrastructure behaviors.
+
+**禁止的隐藏命令**：
+
+| 禁止 | 原因 |
+|------|------|
+| Automatic Reflection | 属于 ReflectionService |
+| Automatic Embedding Generation | 属于 Engine/Task Runtime |
+| Automatic Index Rebuilding | 属于 Task Runtime |
+| Automatic Repairs | 属于 EntityService/Task Runtime |
+
+所有上述操作必须通过显式 Command 或 Task 执行。
+
+**引用**：10_3 §2.3
+
+### G-072: Capability Composition Principle
+
+> Public Query capabilities may internally compose other Query capabilities. Composition remains inside QueryService.
+
+| 规则 | 说明 |
+|------|------|
+| QueryService 内部组合 | Retrieval 可组合 Search + Projection |
+| 禁止跨层编排 | Entry/Repository/Engine 不编排能力组合 |
+| 组合结果仍为 Query | 不引入写操作 |
+
+**引用**：10_3 §3
+
+### G-073: Query Idempotence Principle
+
+> The same query executed against the same persisted state shall always produce the same business result.
+
+| 约束 | 说明 |
+|------|------|
+| 相同查询 + 相同状态 = 相同结果 | 基本保证 |
+| 不要求逐字节一致 | 允许非确定性基础设施行为 |
+| 要求业务语义一致 | 核心业务结果必须一致 |
+| 不修改持久化状态 | 幂等的前提 |
+
+**引用**：10_3 §9
+
+### G-074: Language Preservation Principle
+
+> Preserve original language. Cross-language retrieval relies on embeddings rather than translating stored memory into a canonical language.
+
+| 原则 | 说明 |
+|------|------|
+| 不翻译存储内容 | Memory 以原始语言存储和检索 |
+| 嵌入是跨语言桥梁 | 多语言嵌入模型处理语义匹配 |
+| QueryService 语言中立 | 不对语言做任何假设或转换 |
+
+**引用**：10_3 §12
+
+### G-075: Observational Consistency
+
+> Query results reflect the persisted business state at query time. QueryService must not alter the observed business state during query execution.
+
+QueryService 的职责是观察（Observe）和组织（Orchestrate），而不是影响（Influence）业务状态。
+
+**引用**：10_3 §2.4
+
+### G-076: Repository Coordination Uniqueness
+
+> QueryService is the only repository coordinator.
+
+| 规则 | 说明 |
+|------|------|
+| Repository 不互调 | Repositories never coordinate each other |
+| Repository 不知道彼此 | Repositories never know each other |
+| Repository 不组装跨聚合结果 | Repositories never assemble cross-aggregate results |
+| Repository 组合由 Planning 决定 | Query Planning determines combinations |
+
+**引用**：10_3 §7
+
+### G-077: Read Pipeline Principles
+
+> All read operations follow a single, forward-only pipeline with immutable intermediate results.
+
+| 原则 | 说明 |
+|------|------|
+| Single Read Flow | 所有读操作走同一条 Pipeline |
+| Forward-Only | Pipeline 单向执行，不回退、不循环 |
+| Immutable Intermediate Results | 每个阶段输出不可变 |
+| Stateless Execution | Pipeline 不保留跨请求状态 |
+| 差异仅在三处 | Planning、Repository Coordination、Domain Processing |
+
+**引用**：10_3 §6
+
+### G-078: Projection Three-Level Boundary
+
+> Domain Model → Domain View → Entry DTO
+
+| 层级 | 职责 |
+|------|------|
+| Domain Model | Engine 返回的最完整领域对象 |
+| Domain View | QueryService 投影后的语义变换结果 |
+| Entry DTO | Entry 层协议适配后的传输对象 |
+
+**投影约束**：仅变换表示、不改变语义、确定性、无状态、无副作用。
+
+**引用**：10_3 §4.4
+
+### G-079: Transaction Strategy
+
+> Read-Only Transaction. Transaction owned by QueryService.
+
+| 规则 | 说明 |
+|------|------|
+| 事务由 QueryService 拥有 | QueryService 负责 begin/commit/rollback |
+| Repository 不拥有事务 | Repositories 是事务中性的 |
+| 一致的单一业务快照 | 事务确保整个查询看到一致的数据 |
+| 无长运行读事务 | 事务在单次查询执行期间完成 |
+| Streaming 是交付策略 | 不是事务策略 |
+
+**引用**：10_3 §10
+
+### G-080: Deterministic Error Mapping
+
+> Repository errors are deterministically translated into Service errors. Empty search results are not errors.
+
+| 层级 | 错误类型 |
+|------|----------|
+| Repository | `RepositoryError` |
+| QueryService | `ServiceError` (业务导向) |
+| Entry | `EntrySafeError` |
+
+部分故障恢复属于 D4 QueryEngine，不属于 D3 Service。
+
+**引用**：10_3 §11
+
+---
+
 ## 附录：Testing Guidelines
 
 ### G-056: Testing Mirrors Architecture
@@ -658,7 +793,17 @@
 | G-067 | Stateless AI Collaboration | 13_AI_Development_Workflow |
 | G-068 | Evidence-Based Verification | 13_AI_Development_Workflow |
 | G-069 | GitHub as Project State | 13_AI_Development_Workflow |
-| G-070 | Knowledge Refinement Over Proliferation | 13_AI_Development_Workflow |
+|| G-070 | Knowledge Refinement Over Proliferation | 13_AI_Development_Workflow |
+|| G-071 | Query Purity Principle | 10_3 |
+|| G-072 | Capability Composition Principle | 10_3 |
+|| G-073 | Query Idempotence Principle | 10_3 |
+|| G-074 | Language Preservation Principle | 10_3 |
+|| G-075 | Observational Consistency | 10_3 |
+|| G-076 | Repository Coordination Uniqueness | 10_3 |
+|| G-077 | Read Pipeline Principles | 10_3 |
+|| G-078 | Projection Three-Level Boundary | 10_3 |
+|| G-079 | Transaction Strategy | 10_3 |
+|| G-080 | Deterministic Error Mapping | 10_3 |
 
 ---
 

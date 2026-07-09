@@ -277,33 +277,109 @@ QueryService
     └── analyze_insights()
 ```
 
+**Unified Read Workflow** (frozen):
+
+```
+Validation
+    ↓
+Planning
+    ↓
+Repository Coordination
+    ↓
+Domain Processing
+    ↓
+Projection
+    ↓
+Result Assembly
+```
+
 **Repository Coordination**:
-- MemoryQueryRepository: complex multi-table JOIN queries, evidence-linked retrieval
-- EntityQueryRepository: graph traversal queries (entity relationships)
-- VectorQueryRepository: similarity search (deferred until pgvector available)
-- MemoryNodeRepository: basic single-entity reads (for projection enrichment)
-- EntityRepository: single-entity reads (for projection enrichment)
+- QueryService is the **only** repository coordinator
+- Repositories never coordinate each other, never know each other, never assemble cross-aggregate results
+- Repository combinations determined by Query Planning
+- Repositories return domain data only
+
+**Read Pipeline Principles**:
+- Single Read Flow — all reads follow the same pipeline
+- Forward-Only — no backtracking, no loops
+- Immutable Intermediate Results — each stage produces immutable output
+- Stateless Execution — no cross-request state
+- Pipeline differences only in: Planning, Repository Coordination, Domain Processing
+
+**Projection Boundary**:
+- Projection belongs to QueryService (not Engine, not Presentation/Entry layer)
+- Three-level boundary: Domain Model → Domain View → Entry DTO
+- Projection constraints: transforms representation only, never changes semantics, deterministic, stateless, side-effect free
 
 **Side-Effect Free Principle**:
 - QueryService MUST NOT modify any domain state or persist data
 - QueryService always respects current persisted state as the single source of truth
 - Allowed infrastructure behavior: cache reads, query metrics, performance tracing, access logging
+- Prohibited hidden commands: automatic reflection, automatic embedding generation, automatic index rebuilding, automatic repairs
+
+**Query Purity Principle**:
+- 除基础设施侧效果外，QueryService 不得产生任何业务侧效果
+- 所有侧效果必须通过显式 Command 或 Task 执行
+
+**Observational Consistency**:
+- Query results reflect the persisted business state at query time
+- QueryService must not alter the observed business state during query execution
+
+**Query Idempotence Principle**:
+- The same query executed against the same persisted state shall always produce the same business result
+
+**Capability Composition Principle**:
+- Public Query capabilities may internally compose other Query capabilities
+- Composition remains inside QueryService
+- Entry Layer, Repository Layer and Engine Layer do not orchestrate business capability composition
+
+**Transaction Strategy**:
+- Read-Only Transaction
+- Transaction owned by QueryService
+- Repositories never own transactions
+- Single consistent business snapshot
+- No long-running read transactions
+- Streaming is a delivery strategy, not a transaction strategy
+
+**Error Mapping**:
+- Repository errors are translated into Service errors (deterministic mapping)
+- Business-oriented exception model
+- Projection failures belong to QueryService
+- Empty search results are not errors
+- Partial failure recovery belongs to D4 QueryEngine, not D3 Service
+
+**Language Preservation**:
+- Preserve original language
+- Cross-language retrieval relies on embeddings
+- Memory Hub remains language-agnostic
 
 **Constraints**:
-- Query Returns State: query methods return full domain objects (MemoryView, EntityView, etc.)
+- Query Returns State: query methods return full domain objects/views
 - No Command responsibilities: all writes go through MemoryService/EntityService/ReflectionService
 - Projection belongs to QueryService (not Engine, not Presentation/Entry layer)
 - Pagination: all list-returning methods support OffsetPage/CursorPage
+- QueryService is the only business read entry
+- Domain algorithms belong to D4 Engine
 
 **Engineering decisions referenced**:
-- 10_3: QueryService design (Capability taxonomy, Pipeline, Engine interaction)
+- 10_3: QueryService design (Capability taxonomy, Pipeline, Engine interaction, Repository Coordination, Projection Boundary, Transaction Strategy, Error Mapping)
 - 10_1 §4.2.2: Command/Query Separation
 - G-001: One Capability, One Public API Family
 - G-003: Consumer-Agnostic Interface
+- G-071: Query Purity Principle
+- G-072: Capability Composition Principle
+- G-073: Query Idempotence Principle
+- G-074: Language Preservation Principle
+- G-075: Observational Consistency
+- G-076: Repository Coordination Uniqueness
+- G-077: Read Pipeline Principles
+- G-078: Projection Three-Level Boundary
+- G-079: Transaction Strategy
+- G-080: Deterministic Error Mapping
 - IR-005: Stable Result Contract (QueryResult model)
 - IR-006: Continuation Semantics (pagination continuation)
 
-**Verification**: All 5 Capability groups have implemented methods. No write methods exist. Side-effect free property verified. Projection methods return domain views, not DTOs.
+**Verification**: All 5 Capability groups have implemented methods. No write methods exist. Side-effect free property verified. Projection methods return domain views, not DTOs. Unified read workflow followed. Repository coordination rules enforced. Query purity verified. Transaction ownership confirmed. Error mapping deterministic.
 
 ---
 
