@@ -458,9 +458,11 @@ EntityService
 
 ### D3.5 ReflectionService
 
-**Purpose**: Implement the Memory Evolution Service — semantic quality, evidence consistency, and continuous knowledge evolution.
+**Purpose**: Implement the Reflection Business Capability Orchestrator — Reflection workflow orchestration, business validation, repository coordination, and reflection transaction management.
 
-**Dependencies**: D3.1 (BaseService available), D3.4 (EntityService available for entity updates), D2 (MemoryNodeRepository, CandidateRepository, RelationshipRepository available).
+**Dependencies**: D3.1 (BaseService available), D2 (MemoryNodeRepository, CandidateRepository, RelationshipRepository available).
+
+> **Note**: Reflection algorithms belong to ReflectionEngine (D4). Task lifecycle belongs to TaskService (D3.6). Task execution belongs to Task Runtime (D4).
 
 **Expected outputs**:
 
@@ -513,12 +515,20 @@ ReflectionService
 - Semantic uniqueness within same abstraction level
 - Incremental propagation (only upward when necessary)
 - Raw Evidence Preservation: raw L0 memories are never modified or deleted by Reflection
+- **Reflection Algorithm Ownership**: ReflectionService does NOT own reflection algorithms (owned by ReflectionEngine)
+- **Task Lifecycle Ownership**: ReflectionService does NOT own task lifecycle (owned by TaskService)
+- **Execution Ownership**: ReflectionService does NOT own runtime execution (owned by Task Runtime)
+- **Service Independence**: ReflectionService does NOT call MemoryService, QueryService, EntityService, or TaskService
 
 **Engineering decisions referenced**:
-- 10_4: ReflectionService design (Philosophy, Capability taxonomy, Pipeline)
+- 10_4: ReflectionService design (Philosophy, Capability taxonomy, Workflow)
 - 10_1 §4.2.1: Domain Service principle
-- IR-008: Reflection Pipeline (scope → collect → analyze → generate → validate → persist → propagate)
+- IR-008: Reflection Workflow (business validation → acquire scope → invoke engine → review → persist)
 - IR-013: Reflection Execution Result (Status, Statistics, Metadata)
+- G-038: Service Independence Principle
+- G-039: Capability Completeness Principle
+- G-040: Shared Aggregate Principle
+- G-041: Deferred Execution Principle
 
 **Verification**: All 4 Capability groups have implemented methods. No direct Memory modification without evidence chain. Raw evidence preservation verified. Execution results are reports, not business data.
 

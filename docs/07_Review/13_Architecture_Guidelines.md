@@ -1,10 +1,10 @@
 |# Personal AI Memory Hub — 13 Architecture Guidelines
 
-> **版本**: 1.4  
-> **日期**: 2026-07-01  
+> **版本**: 1.5  
+> **日期**: 2026-07-10  
 > **阶段**: Phase B — 工程规范（Living Guideline）  
 > **状态**: 已确认  
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-080。
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-095 + Error Taxonomy Draft V0。
 
 ---
 
@@ -406,6 +406,58 @@
 
 **引用**：10_5 §3.4
 
+---
+
+## 9. Reflection & Task Architecture
+
+### G-038: Service Independence Principle
+
+> Services are peer-layer business orchestrators. Services shall not invoke other Services.
+
+ReflectionService 不调用 MemoryService、QueryService、EntityService、TaskService。
+共享功能通过共享 Repository 契约、共享 Aggregate 模型、共享 Domain 不变量实现。
+
+**引用**：10_4 §14.1
+
+### G-039: Capability Completeness Principle
+
+> Each Service owns the complete lifecycle required to fulfill its business capability, including persistence required to complete that capability.
+
+MemoryService 不是通用的 Memory 写入网关。Reflection 生成的 Memory 持久化属于 Reflection 能力。
+
+**引用**：10_4 §14.2
+
+### G-040: Shared Aggregate Principle
+
+> Multiple Services may coordinate the same Aggregate while maintaining identical domain invariants and Repository contracts.
+
+MemoryService 与 ReflectionService 共享 Memory Aggregate，但各自拥有不同的工作流所有权。
+
+**引用**：10_4 §14.3
+
+### G-041: Deferred Execution Principle
+
+> Task represents deferred execution rather than deferred business logic.
+
+TaskService 拥有任务生命周期。Task Runtime 拥有执行调度。Reflection 工作流保持在 ReflectionService 内部。
+
+**引用**：10_4 §14.4
+
+### G-042: Execution Context Transparency Principle
+
+> Immediate execution and background execution shall produce identical business behavior.
+
+后台执行只改变执行上下文，不改变工作流、验证、领域规则、错误映射。
+
+**引用**：10_4 §14.5
+
+### G-043: Enhancement Isolation Principle
+
+> Enhancement capabilities fail independently and shall never invalidate committed business results.
+
+Reflection 失败保持局部。重试必须是安全的。每个增强能力独立失败。
+
+**引用**：10_4 §14.7
 
 ---
 
@@ -448,89 +500,95 @@
 | G-035 | No Runtime Canonical Resolution | 10_5 |
 | G-036 | Entity Is Current Best Identity | 10_5 |
 | G-037 | Memory Fact ≠ Entity Reference | 10_5 |
-| G-039 | Task Runtime Is Infrastructure | 10_6 |
-| G-040 | Task Runtime Domain Agnostic | 10_6 |
-| G-041 | Task Chaining via Events | 10_6 |
-| G-042 | Retry vs Re-trigger | 10_6 |
-| G-043 | Task Idempotency | 10_6 |
-| G-044 | Operational Interface Principle | 10_6 |
-| G-045 | Scheduler Is Unified Task Dispatcher | 10_6 |
-| G-046 | Recovery Never Re-evaluates | 10_6 |
-| G-047 | Maintenance Manager Scope | 10_6 |
-| G-048 | Observability Layering | 10_6 |
-|| G-049 | Infrastructure Isolation | 10_6 |
-|| G-050 | API Entry Layer 职责 | 10_7 |
-|| G-051 | Capability Discovery | 10_7 |
-|| G-052 | Multi-Adapter Entry | 10_7 |
-|| G-053 | Entry Validation Layers | 10_7 |
-|| G-054 | DTO Transformation | 10_7 |
-|| G-055 | Memory Immutability at Entry | 10_7 |
+| G-038 | Service Independence Principle | 13 |
+| G-039 | Capability Completeness Principle | 13 |
+| G-040 | Shared Aggregate Principle | 13 |
+| G-041 | Deferred Execution Principle | 13 |
+| G-042 | Execution Context Transparency Principle | 13 |
+| G-043 | Enhancement Isolation Principle | 13 |
+| G-054 | Task Runtime Is Infrastructure | 10_6 |
+| G-055 | Task Runtime Domain Agnostic | 10_6 |
+| G-056 | Task Chaining via Events | 10_6 |
+| G-057 | Retry vs Re-trigger | 10_6 |
+| G-058 | Task Idempotency | 10_6 |
+| G-059 | Operational Interface Principle | 10_6 |
+| G-060 | Scheduler Is Unified Task Dispatcher | 10_6 |
+| G-061 | Recovery Never Re-evaluates | 10_6 |
+| G-062 | Maintenance Manager Scope | 10_6 |
+| G-063 | Observability Layering | 10_6 |
+| G-064 | Infrastructure Isolation | 10_6 |
+| G-065 | API Entry Layer 职责 | 10_7 |
+| G-066 | Capability Discovery | 10_7 |
+| G-067 | Multi-Adapter Entry | 10_7 |
+| G-068 | Entry Validation Layers | 10_7 |
+| G-069 | DTO Transformation | 10_7 |
+| G-070 | Memory Immutability at Entry | 10_7 |
 
 ---
 
 ## 附录：Task Runtime Guidelines
 
-### G-039: Task Runtime Is Infrastructure
+### G-054: Task Runtime Is Infrastructure
 
 > Task Runtime 是通用基础设施层，不是业务逻辑。Task Runtime 不理解 Memory、Entity、Reflection 等业务概念。
 
 **引用**：10_6 §2
 
-### G-040: Task Runtime Domain Agnostic
+### G-055: Task Runtime Domain Agnostic
 
 > Task Runtime 操作 exclusively on generic Task abstraction。Payload 属于 Task 实现，Runtime 从不解析 Payload。
 
 **引用**：10_6 §3
 
-### G-041: Task Chaining via Events
+### G-056: Task Chaining via Events
 
 > Task 从不直接创建另一个 Task。Task Chaining 通过 Domain Event → Event Dispatcher → Task Registry → Task Factory → New Task 实现。
 
 **引用**：10_6 §4
 
-### G-042: Retry vs Re-trigger
+### G-057: Retry vs Re-trigger
 
 > Retry = 同一 Task 的技术恢复（Runtime 责任）。Re-trigger = 新 Task 的业务决策（Service 责任）。
 
 **引用**：10_6 §5.4
 
-### G-043: Task Idempotency
+### G-058: Task Idempotency
 
 > Task Runtime 提供 At-Least-Once 执行保证。每个 Task 实现应该是幂等的。
 
 **引用**：10_6 §6
 
-### G-044: Operational Interface Principle
+### G-059: Operational Interface Principle
 
 > Task Runtime 仅暴露操作接口（submit/getTask/queryRuntimeStatus/retry）。不暴露业务接口。
 
 **引用**：10_6 §12
 
-### G-045: Scheduler Is Unified Task Dispatcher
+### G-060: Scheduler Is Unified Task Dispatcher
 
 > Scheduler 不是 Cron。Scheduler 是统一的 Task 分发协调器，支持 Domain Event / Cron / Startup Recovery / User Async Request 四种触发源。
 
 **引用**：10_6 §7
 
-### G-046: Recovery Never Re-evaluates Business Logic
+### G-061: Recovery Never Re-evaluates Business Logic
 
 > Startup Recovery 只恢复执行，不重新评估业务逻辑。依靠 Task 幂等性保证安全。
 
 **引用**：10_6 §9.4
 
-### G-047: Maintenance Manager Scope
+### G-062: Maintenance Manager Scope
 
 > Maintenance Manager 仅负责 Runtime 维护（Task Cleanup / Lock Cleanup / Statistics / Health / Log Retention）。业务维护属于 Service 层。
 
 **引用**：10_6 §10
 
-### G-048: Observability Layering
+### G-063: Observability Layering
 
 > Runtime Metadata / Logging / Metrics / Dashboard 是分层独立的。Dashboard 是消费者，不是 Runtime 的一部分。
 
 **引用**：10_6 §13
 
-### G-049: Infrastructure Isolation
+### G-064: Infrastructure Isolation
 
 > Task Runtime 与业务逻辑完全隔离。基础设施关注执行，Service 关注业务。
 
@@ -540,37 +598,37 @@
 
 ## 附录：API Entry Layer Guidelines
 
-### G-050: API Entry Layer 职责
+### G-065: API Entry Layer 职责
 
 > API Entry Layer 负责协议适配、DTO 转换、认证、能力检查。Entry 层不包含业务逻辑。业务逻辑属于 Service 层。
 
 **引用**：10_7 §2
 
-### G-051: Capability Discovery
+### G-066: Capability Discovery
 
 > 外部调用者通过 Capability 交互，不直接面对 Service。Capability 是稳定的，Service 是内部实现细节。
 
 **引用**：10_7 §3
 
-### G-052: Multi-Adapter Entry
+### G-067: Multi-Adapter Entry
 
 > REST / MCP / CLI / SDK / Agent 等多种 Entry 适配器共享同一能力接口。新增适配器不修改 Service 层。
 
 **引用**：10_7 §5
 
-### G-053: Entry Validation Layers
+### G-068: Entry Validation Layers
 
 > 请求验证分三层：协议验证（Entry）→ 能力验证（Entry）→ 领域验证（Service）。每一层拒绝不符合其职责范围的请求。
 
 **引用**：10_7 §7
 
-### G-054: DTO Transformation
+### G-069: DTO Transformation
 
 > Entry 层负责协议特定的 DTO 与内部 Domain Command 之间的转换。内部模型不得泄漏到外部响应。
 
 **引用**：10_7 §8
 
-### G-055: Memory Immutability at Entry
+### G-070: Memory Immutability at Entry
 
 > Entry 层拒绝所有直接修改 Memory 的请求（update/delete）。修正通过 correctMemory() 完成，归档通过 archiveMemory() 完成。
 
@@ -580,7 +638,7 @@
 
 ## 8. QueryService Guidelines
 
-### G-071: Query Purity Principle
+### G-086: Query Purity Principle
 
 > QueryService shall not produce any business side effects other than allowed infrastructure behaviors.
 
@@ -597,7 +655,7 @@
 
 **引用**：10_3 §2.3
 
-### G-072: Capability Composition Principle
+### G-087: Capability Composition Principle
 
 > Public Query capabilities may internally compose other Query capabilities. Composition remains inside QueryService.
 
@@ -609,7 +667,7 @@
 
 **引用**：10_3 §3
 
-### G-073: Query Idempotence Principle
+### G-088: Query Idempotence Principle
 
 > The same query executed against the same persisted state shall always produce the same business result.
 
@@ -622,7 +680,7 @@
 
 **引用**：10_3 §9
 
-### G-074: Language Preservation Principle
+### G-089: Language Preservation Principle
 
 > Preserve original language. Cross-language retrieval relies on embeddings rather than translating stored memory into a canonical language.
 
@@ -634,7 +692,7 @@
 
 **引用**：10_3 §12
 
-### G-075: Observational Consistency
+### G-090: Observational Consistency
 
 > Query results reflect the persisted business state at query time. QueryService must not alter the observed business state during query execution.
 
@@ -642,7 +700,7 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 **引用**：10_3 §2.4
 
-### G-076: Repository Coordination Uniqueness
+### G-091: Repository Coordination Uniqueness
 
 > QueryService is the only repository coordinator.
 
@@ -655,7 +713,7 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 **引用**：10_3 §7
 
-### G-077: Read Pipeline Principles
+### G-092: Read Pipeline Principles
 
 > All read operations follow a single, forward-only pipeline with immutable intermediate results.
 
@@ -669,7 +727,7 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 **引用**：10_3 §6
 
-### G-078: Projection Three-Level Boundary
+### G-093: Projection Three-Level Boundary
 
 > Domain Model → Domain View → Entry DTO
 
@@ -683,7 +741,7 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 **引用**：10_3 §4.4
 
-### G-079: Transaction Strategy
+### G-094: Transaction Strategy
 
 > Read-Only Transaction. Transaction owned by QueryService.
 
@@ -697,7 +755,7 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 **引用**：10_3 §10
 
-### G-080: Deterministic Error Mapping
+### G-095: Deterministic Error Mapping
 
 > Repository errors are deterministically translated into Service errors. Empty search results are not errors.
 
@@ -715,61 +773,61 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 ## 附录：Testing Guidelines
 
-### G-056: Testing Mirrors Architecture
+### G-071: Testing Mirrors Architecture
 
 > 测试结构镜像五层架构：Entry / Service / Engine / Repository / Integration。每层有明确的测试范围和边界。
 
 **引用**：10_8 §3
 
-### G-057: Mock Mirrors Layer Boundary
+### G-072: Mock Mirrors Layer Boundary
 
 > Mock 仅存在于层边界。禁止在同层内 Mock。禁止 Mock 当前测试对象自身。优先使用真实对象而非 Mock。
 
 **引用**：10_8 §4
 
-### G-058: Deterministic-by-Default
+### G-073: Deterministic-by-Default
 
 > 所有单元测试和集成测试必须是确定性的。CI 门仅依赖确定性测试。LLM 评估测试为非阻塞信号。
 
 **引用**：10_8 §5
 
-### G-059: Semantic Equivalence Principle
+### G-074: Semantic Equivalence Principle
 
 > 测试验证语义等价（含义、状态、行为），而非字面字符串匹配。特别是 LLM 生成内容的验证。
 
 **引用**：10_8 §2.1 (P18)
 
-### G-060: Regression as Executable Memory
+### G-075: Regression as Executable Memory
 
 > 回归测试是可执行的项目记忆。每个 Bug Fix 必须新增回归测试。回归保护 Contract，不保护实现细节。
 
 **引用**：10_8 §7
 
-### G-061: Golden Dataset Principle
+### G-076: Golden Dataset Principle
 
 > Golden Dataset 定义已知输入的期望输出，是回归测试的真相标准。Golden Dataset 随设计变更而更新，不随实现变更而更新。
 
 **引用**：10_8 §6.4
 
-### G-062: Testability Is an Architectural Requirement
+### G-077: Testability Is an Architectural Requirement
 
 > 如果一个组件无法在隔离状态下测试，其架构是有缺陷的。可测试性驱动设计决策。
 
 **引用**：10_8 §8.1
 
-### G-063: Quality Is Designed, Not Inspected
+### G-078: Quality Is Designed, Not Inspected
 
 > 质量来自良好的架构、清晰的契约和确定性设计。测试验证质量，不创造质量。
 
 **引用**：10_8 §8.4
 
-### G-064: Tests Generated from Design
+### G-079: Tests Generated from Design
 
 > 测试用例从设计文档生成，而非从代码审查生成。测试用例是设计资产，不是代码附属品。
 
 **引用**：10_8 §2.1 (P9, P10)
 
-### G-065: Test Data Is a First-Class Artifact
+### G-080: Test Data Is a First-Class Artifact
 
 > 测试数据（Fixtures、Scenarios、Golden Datasets）是版本控制的一等公民，与源代码同等审查标准。
 
@@ -779,53 +837,53 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 | 编号 | 名称 | 首次出现 |
 |------|------|----------|
-| G-056 | Testing Mirrors Architecture | 10_8 |
-| G-057 | Mock Mirrors Layer Boundary | 10_8 |
-| G-058 | Deterministic-by-Default | 10_8 |
-| G-059 | Semantic Equivalence Principle | 10_8 |
-| G-060 | Regression as Executable Memory | 10_8 |
-| G-061 | Golden Dataset Principle | 10_8 |
-| G-062 | Testability Is an Architectural Requirement | 10_8 |
-| G-063 | Quality Is Designed, Not Inspected | 10_8 |
-| G-064 | Tests Generated from Design | 10_8 |
-| G-065 | Test Data Is a First-Class Artifact | 10_8 |
-| G-066 | Knowledge Evolution Principle | 12 |
-| G-067 | Stateless AI Collaboration | 13_AI_Development_Workflow |
-| G-068 | Evidence-Based Verification | 13_AI_Development_Workflow |
-| G-069 | GitHub as Project State | 13_AI_Development_Workflow |
-|| G-070 | Knowledge Refinement Over Proliferation | 13_AI_Development_Workflow |
-|| G-071 | Query Purity Principle | 10_3 |
-|| G-072 | Capability Composition Principle | 10_3 |
-|| G-073 | Query Idempotence Principle | 10_3 |
-|| G-074 | Language Preservation Principle | 10_3 |
-|| G-075 | Observational Consistency | 10_3 |
-|| G-076 | Repository Coordination Uniqueness | 10_3 |
-|| G-077 | Read Pipeline Principles | 10_3 |
-|| G-078 | Projection Three-Level Boundary | 10_3 |
-|| G-079 | Transaction Strategy | 10_3 |
-|| G-080 | Deterministic Error Mapping | 10_3 |
+| G-071 | Testing Mirrors Architecture | 10_8 |
+| G-072 | Mock Mirrors Layer Boundary | 10_8 |
+| G-073 | Deterministic-by-Default | 10_8 |
+| G-074 | Semantic Equivalence Principle | 10_8 |
+| G-075 | Regression as Executable Memory | 10_8 |
+| G-076 | Golden Dataset Principle | 10_8 |
+| G-077 | Testability Is an Architectural Requirement | 10_8 |
+| G-078 | Quality Is Designed, Not Inspected | 10_8 |
+| G-079 | Tests Generated from Design | 10_8 |
+| G-080 | Test Data Is a First-Class Artifact | 10_8 |
+| G-081 | Knowledge Evolution Principle | 12 |
+| G-082 | Stateless AI Collaboration | 13_AI_Development_Workflow |
+| G-083 | Evidence-Based Verification | 13_AI_Development_Workflow |
+| G-084 | GitHub as Project State | 13_AI_Development_Workflow |
+| G-085 | Knowledge Refinement Over Proliferation | 13_AI_Development_Workflow |
+| G-086 | Query Purity Principle | 10_3 |
+| G-087 | Capability Composition Principle | 10_3 |
+| G-088 | Query Idempotence Principle | 10_3 |
+| G-089 | Language Preservation Principle | 10_3 |
+| G-090 | Observational Consistency | 10_3 |
+| G-091 | Repository Coordination Uniqueness | 10_3 |
+| G-092 | Read Pipeline Principles | 10_3 |
+| G-093 | Projection Three-Level Boundary | 10_3 |
+| G-094 | Transaction Strategy | 10_3 |
+| G-095 | Deterministic Error Mapping | 10_3 |
 
 ---
 
-## G-067: Stateless AI Collaboration
+## G-082: Stateless AI Collaboration
 
 > AI collaboration is stateless — each session operates from the current Project State (GitHub HEAD), not from conversation history. Conversation context is ephemeral; documents and repository are persistent.
 
 **引用**：13 §9
 
-## G-068: Evidence-Based Verification
+## G-083: Evidence-Based Verification
 
 > Every verification claim must reference specific evidence (test output, document section, or approved decision). Claims without evidence are not accepted.
 
 **引用**：13 §8.3
 
-## G-069: GitHub as Project State
+## G-084: GitHub as Project State
 
 > GitHub HEAD is the authoritative representation of current Project State. Project State is an engineering abstraction; it is not the entirety of Project Memory.
 
 **引用**：13 §9.2
 
-## G-070: Knowledge Refinement Over Proliferation
+## G-085: Knowledge Refinement Over Proliferation
 
 > Knowledge should evolve primarily by refining existing knowledge instead of continuously creating new knowledge. Proliferation (creating new entries) is the least preferred evolution type.
 
@@ -834,3 +892,119 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 *本文档是 Living Guideline，随 Phase B 推进持续更新。*
 
 *后续 10_9~10_N 每完成一个文档，同步更新本文档。*
+
+---
+
+## 附录：Service Error Taxonomy (Draft V0)
+
+> **⚠️ Living Specification**
+> 
+> 此分类法将在 D3 期间持续演进。
+> 最终版本将在最终一致性审查（Final Consistency Review）中确定。
+> 
+> 后续 Service 文档应扩展此分类法，而不是重新定义它。
+
+### 分类法概览
+
+| 编号 | 错误类型 | 适用范围 | 暴露给 Entry |
+|------|----------|----------|-------------|
+| E-01 | Validation Error | 所有 Service | ✅ |
+| E-02 | Conflict Error | 所有 Service | ✅ |
+| E-03 | Capability Error | 所有 Service | ✅ |
+| E-04 | Persistence Error | 所有 Service | ⚠️ (映射后) |
+| E-05 | Background Error | Task Runtime | ⚠️ (映射后) |
+| E-06 | Policy Error | 所有 Service | ✅ |
+| E-07 | Infrastructure Error | 内部 | ❌ |
+
+### 详细说明
+
+#### E-01: Validation Error
+
+| 属性 | 说明 |
+|------|------|
+| 触发条件 | 输入参数不符合业务规则 |
+| 示例 | 无效的 Memory Level、超出范围的 Confidence |
+| 重试策略 | 不重试（客户端修复） |
+| 事务影响 | 不启动事务 |
+
+#### E-02: Conflict Error
+
+| 属性 | 说明 |
+|------|------|
+| 触发条件 | 资源状态冲突（乐观锁、唯一约束） |
+| 示例 | Memory 已被其他事务修改、Entity 重复 |
+| 重试策略 | 可重试（带退避） |
+| 事务影响 | 回滚当前事务 |
+
+#### E-03: Capability Error
+
+| 属性 | 说明 |
+|------|------|
+| 触发条件 | 业务操作无法完成 |
+| 示例 | Reflection 无法生成 Memory（证据不足）、Archive 目标不存在 |
+| 重试策略 | 根据具体场景决定 |
+| 事务影响 | 回滚当前事务 |
+
+#### E-04: Persistence Error
+
+| 属性 | 说明 |
+|------|------|
+| 触发条件 | 数据库操作失败 |
+| 示例 | 连接丢失、死锁、约束违反 |
+| 重试策略 | 可重试（带退避） |
+| 事务影响 | 回滚当前事务 |
+
+#### E-05: Background Error
+
+| 属性 | 说明 |
+|------|------|
+| 触发条件 | 后台任务执行失败 |
+| 示例 | Reflection 后台执行超时、Embedding 生成失败 |
+| 重试策略 | Task Runtime 重试机制 |
+| 事务影响 | 不影响前台事务 |
+
+#### E-06: Policy Error
+
+| 属性 | 说明 |
+|------|------|
+| 触发条件 | 违反业务策略或权限 |
+| 示例 | 无权访问 Workspace、Reflection 策略限制 |
+| 重试策略 | 不重试 |
+| 事务影响 | 不启动事务 |
+
+#### E-07: Infrastructure Error (Internal Only)
+
+| 属性 | 说明 |
+|------|------|
+| 触发条件 | 基础设施层故障 |
+| 示例 | 网络中断、磁盘满、OOM |
+| 重试策略 | 基础设施层处理 |
+| 事务影响 | 由基础设施层决定 |
+
+> **注意**：Infrastructure Error 永远不直接暴露给 Entry 层。Entry 层只看到映射后的 EntrySafeError。
+
+### 错误映射规则
+
+```
+Repository Exception
+    ↓ (Repository Error → Persistence Error E-04)
+Service Exception
+    ↓ (Persistence Error → Capability Error E-03 / Conflict Error E-02)
+Entry Safe Error
+    ↓ (Capability/Conflict Error → HTTP 4xx / 5xx)
+Protocol Response
+```
+
+**原则**：
+- 每层只翻译一次
+- 保留根因（Exception Chaining）
+- 确定性映射（相同输入 → 相同输出）
+- Infrastructure Error 不跨越 Service 边界
+
+### 与现有 Guideline 的关系
+
+| 现有 Guideline | 关系 |
+|---------------|------|
+| G-080 (Deterministic Error Mapping) | 提供具体的错误分类法 |
+| G-008 (Command/Query Separation) | 错误类型按 Command/Query 分类 |
+| G-049 (Infrastructure Isolation) | Infrastructure Error 隔离在基础设施层 |

@@ -22,11 +22,36 @@ ReflectionService 负责维护 Memory Pyramid 的语义质量、证据一致性�
 
 ### 2.1 核心定位
 
-> **ReflectionService is responsible for maintaining the semantic quality, evidence consistency, and continuous knowledge evolution of the Memory Pyramid.**
+> **ReflectionService is a Business Capability Orchestrator for the Reflection capability.**
 
-ReflectionService 是 **Memory Domain** 的演化编排服务（Orchestration Service），不是摘要生成器。
+ReflectionService 负责 Reflection 工作流的完整编排。ReflectionService 是 **Memory Domain** 的 Reflection 业务能力编排服务，不是算法实现者。
 
-它编排 ReflectionEngine、MemoryEngine、EntityEngine、ArchiveEngine 等 Domain Engine，完成记忆领域的知识演化。
+ReflectionService 拥有以下职责：
+- Reflection 工作流编排
+- 业务验证（Business Validation）
+- Repository 协调
+- Reflection 事务协调
+- Reflection 能力执行
+
+ReflectionService **不拥有**以下职责：
+- Reflection 算法（由 ReflectionEngine 拥有）
+- Repository 实现（由 Repository 层拥有）
+- 运行时调度（由 Task Runtime 拥有）
+- 任务生命周期管理（由 TaskService 拥有）
+
+### 2.2 职责边界原则
+
+> **Ownership Separation Principle**
+
+| 职责 | 拥有者 |
+|------|--------|
+| Reflection 工作流编排 | ReflectionService |
+| Reflection 算法与推理 | ReflectionEngine |
+| Memory 持久化 | Repository 层 |
+| 任务调度与执行 | Task Runtime |
+| 任务生命周期管理 | TaskService |
+| 查询能力 | QueryService |
+| 记忆管理能力 | MemoryService |
 
 ### 2.2 明确禁止
 
@@ -44,6 +69,29 @@ ReflectionService **不得**执行以下操作：
 ### 2.3 正确定位
 
 ReflectionService 的公开接口按 **Capability** 组织，而非按 **实现动作** 组织。
+
+#### 2.3.1 API 分类
+
+ReflectionService 的 API 分为三类：
+
+| 类别 | 说明 | 示例 |
+|------|------|------|
+| **Reflection Request** | 发起 Reflection 操作 | `reflect()`, `summarize()`, `consolidate()`, `evaluate()` |
+| **Reflection Status** | 查询 Reflection 执行状态 | `getReflectionStatus()`, `listReflectionHistory()` |
+| **Reflection Control** | 控制 Reflection 执行 | `suspendReflection()`, `resumeReflection()`, `cancelReflection()` |
+
+#### 2.3.2 不暴露的内部细节
+
+ReflectionService **不暴露**以下内部细节：
+
+| 不暴露 | 原因 |
+|--------|------|
+| Repository 协调 | 内部实现细节 |
+| 内部工作流 | 消费者不应了解内部步骤 |
+| Engine 调用 | 引擎选型属于内部决策 |
+| 事务管理 | 事务属于 Service 内部责任 |
+
+#### 2.3.3 Capability 树
 
 ```
 ReflectionService
@@ -75,7 +123,14 @@ ReflectionService
 
 > **Reflection Is Evolution, Not Mutation Principle**
 
-ReflectionService 的职责是驱动 Memory 的演化（Evolution），而不是直接修改任意 Domain Object。Reflection 产生的是领域决策（Decision）、建议（Proposal）或新的领域结果，由对应 Domain Engine 完成实际领域变更。
+ReflectionService 的职责是驱动 Memory 的演化（Evolution），而不是直接修改任意 Domain Object。
+
+**职责分离**：
+- ReflectionService 编排 Reflection 工作流
+- ReflectionEngine 拥有并执行 Reflection 算法
+- 对应 Domain Engine 完成实际领域变更
+
+Reflection 产生的是领域决策（Decision）、建议（Proposal）或新的领域结果，由对应 Domain Engine 完成实际领域变更。
 
 意义：
 - 避免 ReflectionService 成为"万能修改器"
@@ -176,7 +231,17 @@ Capability 应该对应**用户或系统可理解的领域能力**，而不是�
 | Summarize | `summarize*` | 生成高层级记忆 |
 | Evaluate | `evaluate*` | 重新评估已有 Memory |
 
-### 5.2 返回结果模型
+### 5.2 API 分类原则
+
+ReflectionService 的 Public API 按 **Capability Category** 分类，而非按 **实现动作** 分类：
+
+| 类别 | 说明 | 示例方法 |
+|------|------|----------|
+| **Reflection Request** | 发起 Reflection 操作 | `reflect()`, `summarize()`, `consolidate()`, `evaluate()` |
+| **Reflection Status** | 查询 Reflection 执行状态 | `getReflectionStatus(reflectionId)`, `listReflectionHistory()` |
+| **Reflection Control** | 控制 Reflection 执行 | `suspendReflection()`, `resumeReflection()`, `cancelReflection()` |
+
+### 5.3 返回结果模型
 
 ReflectionService 返回 **ReflectionExecutionResult**，属于执行报告（Execution Report），不是业务数据。
 
@@ -211,14 +276,14 @@ Reflection 本质上是 **Command Capability**，遵循 **Command Returns Identi
 
 ### 6.1 编排关系
 
-ReflectionService 作为 Capability Orchestrator，协调多个共享 Domain Engine：
+ReflectionService 作为 **Business Capability Orchestrator**，协调多个共享 Domain Engine：
 
 ```
-ReflectionService
+ReflectionService (Business Capability Orchestrator)
         │
         ├── ReflectionEngine
         │       ↓
-        │   Generated Memory Proposal
+        │   Reflection Algorithms & Reasoning
         │
         ├── MemoryEngine
         │       ↓
@@ -232,6 +297,12 @@ ReflectionService
                 ↓
             Archive Decision Execution
 ```
+
+**关键原则**：
+- ReflectionService 编排工作流，但不执行算法
+- ReflectionEngine 拥有并执行 Reflection 算法
+- MemoryEngine 拥有 Memory 生命周期管理
+- 每个 Engine 只对自己的领域算法负责
 
 ### 6.2 共享 Engine 原则
 
@@ -568,7 +639,129 @@ L0 聊天记录 / Git Commit / 设计文档
 
 ---
 
-## 14. Future Evolution
+## 14. Architecture Principles (D3.4 Decisions)
+
+### 14.1 Service Independence Principle
+
+> **Services are peer-layer business orchestrators. Services shall NOT invoke other Services.**
+
+ReflectionService 不调用：
+- MemoryService
+- QueryService
+- EntityService
+- TaskService
+
+共享功能通过以下方式实现：
+- 共享 Repository 契约
+- 共享 Aggregate 模型
+- 共享 Domain 不变量
+
+**NOT Service-to-Service invocation。**
+
+**引用**：G-005, G-006
+
+### 14.2 Capability Completeness Principle
+
+> **Each Service owns the complete lifecycle required to fulfill its own business capability.**
+
+ReflectionService 拥有 Reflection 能力所需的完整生命周期，包括完成该能力所必需的持久化。
+
+- MemoryService 不是通用的 Memory 写入网关
+- Reflection 生成的 Memory 持久化属于 Reflection 能力
+- MemoryService 仅负责 Memory Management 能力
+
+**引用**：G-007
+
+### 14.3 Shared Aggregate Principle
+
+> **Multiple Services may coordinate the same Aggregate while owning different business capabilities.**
+
+Memory Aggregate 示例：
+- ← MemoryService（Memory Management 能力）
+- ← ReflectionService（Reflection 能力）
+- 未来 Import 能力
+
+所有服务共享：
+- 相同的 Repository 契约
+- 相同的 Memory 模式
+- 相同的 Domain 不变量
+- 相同的验证规则
+
+工作流所有权保持分离。
+
+**引用**：G-006
+
+### 14.4 Task Coordination Principle
+
+> **TaskService owns task lifecycle. Task Runtime owns execution dispatch.**
+
+TaskService 拥有：
+- 注册
+- 重试
+- 取消
+- 生命周期
+
+Task Runtime 拥有：
+- 轮询
+- 分发
+- 执行
+
+Runtime 调用 ReflectionService。
+Reflection 工作流保持在 ReflectionService 内部。
+Task 仅改变执行模式。
+业务工作流不会移入 Runtime。
+
+**引用**：G-039~G-049
+
+### 14.5 Background Execution Boundary
+
+> **Background execution changes only execution context.**
+
+后台执行不改变：
+- 工作流
+- 验证
+- 领域规则
+- 错误映射
+
+每个后台执行启动：
+- 新的 Service 调用
+- 新的事务
+
+**引用**：G-049
+
+### 14.6 Transaction Strategy
+
+> **One Reflection workflow = One business transaction.**
+
+- Reflection 输出应原子提交
+- 后续任务仅在成功提交后提交
+- Repository 协调共享同一事务
+
+**引用**：IR-008
+
+### 14.7 Failure Isolation
+
+> **Reflection is an Enhancement Capability. Failure must never invalidate committed Memory.**
+
+- Reflection 故障保持局部
+- 重试必须是安全的
+- 每个增强能力独立失败
+
+**引用**：IR-017
+
+### 14.8 Error Mapping
+
+> **ReflectionService exposes only capability-level domain errors.**
+
+ReflectionService 将以下异常转换为稳定的领域错误契约：
+- Repository 异常
+- Engine 异常
+- 运行时异常
+- 基础设施故障
+
+保持确定性错误映射。
+
+**引用**：G-080
 
 ### 14.1 Planned Evolution
 
@@ -608,6 +801,14 @@ L0 聊天记录 / Git Commit / 设计文档
 | P0-10 | **L0 Protection** | ReflectionService 绝不自主创建 L0 |
 | P0-11 | **Maximum Reflection Horizon** | 可配置，超限触发 Recovery Baseline |
 | P0-12 | **Incremental Propagation** | 先更新本层，再决定是否向上传播 |
+| P0-13 | **Responsibility Boundary** | ReflectionService 拥有工作流，ReflectionEngine 拥有算法 |
+| P0-14 | **Service Independence** | 不调用其他 Service（MemoryService/QueryService/EntityService/TaskService） |
+| P0-15 | **Workflow Completeness** | Reflection 工作流在 ReflectionService 内完整执行 |
+| P0-16 | **Execution Mode Consistency** | 同步/异步执行产生相同业务行为 |
+| P0-17 | **Transaction Boundary** | 一个 Reflection 工作流 = 一个业务事务 |
+| P0-18 | **Failure Isolation** | Reflection 失败不使已提交的 Memory 无效 |
+| P0-19 | **Shared Aggregate Consistency** | 多 Service 共享 Memory Aggregate 时使用相同契约 |
+| P0-20 | **Capability Completeness** | ReflectionService 拥有 Reflection 能力的完整生命周期 |
 
 ### 15.2 P1 — 推荐实现
 
@@ -644,7 +845,7 @@ L0 聊天记录 / Git Commit / 设计文档
 
 | # | 决策 | 说明 | 来源 |
 |---|------|------|------|
-| 1 | **ReflectionService 定位** | 不是摘要生成器，是 Memory Pyramid 演化编排服务 | 10_4 §2 |
+| 1 | **ReflectionService 定位** | 不是摘要生成器，是 Memory Pyramid 演化编排服务 | 10_4 §2.1 |
 | 2 | **Reflection Is Evolution, Not Mutation** | Reflection 产生领域决策，由 Engine 完成实际变更 | 10_4 §3.1 |
 | 3 | **Memory Pyramid 抽象基于解释范围（Scope）** | 不是按时间，而是按 What→Meaning→Pattern→Principle | 10_4 §3.3 |
 | 4 | **Reflection 目标：提升解释力** | 不是保存快照，而是持续改进高层 Memory 的解释能力 | 10_4 §3.4 |
