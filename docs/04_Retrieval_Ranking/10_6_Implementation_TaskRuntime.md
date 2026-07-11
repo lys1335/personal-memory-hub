@@ -1,7 +1,7 @@
 # Personal AI Memory Hub — 10_6 Implementation Task Runtime
 
-> **版本**: 1.0
-> **日期**: 2026-06-29
+> **版本**: 2.0
+> **日期**: 2026-07-11
 > **阶段**: Phase B — 实现设计（第六部分）
 > **状态**: 已确认
 > **作者**: 系统架构组
@@ -50,6 +50,23 @@ Task Runtime **不负责**：
 | 执行 Reflection | Reflection 属于 ReflectionService |
 | 执行 Memory 管理 | Memory 管理属于 MemoryService |
 | 执行 Entity 管理 | Entity 管理属于 EntityService |
+> **TaskService 负责执行编排，不拥有业务能力。**
+>
+> TaskService 拥有：
+> - 执行生命周期
+> - 调度
+> - 重试
+> - 执行上下文
+> - 执行历史
+>
+> TaskService 从不拥有：
+> - 业务决策
+> - 业务语义
+> - 建议生成
+> - Memory 逻辑
+> - Entity 逻辑
+> - Reflection 逻辑
+
 
 ### 2.2 明确禁止
 
@@ -267,7 +284,50 @@ Dead（超过 maxRetry）
 
 > **Scheduler 不是 Cron。Scheduler 是统一的 Task 分发协调器。**
 
-### 7.2 支持的触发源
+### 7.2 Scheduling Responsibilities
+
+| 职责 | 说明 |
+|------|------|
+| ✅ 决定 **何时**执行 | Scheduling determines when execution occurs |
+| ❌ 不决定 **做什么** | Scheduling never determines what execution occurs |
+| ❌ 不拥有业务逻辑 | Scheduler never owns business logic |
+| ❌ 不评估 Memory | Scheduler never evaluates memory |
+| ❌ 不评估 Entity | Scheduler never evaluates entities |
+| ❌ 不评估 Proposal | Scheduler never evaluates proposals |
+
+> **Scheduling is independent from trigger mechanism.**
+
+### 7.3 支持的触发源
+
+| 触发源 | 说明 | 示例 |
+|--------|------|------|
+| **Domain Event** | 业务事件驱动 | `EntityMerged` → 触发 Reference Migration |
+| **Scheduler（Cron）** | 定时触发 | 每日 Reflection、每月 Archive |
+| **Startup Recovery** | 启动恢复 | 崩溃的 Running Task 恢复为 Pending |
+| **Future User Async Request** | 用户异步请求 | 用户手动触发 Reflection |
+
+### 7.4 调度模式
+
+| 模式 | 说明 |
+|------|------|
+| **Immediate** | 立即执行 |
+| **Delayed** | 延迟执行 |
+| **Scheduled** | 定时执行 |
+| **Periodic** | 周期性执行 |
+
+> **Periodic execution should create new Tasks rather than endlessly recycling the same Task.**
+
+周期性执行应当创建新 Task，而不是无限循环复用同一个 Task。
+
+### 7.5 Scheduler 职责边界
+
+| 职责 | 说明 |
+|------|------|
+| ✅ 提交 Entry Task | 将任务放入调度队列 |
+| ✅ 优先级管理 | High / Normal / Low |
+| ✅ 定时调度 | Cron 驱动的任务提交 |
+| ❌ 业务扫描 | 不主动扫描业务数据 |
+| ❌ 业务决策 | 不决定"做什么"，只决定"何时做" |
 
 | 触发源 | 说明 | 示例 |
 |--------|------|------|
@@ -285,6 +345,36 @@ Dead（超过 maxRetry）
 | ✅ 定时调度 | Cron 驱动的任务提交 |
 | ❌ 业务扫描 | 不主动扫描业务数据 |
 | ❌ 业务决策 | 不决定"做什么"，只决定"何时做" |
+
+
+### 2.4 Execution Scope（新增）
+
+> **Execution Context answers "Who executes?". Execution Scope answers "What immutable input is executed?".**
+
+| 概念 | 说明 |
+|------|------|
+| **Execution Context** | 回答"谁在执行"——Worker、优先级、重试次数 |
+| **Execution Scope** | 回答"执行什么不可变输入"——Task 的 Payload 业务意图 |
+
+**Execution Scope 规则**：
+
+| 规则 | 说明 |
+|------|------|
+| **Immutable** | Execution Scope 在执行期间不可变 |
+| **Retry Preserves** | 重试必须保留相同的 Execution Scope |
+| **Timing Independent** | 即时执行与延迟执行使用相同的 Execution Scope |
+| **Timing May Change** | 执行时机可以改变，Execution Scope 永不改变 |
+
+**Execution Scope 与 Retry**：
+
+| 维度 | Retry 允许改变 | Retry 禁止改变 |
+|------|---------------|---------------|
+| Attempt Number | ✅ | ❌ |
+| Retry Metadata | ✅ | ❌ |
+| Retry Schedule | ✅ | ❌ |
+| Execution Scope | ❌ | ✅ |
+| Business Intent | ❌ | ✅
+
 
 ### 7.4 优先级策略
 
@@ -337,7 +427,31 @@ Task Registry 维护 Event → Task 类型的映射关系：
 
 ## 9. Retry / Recovery
 
-### 9.1 失败分类
+### 9.1 Retry 策略
+
+> **Retry retries execution. Retry never retries business decision.**
+
+Retry 保留：
+
+| 保留项 | 说明 |
+|--------|------|
+| **Execution Context** | 重试保持相同的执行上下文 |
+| **Execution Scope** | 重试必须保留相同的 Execution Scope |
+| **Business Intent** | 重试保持相同的业务意图 |
+
+Retry 仅改变：
+
+| 改变项 | 说明 |
+|--------|------|
+| **Attempt Number** | 每次重试递增 |
+| **Retry Metadata** | 最后一次重试时间、错误信息等 |
+| **Retry Schedule** | 指数退避计算的下次重试时间 |
+
+> **Retry uses new transaction each attempt.**
+
+> **Business Services remain responsible for semantic idempotency. TaskService never guarantees business idempotency.**
+
+### 9.2 失败分类
 
 | 失败类型 | 说明 | 处理方式 |
 |----------|------|----------|
@@ -558,6 +672,28 @@ Task Runtime **不暴露**以下接口：
 | **ReflectionService** | submit / query | 提交 Reflection Task；查询状态 |
 | **QueryService** | ❌ 不调用 | QueryService 是读接口，不触发任务 |
 
+### 14.2 MemoryService Coordination
+
+> **MemoryService owns memory semantics. TaskService owns execution semantics.**
+
+| 原则 | 说明 |
+|------|------|
+| **MemoryService 执行无关** | MemoryService 保持执行无关（execution-agnostic） |
+| **MemoryService 不创建 Task** | MemoryService 不直接创建 Task |
+| **Summary 属于 MemoryService** | Summary 能力属于 MemoryService |
+| **TaskService 仅执行 Summary** | TaskService 仅执行 Summary 能力 |
+
+### 14.3 EntityService Coordination
+
+> **EntityService owns identity semantics. TaskService owns execution semantics.**
+
+| 原则 | 说明 |
+|------|------|
+| **Entity Merge 影响未来处理** | Entity Merge 只影响未来处理 |
+| **已完成执行永不修改** | Completed execution is never modified |
+| **Entity 演化创建新 Task** | Entity 演化通过 Trigger Evaluation 创建新 Task |
+| **不复用已完成的 Task** | 不重新打开已完成的 Task |
+
 ### 14.2 Domain Event → Task 映射
 
 | Domain Event | Task Type | 触发 Service |
@@ -616,9 +752,61 @@ Task Runtime **不暴露**以下接口：
 | **Event-Driven Chaining** | 业务链通过 Domain Event + Task Registry 实现 |
 | **Separation of Concerns** | 基础设施关注执行，Service 关注业务 |
 
-### 15.2 Error Handling
+### 15.2 Transaction Strategy（新增）
+
+> **One Task corresponds to one business capability. One Task corresponds to one business transaction.**
 
 | 原则 | 说明 |
+|------|------|
+| **One Task = One Business Transaction** | 一个 Task 对应一个业务事务 |
+| **No Cross-Service Transaction** | 不跨服务事务 |
+| **Independent Transactions** | 业务事务与 Task 状态事务独立 |
+| **Retry Creates New Transaction** | 重试总是创建新事务 |
+| **Enhancement Failure Local** | 增强失败永不回滚已提交业务状态 |
+
+### 15.3 Failure Isolation（新增）
+
+> **Execution failure never invalidates committed business state.**
+
+| 失败类型 | 处理 |
+|----------|------|
+| **Business Failure** | → Terminal Failure |
+| **Execution Failure** | → Retry |
+| **Enhancement Failure** | → Independent retry |
+
+**规则**：
+
+| 规则 | 说明 |
+|------|------|
+| **Failures Local** | 故障保持局部 |
+| **No Cross-Task Propagation** | 故障不在已完成 Task 间传播 |
+| **Completed History Immutable** | 已完成执行历史不可变 |
+
+### 15.4 Completed Task Immutability（新增）
+
+> **Completed Tasks are immutable execution history. Completed Tasks are never reopened.**
+
+| 禁止 | 说明 |
+|------|------|
+| **No Return to Pending** | 已完成 Task 永不返回 Pending |
+| **No Return to Running** | 已完成 Task 永不返回 Running |
+| **No Return to Retry Waiting** | 已完成 Task 永不返回 Retry Waiting |
+
+> **Business evolution always creates a new Task. Never reopen completed Task history.**
+
+This mirrors Memory Immutable at execution level.
+
+### 15.5 Error Mapping
+
+> **Business Services define business errors. TaskService classifies execution results.**
+
+| 原则 | 说明 |
+|------|------|
+| **Reuse Existing Taxonomy** | 复用现有 Error Taxonomy（E-01 至 E-07） |
+| **Retry Based on Category** | 重试决策基于错误类别 |
+| **Preserve Business Error** | 保留原始业务错误信息用于审计 |
+
+### 15.6 Error Handling
 |------|------|
 | **Transient → Retry** | 临时故障自动重试 |
 | **Permanent → Dead** | 永久故障标记 Dead，人工审查 |
@@ -633,6 +821,34 @@ Task Runtime **不暴露**以下接口：
 | **Reserved Capacity** | 为 High Priority 预留执行槽 |
 | **Worker Pool** | 可配置 Worker 数量 |
 | **No Blocking** | 不阻塞高优先级任务 |
+
+---
+
+
+### 15.4 Incremental Processing Principle（新增）
+
+> **Each immutable Observation should enter processing pipeline only once.**
+
+| 概念 | 说明 |
+|------|------|
+| **Summary** | 产生新 Memory |
+| **Reflection** | 演化现有 Memory |
+| **Avoid** | 重复全量对话摘要 |
+
+Incremental Processing 与以下原则对齐：
+
+- Memory Immutable
+- Evidence-Based Memory
+- Memory Evolution
+
+**核心规则**：
+
+| 规则 | 说明 |
+|------|------|
+| Observation 只处理一次 | 每个不可变 Observation 只进入处理管线一次 |
+| Summary 只处理新数据 | Summary 只处理新产生的 Observations |
+| Reflection 演化现有 Memory | 现有 Memory 通过 Reflection 演化 |
+| 不依赖全量重处理 | Memory 演化不应依赖重复的全量重处理 |
 
 ---
 
@@ -675,6 +891,14 @@ Task Runtime **不暴露**以下接口：
 | P0-10 | **Minimal Lifecycle** | Pending → Running → Completed / Failed → Retry → Dead |
 | P0-11 | **At-Least-Once Execution** | 提供幂等保障，不追求 Exactly-Once |
 | P0-12 | **Recovery Never Re-evaluates** | 启动恢复只恢复执行，不重新评估业务逻辑 |
+| P0-13 | **Execution Scope Immutable** | Execution Scope 在执行期间不可变，Retry 必须保留 |
+| P0-14 | **Periodic Creates New Tasks** | 周期性执行创建新 Task，不无限循环复用 |
+| P0-15 | **Incremental Processing** | 每个 Observation 只进入处理管线一次 |
+| P0-16 | **MemoryService Execution-Agnostic** | MemoryService 不创建 Task，Summary 属于 MemoryService |
+| P0-17 | **EntityService Execution-Agnostic** | Entity Merge 只影响未来处理，不复用已完成 Task |
+| P0-18 | **One Task = One Transaction** | 一个 Task 对应一个业务事务，不跨服务事务 |
+| P0-19 | **Failure Isolation** | 执行失败不使已提交业务状态无效 |
+| P0-20 | **Completed Task Immutability** | 已完成 Task 是 immutable execution history，永不重新打开 |
 
 ### 17.2 P1 — 推荐实现
 
@@ -727,6 +951,32 @@ Task Runtime **不暴露**以下接口：
 | 26 | **Observability Layering** | Runtime Metadata / Logging / Metrics / Dashboard 分层 | 10_6 §13 |
 | 27 | **Infrastructure Isolation** | Runtime 与业务逻辑完全隔离 | 10_6 §15.1 |
 | 28 | **Manual Execution is Operational** | 不是业务接口 | 10_6 §12.2 |
+| 29 | **TaskService Owns Execution, Not Business** | TaskService 拥有执行生命周期，不拥有业务能力 | 10_6 §2.1 |
+| 30 | **Execution Scope Immutable** | Execution Scope 在执行期间不可变，Retry 必须保留 | 10_6 §2.4 |
+| 31 | **Scheduling Determines When, Not What** | Scheduler 决定何时执行，不决定做什么 | 10_6 §7.2 |
+| 32 | **Periodic Creates New Tasks** | 周期性执行创建新 Task，不无限循环复用 | 10_6 §7.4 |
+| 33 | **Retry Preserves Scope** | Retry 保留 Execution Context/Scope/Intent，只改变元数据 | 10_6 §9.1 |
+| 34 | **Business Services Ensure Idempotency** | TaskService 不保证业务幂等性 | 10_6 §9.1 |
+| 35 | **Incremental Processing** | 每个 Observation 只进入处理管线一次 | 10_6 §15.4 |
+| 36 | **MemoryService Execution-Agnostic** | MemoryService 不创建 Task，Summary 属于 MemoryService | 10_6 §14.2 |
+| 37 | **EntityService Execution-Agnostic** | Entity Merge 只影响未来处理 | 10_6 §14.3 |
+| 38 | **One Task = One Transaction** | 一个 Task 对应一个业务事务，不跨服务事务 | 10_6 §15.2 |
+| 39 | **Enhancement Failure Never Rolls Back** | 增强失败不使已提交业务状态无效 | 10_6 §15.3 |
+| 40 | **Completed Task Immutability** | 已完成 Task 是 immutable execution history | 10_6 §15.4 |
+| 41 | **Error Mapping Reuses Taxonomy** | 复用现有 Error Taxonomy，保留原始业务错误 | 10_6 §15.5 |
+| 29 | **TaskService Owns Execution, Not Business** | TaskService 拥有执行生命周期，不拥有业务能力 | 10_6 §2.1 |
+| 30 | **Execution Scope Immutable** | Execution Scope 在执行期间不可变，Retry 必须保留 | 10_6 §2.4 |
+| 31 | **Scheduling ≠ Business Logic** | Scheduler 决定何时执行，不决定做什么 | 10_6 §7.2 |
+| 32 | **Periodic Creates New Tasks** | 周期性执行创建新 Task，不无限循环复用 | 10_6 §7.4 |
+| 33 | **Retry Preserves Scope** | Retry 保留 Execution Context/Scope/Intent，只改变元数据 | 10_6 §9.1 |
+| 34 | **Business Services Ensure Idempotency** | TaskService 不保证业务幂等性 | 10_6 §9.1 |
+| 35 | **Incremental Processing** | 每个 Observation 只进入处理管线一次 | 10_6 §15.4 |
+| 36 | **MemoryService Execution-Agnostic** | MemoryService 不创建 Task，Summary 属于 MemoryService | 10_6 §14.2 |
+| 37 | **EntityService Execution-Agnostic** | Entity Merge 只影响未来处理 | 10_6 §14.3 |
+| 38 | **One Task = One Transaction** | 一个 Task 对应一个业务事务，不跨服务事务 | 10_6 §15.2 |
+| 39 | **Enhancement Failure Never Rolls Back** | 增强失败不使已提交业务状态无效 | 10_6 §15.3 |
+| 40 | **Completed Task Immutability** | 已完成 Task 是 immutable execution history | 10_6 §15.4 |
+| 41 | **Error Mapping Reuses Taxonomy** | 复用现有 Error Taxonomy，保留原始业务错误 | 10_6 §15.5 |
 
 ---
 
@@ -880,6 +1130,9 @@ Completed
 | 文档 | 更新内容 |
 |------|----------|
 | **10_1_Implementation_Service_Layer** | 补充 TaskService 到 Service 清单、Task Runtime 到 Service DAG |
+| **10_4_Implementation_ReflectionService** | 补充 Reflection 产生 Entity Evolution Proposals 与 Task 的关系 |
+| **10_5_Implementation_EntityService** | 补充 Entity Evolution Proposals 通过 TaskService 执行 |
+| **13_Architecture_Guidelines** | 新增 G-050 至 G-052（Execution Scope、Incremental Processing、Completed Task Immutability） |
 | **10_2_Implementation_MemoryService** | 补充 TaskRuntime 与 MemoryService 的 Job Dispatch 关系 |
 | **10_4_Implementation_ReflectionService** | 补充 TaskRuntime 与 ReflectionService 的集成（Reflection Task） |
 | **10_5_Implementation_EntityService** | 补充 TaskRuntime 与 EntityService 的集成（Reference Migration Task） |
@@ -1007,6 +1260,7 @@ sequenceDiagram
 |------|------|------|------|
 | 1.0 | 2026-06-29 | 初始版本，确认 Task Runtime 全部设计要素 | ✅ 已确认 |
 | 1.1 | 2026-07-03 | Phase C Stage 2 修订：(1) §14.2 新增 AR-008 Domain Event 映射边界澄清 | ✅ 已确认 |
+| 2.0 | 2026-07-11 | D3.6 最终决策集成：(1) TaskService 执行编排定位 (2) Execution Scope (3) Scheduling Strategy (4) Retry Strategy (5) Incremental Processing (6) MemoryService Coordination (7) EntityService Coordination (8) Transaction Strategy (9) Failure Isolation (10) Completed Task Immutability (11) Error Mapping (12) 9 new P0 checklist items (13) 13 new Decision Summary items | ✅ 已确认 |
 
 ---
 

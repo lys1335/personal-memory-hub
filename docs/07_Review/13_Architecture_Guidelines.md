@@ -537,6 +537,82 @@ Entity 事务仅修改 Entity、Metadata 和 Relationship Graph。绝不修改 O
 
 ---
 
+## TaskService D3.6 Guidelines
+
+
+### G-053: Execution Scope Immutability Principle
+
+> **Execution Scope is immutable during execution. Retry must preserve Execution Scope. Immediate and delayed execution use identical Execution Scope. Execution timing may change. Execution Scope never changes.**
+
+**引用**：10_6 §2.4
+
+### G-054: Scheduling Determines When, Not What
+
+> **Scheduling determines when execution occurs. Scheduling never determines what execution occurs. Scheduler never owns business logic, never evaluates memory/entities/proposals.**
+
+**引用**：10_6 §7.2
+
+### G-055: Periodic Creates New Tasks
+
+> **Periodic execution should create new Tasks rather than endlessly recycling the same Task.**
+
+**引用**：10_6 §7.4
+
+### G-056: Retry Preserves Scope
+
+> **Retry retries execution, never retries business decision. Retry preserves Execution Context, Execution Scope, and Business Intent. Only changes Attempt Number, Retry Metadata, and Retry Schedule.**
+
+**引用**：10_6 §9.1
+
+### G-057: Business Services Ensure Semantic Idempotency
+
+> **TaskService never guarantees business idempotency. Business Services remain responsible for semantic idempotency.**
+
+**引用**：10_6 §9.1
+
+### G-058: Incremental Processing
+
+> **Each immutable Observation should enter processing pipeline only once. Summary processes only newly produced Observations. Existing Memory evolves through Reflection.**
+
+**引用**：10_6 §15.4
+
+### G-059: MemoryService Execution-Agnostic
+
+> **MemoryService owns memory semantics, not execution semantics. MemoryService does not create Tasks. Summary belongs to MemoryService. TaskService only executes Summary capability.**
+
+**引用**：10_6 §14.2
+
+### G-060: EntityService Execution-Agnostic
+
+> **EntityService owns identity semantics, not execution semantics. Entity Merge affects future processing only. Completed execution is never modified. Entity evolution creates new Tasks through Trigger Evaluation.**
+
+**引用**：10_6 §14.3
+
+### G-061: One Task One Transaction
+
+> **One Task corresponds to one business capability. One Task corresponds to one business transaction. No cross-service transaction. Business transaction and Task state transaction remain independent.**
+
+**引用**：10_6 §15.2
+
+### G-062: Failure Isolation
+
+> **Execution failure never invalidates committed business state. Business Failure → Terminal. Execution Failure → Retry. Enhancement Failure → Independent retry.**
+
+**引用**：10_6 §15.3
+
+### G-063: Completed Task Immutability
+
+> **Completed Tasks are immutable execution history. Completed Tasks are never reopened. Completed Tasks never return to Pending/Running/Retry Waiting. Business evolution always creates a new Task.**
+
+**引用**：10_6 §15.4
+
+### G-064: Error Mapping Reuses Taxonomy
+
+> **Business Services define business errors. TaskService classifies execution results. Reuse existing Error Taxonomy. Retry decision based on error category. Preserve original business error for auditability.**
+
+**引用**：10_6 §15.5
+---
+
 | 编号 | 名称 | 首次出现 |
 |------|------|----------|
 | G-001 | One Capability, One Implementation | 13 §1 |
@@ -585,6 +661,18 @@ Entity 事务仅修改 Entity、Metadata 和 Relationship Graph。绝不修改 O
 | G-050 | Reflection Proposal Principle | 10_4 |
 | G-051 | Proposal–Task Separation Principle | 10_4 |
 | G-052 | Entity Transaction Scope Principle | 10_5 |
+| G-053 | Execution Scope Immutability Principle | 10_6 |
+| G-054 | Scheduling Determines When, Not What | 10_6 |
+| G-055 | Periodic Creates New Tasks | 10_6 |
+| G-056 | Retry Preserves Scope | 10_6 |
+| G-057 | Business Services Ensure Semantic Idempotency | 10_6 |
+| G-058 | Incremental Processing | 10_6 |
+| G-059 | MemoryService Execution-Agnostic | 10_6 |
+| G-060 | EntityService Execution-Agnostic | 10_6 |
+| G-061 | One Task One Transaction | 10_6 |
+| G-062 | Failure Isolation | 10_6 |
+| G-063 | Completed Task Immutability | 10_6 |
+| G-064 | Error Mapping Reuses Taxonomy | 10_6 |
 | G-038 | Service Independence Principle | 13 |
 | G-039 | Capability Completeness Principle | 13 |
 | G-040 | Shared Aggregate Principle | 13 |

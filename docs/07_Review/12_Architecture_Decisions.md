@@ -30,6 +30,18 @@
 || ADR-016 | Reflection Proposal Only | ReflectionService 仅产生 Entity Evolution Proposals，不直接修改 Entity | 10_4 |
 || ADR-017 | Proposal-Task Separation | Proposal 和 Task 是独立概念 | 10_4 |
 || ADR-018 | Entity Transaction Scope | Entity 事务仅修改 Entity/Metadata/Relationship，不碰 Observation/Memory/Evidence | 10_5 |
+|| ADR-019 | TaskService Execution Orchestration | TaskService 拥有执行生命周期，不拥有业务能力 | 10_6 |
+|| ADR-020 | Execution Scope Immutability | Execution Scope 在执行期间不可变 | 10_6 |
+|| ADR-021 | Scheduling Determines When Not What | Scheduler 决定何时执行，不决定做什么 | 10_6 |
+|| ADR-022 | Periodic Creates New Tasks | 周期性执行创建新 Task，不无限循环复用 | 10_6 |
+|| ADR-023 | Retry Preserves Scope | Retry 保留 Execution Context/Scope/Intent | 10_6 |
+|| ADR-024 | Incremental Processing | 每个 Observation 只进入处理管线一次 | 10_6 |
+|| ADR-025 | MemoryService Execution-Agnostic | MemoryService 不创建 Task，Summary 属于 MemoryService | 10_6 |
+|| ADR-026 | EntityService Execution-Agnostic | Entity Merge 只影响未来处理 | 10_6 |
+|| ADR-027 | One Task One Transaction | 一个 Task 对应一个业务事务 | 10_6 |
+|| ADR-028 | Failure Isolation | 执行失败不使已提交业务状态无效 | 10_6 |
+|| ADR-029 | Completed Task Immutability | 已完成 Task 是 immutable execution history | 10_6 |
+|| ADR-030 | Error Mapping Reuses Taxonomy | 复用现有 Error Taxonomy | 10_6 |
 
 ---
 
@@ -343,6 +355,201 @@ Entity 事务的修改范围严格限定：
 ### References
 
 * 10_5 §11.5
+
+---
+
+
+---
+
+## ADR-019: TaskService Execution Orchestration
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: TaskService 负责执行编排，不拥有业务能力
+
+### Decision
+
+TaskService 拥有执行生命周期、调度、重试、执行上下文、执行历史。TaskService 从不拥有业务决策、业务语义、建议生成、Memory/Entity/Reflection 逻辑。
+
+### References
+
+* 10_6 §2.1
+
+---
+
+## ADR-020: Execution Scope Immutability
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: Execution Scope 在执行期间不可变
+
+### Decision
+
+Execution Context 回答"谁执行"，Execution Scope 回答"执行什么不可变输入"。Execution Scope 在执行期间不可变。Retry 必须保留 Execution Scope。即时执行与延迟执行使用相同的 Execution Scope。
+
+### References
+
+* 10_6 §2.4
+
+---
+
+## ADR-021: Scheduling Determines When Not What
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: Scheduler 决定何时执行，不决定做什么
+
+### Decision
+
+Scheduling determines when execution occurs. Scheduling never determines what execution occurs. Scheduler never owns business logic, never evaluates memory/entities/proposals.
+
+### References
+
+* 10_6 §7.2
+
+---
+
+## ADR-022: Periodic Creates New Tasks
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: 周期性执行创建新 Task
+
+### Decision
+
+Periodic execution should create new Tasks rather than endlessly recycling the same Task.
+
+### References
+
+* 10_6 §7.4
+
+---
+
+## ADR-023: Retry Preserves Scope
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: Retry 保留 Execution Context/Scope/Intent
+
+### Decision
+
+Retry retries execution, never retries business decision. Retry preserves Execution Context, Execution Scope, and Business Intent. Only changes Attempt Number, Retry Metadata, and Retry Schedule. Retry uses new transaction each attempt.
+
+### References
+
+* 10_6 §9.1
+
+---
+
+## ADR-024: Incremental Processing
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: 每个 Observation 只进入处理管线一次
+
+### Decision
+
+Each immutable Observation should enter processing pipeline only once. Summary processes only newly produced Observations. Existing Memory evolves through Reflection. Avoid repeated full conversation summarization.
+
+### References
+
+* 10_6 §15.4
+
+---
+
+## ADR-025: MemoryService Execution-Agnostic
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: MemoryService 不创建 Task
+
+### Decision
+
+MemoryService owns memory semantics, not execution semantics. MemoryService does not create Tasks. Summary belongs to MemoryService. TaskService only executes Summary capability.
+
+### References
+
+* 10_6 §14.2
+
+---
+
+## ADR-026: EntityService Execution-Agnostic
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: Entity Merge 只影响未来处理
+
+### Decision
+
+EntityService owns identity semantics, not execution semantics. Entity Merge affects future processing only. Completed execution is never modified. Entity evolution creates new Tasks through Trigger Evaluation.
+
+### References
+
+* 10_6 §14.3
+
+---
+
+## ADR-027: One Task One Transaction
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: 一个 Task 对应一个业务事务
+
+### Decision
+
+One Task corresponds to one business capability. One Task corresponds to one business transaction. No cross-service transaction. Business transaction and Task state transaction remain independent. Retry always creates a new transaction.
+
+### References
+
+* 10_6 §15.2
+
+---
+
+## ADR-028: Failure Isolation
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: 执行失败不使已提交业务状态无效
+
+### Decision
+
+Execution failure never invalidates committed business state. Business Failure → Terminal Failure. Execution Failure → Retry. Enhancement Failure → Independent retry. Failures remain local. Failures never propagate across completed Tasks.
+
+### References
+
+* 10_6 §15.3
+
+---
+
+## ADR-029: Completed Task Immutability
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: 已完成 Task 是 immutable execution history
+
+### Decision
+
+Completed Tasks are immutable execution history. Completed Tasks are never reopened. Completed Tasks never return to Pending/Running/Retry Waiting. Business evolution always creates a new Task. Never reopen completed Task history. This mirrors Memory Immutable at execution level.
+
+### References
+
+* 10_6 §15.4
+
+---
+
+## ADR-030: Error Mapping Reuses Taxonomy
+
+**日期**: 2026-07-11
+**状态**: Final Decision
+**主题**: 复用现有 Error Taxonomy
+
+### Decision
+
+Business Services define business errors. TaskService classifies execution results. Reuse existing Error Taxonomy (E-01 through E-07). Retry decision is based on error category. Preserve original business error information for auditability.
+
+### References
+
+* 10_6 §15.5
 
 ---
 

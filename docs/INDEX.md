@@ -89,7 +89,7 @@ EntityService — Identity Management capability owner, six Capability groups (I
 
 ### 10_6_Implementation_TaskRuntime.md
 
-Task Runtime — Generic task execution infrastructure, domain-agnostic task model, event-driven task chaining, minimal lifecycle (Pending→Running→Completed/Failed→Retry→Dead), at-least-once execution with idempotency, unified scheduler (not Cron), startup recovery, maintenance manager, layered observability.
+Task Runtime + TaskService — Generic task execution infrastructure with TaskService execution orchestration layer. TaskService owns execution lifecycle/scheduling/retry/context/history, never business decisions. Execution Scope concept (immutable during execution). Scheduling determines when, not what. Periodic creates new Tasks. Retry preserves Execution Scope. Incremental Processing Principle. MemoryService/EntityService coordination (execution-agnostic). One Task = One Transaction. Failure Isolation. Completed Task Immutability.
 
 ### 13_Architecture_Guidelines.md
 
