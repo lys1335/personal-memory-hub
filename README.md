@@ -2,7 +2,7 @@
 
 > **A document-driven long-term memory system for personal AI assistants.**
 >
-> **Phase D, Milestone D1: Infrastructure Foundation** — ✅ Complete
+> **Phase D, Milestone D3: Service Layer** — ✅ Complete
 
 ---
 
@@ -114,11 +114,33 @@ See `docs/INDEX.md` for the full architecture documentation.
 | Milestone | Status | Description |
 |-----------|--------|-------------|
 | **D1: Infrastructure Foundation** | ✅ Complete | Project setup, database, logging, DI, testing, CI |
-| **D2: Repository Layer** | ⏳ Planned | Database models, repositories, migrations |
-| **D3: Domain Engine** | ⏳ Planned | Stateless domain engines |
-| **D4: Service Layer** | ⏳ Planned | Application services |
+| **D2: Repository Layer** | ✅ Complete | Database models, repositories, migrations |
+| **D3: Service Layer** | ✅ Complete | Application services (Memory, Query, Entity, Reflection, Task) |
+| **D4: Domain Engine** | ⏳ Planned | Stateless domain engines |
 | **D5: Entry & API** | ⏳ Planned | REST, MCP, CLI adapters |
 | **D6: Testing & Stabilization** | ⏳ Planned | Integration, evaluation, regression |
+
+> **Note**: The implementation roadmap has evolved during the project. Service Layer architecture is intentionally completed before Domain Engine architecture. Stable service contracts provide clear capability boundaries, allowing stateless Domain Engines to be designed afterwards without affecting external service interfaces.
+
+---
+
+## Overall Project Roadmap
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| **Phase A** | Architecture Design | ✅ Complete |
+| **↓** | | |
+| **Phase B** | Implementation Design | ✅ Complete |
+| **↓** | | |
+| **Phase C** | Architecture Review | ✅ Complete |
+| **↓** | | |
+| **Phase D** | Engineering Architecture | 🔄 In Progress |
+| **↓** | | |
+| **Phase E** | MVP Development | 📋 Planned |
+| **↓** | | |
+| **Phase F** | AI Integration | 📋 Planned |
+| **↓** | | |
+| **Phase G** | Production Ready | 📋 Planned |
 
 ---
 
