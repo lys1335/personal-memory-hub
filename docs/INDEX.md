@@ -85,7 +85,7 @@ ReflectionService — Memory Pyramid evolution orchestration, four Capabilities 
 
 ### 10_5_Implementation_EntityService.md
 
-EntityService — Identity Management capability owner, five Capability groups (Identity/Merge/Alias/Relationship/Profile Update), EntityID stability, Asynchronous Reference Migration, three-state lifecycle (Created→Active→Merged), Domain Events, Evidence-based Entity (L0 support required), No Entity Version.
+EntityService — Identity Management capability owner, six Capability groups (Identity Management/Identity Consolidation/Alias/Relationship/Metadata Update), EntityID stability, Asynchronous Reference Graph Update, Entity Permanence (no delete/destroy/restore), Domain Events, Evidence-based Entity (L0 support required), No Entity Version, Memory Reference Immutability, QueryService Resolution (Alias/Canonical/Merge-Graph), Relationship Evolution.
 
 ### 10_6_Implementation_TaskRuntime.md
 

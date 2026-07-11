@@ -383,7 +383,84 @@ Result Assembly
 
 ---
 
-### D3.4 EntityService
+### D3.4 ReflectionService
+
+**Purpose**: Implement the Reflection Business Capability Orchestrator — Reflection workflow orchestration, business validation, repository coordination, and reflection transaction management.
+
+**Dependencies**: D3.1 (BaseService available), D2 (MemoryNodeRepository, CandidateRepository, RelationshipRepository available).
+
+> **Note**: Reflection algorithms belong to ReflectionEngine (D4). Task lifecycle belongs to TaskService (D3.6). Task execution belongs to Task Runtime (D4).
+
+**Expected outputs**:
+
+- `backend/src/backend/service/reflection_service.py` — `ReflectionService` class with:
+  - **Reflect Capability**: `reflect()`, `reflect_by_entity()`, `reflect_by_time_window()`, `reflect_by_scope()`
+  - **Consolidate Capability**: `consolidate()`, `consolidate_by_entity()`
+  - **Summarize Capability**: `summarize()`, `summarize_by_level()`
+  - **Evaluate Capability**: `evaluate()`, `evaluate_by_entity()`
+
+**Capability-Oriented API**:
+
+```
+ReflectionService
+│
+├── Reflect Capability
+│   ├── reflect()
+│   ├── reflect_by_entity()
+│   ├── reflect_by_time_window()
+│   └── reflect_by_scope()
+│
+├── Consolidate Capability
+│   ├── consolidate()
+│   └── consolidate_by_entity()
+│
+├── Summarize Capability
+│   ├── summarize()
+│   └── summarize_by_level()
+│
+└── Evaluate Capability
+    ├── evaluate()
+    └── evaluate_by_entity()
+```
+
+**Repository Coordination**:
+- MemoryNodeRepository: read candidate memories, create new summary memories, update memory levels
+- CandidateRepository: create candidates, find_candidates_by_scope, update_candidate_status
+- RelationshipRepository: create/update memory relationships (CORRECTS, SUPERSEDES, PART_OF)
+
+**Transaction Policy**:
+- Reflect: single transaction for all generated memories within one reflection run
+- Consolidate: single transaction for merged memories
+- Summarize: single transaction per level update
+- Evaluate: read-only (no transaction needed)
+
+**Constraints**:
+- Command Returns Identity: reflection methods return `ReflectionExecutionResult` (execution report, not business data)
+- True business data (newly generated memories, updated entities) accessed through QueryService
+- Reflection is evolution, not mutation (produces proposals, not direct modifications)
+- Higher-level Memory stores evolving explanations, not historical snapshots
+- Semantic uniqueness within same abstraction level
+- Incremental propagation (only upward when necessary)
+- Raw Evidence Preservation: raw L0 memories are never modified or deleted by Reflection
+- **Reflection Algorithm Ownership**: ReflectionService does NOT own reflection algorithms (owned by ReflectionEngine)
+- **Task Lifecycle Ownership**: ReflectionService does NOT own task lifecycle (owned by TaskService)
+- **Execution Ownership**: ReflectionService does NOT own runtime execution (owned by Task Runtime)
+- **Service Independence**: ReflectionService does NOT call MemoryService, QueryService, EntityService, or TaskService
+
+**Engineering decisions referenced**:
+- 10_4: ReflectionService design (Philosophy, Capability taxonomy, Workflow)
+- 10_1 §4.2.1: Domain Service principle
+- IR-008: Reflection Workflow (business validation → acquire scope → invoke engine → review → persist)
+- IR-013: Reflection Execution Result (Status, Statistics, Metadata)
+- G-038: Service Independence Principle
+- G-039: Capability Completeness Principle
+- G-040: Shared Aggregate Principle
+- G-041: Deferred Execution Principle
+
+**Verification**: All 4 Capability groups have implemented methods. No direct Memory modification without evidence chain. Raw evidence preservation verified. Execution results are reports, not business data.
+
+---
+
 
 **Purpose**: Implement the Identity Management Service — Entity lifecycle and relationship management.
 
@@ -456,7 +533,156 @@ EntityService
 
 ---
 
-### D3.5 ReflectionService
+
+**Purpose**: Implement the Reflection Business Capability Orchestrator — Reflection workflow orchestration, business validation, repository coordination, and reflection transaction management.
+
+**Dependencies**: D3.1 (BaseService available), D2 (MemoryNodeRepository, CandidateRepository, RelationshipRepository available).
+
+> **Note**: Reflection algorithms belong to ReflectionEngine (D4). Task lifecycle belongs to TaskService (D3.6). Task execution belongs to Task Runtime (D4).
+
+**Expected outputs**:
+
+- `backend/src/backend/service/reflection_service.py` — `ReflectionService` class with:
+  - **Reflect Capability**: `reflect()`, `reflect_by_entity()`, `reflect_by_time_window()`, `reflect_by_scope()`
+  - **Consolidate Capability**: `consolidate()`, `consolidate_by_entity()`
+  - **Summarize Capability**: `summarize()`, `summarize_by_level()`
+  - **Evaluate Capability**: `evaluate()`, `evaluate_by_entity()`
+
+**Capability-Oriented API**:
+
+```
+ReflectionService
+│
+├── Reflect Capability
+│   ├── reflect()
+│   ├── reflect_by_entity()
+│   ├── reflect_by_time_window()
+│   └── reflect_by_scope()
+│
+├── Consolidate Capability
+│   ├── consolidate()
+│   └── consolidate_by_entity()
+│
+├── Summarize Capability
+│   ├── summarize()
+│   └── summarize_by_level()
+│
+└── Evaluate Capability
+    ├── evaluate()
+    └── evaluate_by_entity()
+```
+
+**Repository Coordination**:
+- MemoryNodeRepository: read candidate memories, create new summary memories, update memory levels
+- CandidateRepository: create candidates, find_candidates_by_scope, update_candidate_status
+- RelationshipRepository: create/update memory relationships (CORRECTS, SUPERSEDES, PART_OF)
+
+**Transaction Policy**:
+- Reflect: single transaction for all generated memories within one reflection run
+- Consolidate: single transaction for merged memories
+- Summarize: single transaction per level update
+- Evaluate: read-only (no transaction needed)
+
+**Constraints**:
+- Command Returns Identity: reflection methods return `ReflectionExecutionResult` (execution report, not business data)
+- True business data (newly generated memories, updated entities) accessed through QueryService
+- Reflection is evolution, not mutation (produces proposals, not direct modifications)
+- Higher-level Memory stores evolving explanations, not historical snapshots
+- Semantic uniqueness within same abstraction level
+- Incremental propagation (only upward when necessary)
+- Raw Evidence Preservation: raw L0 memories are never modified or deleted by Reflection
+- **Reflection Algorithm Ownership**: ReflectionService does NOT own reflection algorithms (owned by ReflectionEngine)
+- **Task Lifecycle Ownership**: ReflectionService does NOT own task lifecycle (owned by TaskService)
+- **Execution Ownership**: ReflectionService does NOT own runtime execution (owned by Task Runtime)
+- **Service Independence**: ReflectionService does NOT call MemoryService, QueryService, EntityService, or TaskService
+
+**Engineering decisions referenced**:
+- 10_4: ReflectionService design (Philosophy, Capability taxonomy, Workflow)
+- 10_1 §4.2.1: Domain Service principle
+- IR-008: Reflection Workflow (business validation → acquire scope → invoke engine → review → persist)
+- IR-013: Reflection Execution Result (Status, Statistics, Metadata)
+- G-038: Service Independence Principle
+- G-039: Capability Completeness Principle
+- G-040: Shared Aggregate Principle
+- G-041: Deferred Execution Principle
+
+**Verification**: All 4 Capability groups have implemented methods. No direct Memory modification without evidence chain. Raw evidence preservation verified. Execution results are reports, not business data.
+
+---
+
+### D3.5 EntityService
+
+**Purpose**: Implement the Identity Management Service — Entity lifecycle and relationship management.
+
+**Dependencies**: D3.1 (BaseService available), D2 (EntityRepository, RelationshipRepository, TagRepository available).
+
+**Expected outputs**:
+
+- `backend/src/backend/service/entity_service.py` — `EntityService` class with:
+  - **Identity Management Capability**: `create_entity()`, `resolve_entity()`, `get_entity_profile()`
+  - **Merge Capability**: `merge_entities()`, `get_merge_status()`
+  - **Alias Capability**: `add_alias()`, `remove_alias()`, `get_aliases()`
+  - **Relationship Capability**: `add_relationship()`, `remove_relationship()`, `get_relationships()`
+  - **Profile Update Capability**: `update_canonical_name()`, `update_metadata()`
+
+**Capability-Oriented API**:
+
+```
+EntityService
+│
+├── Identity Management Capability
+│   ├── create_entity()
+│   ├── resolve_entity()
+│   └── get_entity_profile()
+│
+├── Merge Capability
+│   ├── merge_entities()
+│   └── get_merge_status()
+│
+├── Alias Capability
+│   ├── add_alias()
+│   ├── remove_alias()
+│   └── get_aliases()
+│
+├── Relationship Capability
+│   ├── add_relationship()
+│   ├── remove_relationship()
+│   └── get_relationships()
+│
+└── Profile Update Capability
+    ├── update_canonical_name()
+    └── update_metadata()
+```
+
+**Repository Coordination**:
+- EntityRepository: create_entity, find_by_id, find_by_name, find_by_alias, find_by_area, find_by_parent, create_area, create_user_profile, find_page
+- RelationshipRepository: find_by_source, find_by_target, find_connections, create_relationship, find_by_type
+- TagRepository: link_tag, unlink_tag (for entity tagging)
+
+**Transaction Policy**:
+- Create entity: single transaction
+- Merge entities: single transaction (entity update + relationship migration + alias consolidation)
+- Add/remove alias: single transaction per operation
+- Add/remove relationship: single transaction per operation
+
+**Constraints**:
+- Command Returns Identity: `create_entity()` returns `EntityId`, `merge_entities()` returns `MergeResult`
+- Entity identity evolves, does not mutate (EntityID remains stable)
+- Entity is never soft-deleted (status management via relationships)
+- No Memory management (belongs to MemoryService)
+- No Reflection generation (belongs to ReflectionService)
+- No Query Projection (belongs to QueryService)
+
+**Engineering decisions referenced**:
+- 10_5: EntityService design (Identity philosophy, Merge strategy, Lifecycle)
+- 10_1 §4.2.1: Domain Service principle
+- IR-003: Asynchronous Reference Migration (merge workflow)
+- IR-004: Entity Status Management (never deleted, only status transition)
+
+**Verification**: All 5 Capability groups have implemented methods. No Memory or Reflection methods exist. Entity identity stability verified. Merge uses asynchronous reference migration pattern.
+
+---
+
 
 **Purpose**: Implement the Reflection Business Capability Orchestrator — Reflection workflow orchestration, business validation, repository coordination, and reflection transaction management.
 
@@ -914,8 +1140,8 @@ D3.1 Service Base Infrastructure ───────────────�
        ↓                                          │
 D3.2 MemoryService ←──────────────────────────────┤
 D3.3 QueryService ←───────────────────────────────┤
-D3.4 EntityService ←──────────────────────────────┤
-D3.5 ReflectionService ←──────────────────────────┤
+D3.4 ReflectionService ←──────────────────────────┤
+D3.5 EntityService ←──────────────────────────────┤
 D3.6 TaskService ←────────────────────────────────┤       ↓
        ↓                                  D3.7 Error & DTO Models
 D3.8 Service Test Suite (parallel with D3.2–D3.6)
@@ -924,8 +1150,8 @@ D3.9 Documentation Updates (parallel throughout)
 ```
 
 **Parallel execution opportunities**:
-- D3.2 (MemoryService), D3.3 (QueryService), D3.4 (EntityService) can proceed in parallel once D3.1 is complete
-- D3.5 (ReflectionService) depends on D3.1 + D3.4 (EntityService for entity updates during reflection)
+- D3.2 (MemoryService), D3.3 (QueryService), D3.5 (EntityService) can proceed in parallel once D3.1 is complete
+- D3.4 (ReflectionService) depends on D3.1 + D3.5 (EntityService for entity updates during reflection)
 - D3.6 (TaskService) can proceed in parallel with D3.2–D3.5 (independent capability)
 - D3.7 (Error & DTO) can proceed in parallel with D3.2–D3.6 (shared infrastructure)
 - D3.8 (tests) can proceed in parallel with individual Service implementations
@@ -942,8 +1168,8 @@ The recommended implementation order follows dependency resolution:
 | 1 | D3.1 | Service Base Infrastructure | ~3 hours |
 | 2 | D3.2 | MemoryService (largest Service) | ~6 hours |
 | 3 | D3.3 | QueryService (read-only, simpler) | ~4 hours |
-| 4 | D3.4 | EntityService (identity management) | ~4 hours |
-| 5 | D3.5 | ReflectionService (evolution orchestration) | ~5 hours |
+| 4 | D3.5 | EntityService (identity management) | ~4 hours |
+| 5 | D3.4 | ReflectionService (evolution orchestration) | ~5 hours |
 | 6 | D3.6 | TaskService (task scheduling) | ~3 hours |
 | 7 | D3.7 | Error Handling & DTO Models | ~2 hours |
 | 8 | D3.8 | Service Test Suite | ~8 hours |

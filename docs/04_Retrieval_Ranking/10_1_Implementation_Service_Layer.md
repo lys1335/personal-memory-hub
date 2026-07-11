@@ -979,7 +979,7 @@ src/
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
 | 1.2 | 2026-06-27 | Phase B-3 修订：(1) 新增 QueryService 定位原则 (2) Decision Summary 补充 23~34 (3) 回溯更新表补充 10_3 (4) 新增 13 Architecture Guidelines 引用 | ✅ 已确认 |
-|| 1.3 | 2026-06-28 | Phase B-5 修订：(1) 新增 EntityEngine（#12）到 Engine 清单 (2) 新增 EntityService 到 Service Collaboration Matrix (3) 新增 EntityService 到 Service DAG / Engine DAG (4) Decision Summary 补充 35~38 (5) 回溯更新表补充 10_5 | ✅ 已确认 |
+|| 1.3 | 2026-07-11 | Phase B-5 修订：(1) 更新 EntityService 决策集（Entity Permanence、Identity Consolidation、Metadata Update、Memory Reference Immutability、QueryService Resolution、Proposal-Task Separation）(2) 补充 10_5 版本号至 2.0 | ✅ 已确认 |
 || 1.4 | 2026-06-30 | Phase B-7 修订：(1) Decision Summary 补充 39~41（API Entry Layer / Capability Discovery / Multi-Adapter Entry） (2) 回溯更新表补充 10_7 | ✅ 已确认 |
 || 1.5 | 2026-07-01 | Phase B-8 修订：(1) Decision Summary 补充 42~43（Testing Architecture / Testing Guidelines G-056~G-065） (2) 回溯更新表补充 10_8 | ✅ 已确认 |
 | 1.6 | 2026-07-01 | Phase B-9 修订：(1) Decision Summary 补充 44（Implementation Roadmap） (2) 回溯更新表补充 11 | ✅ 已确认 |

@@ -461,6 +461,82 @@ Reflection 失败保持局部。重试必须是安全的。每个增强能力独
 
 ---
 
+## EntityService D3.5 Guidelines
+
+### G-044: Entity Permanence Principle
+
+> **Entity is never deleted. No Delete. No Destroy. No Restore. Entity permanently exists after creation.**
+
+Entity 一旦创建即永久存在。不存在删除、销毁或恢复操作。
+
+**引用**：10_5 §8.1
+
+### G-045: Identity Consolidation Principle
+
+> **Merge is redefined as Identity Consolidation. Merge does NOT represent real-world evolution. Rename is Metadata Update.**
+
+Identity Consolidation 是身份层面的合并，不代表真实世界的演化。Rename 只是 Metadata Update。
+
+**引用**：10_5 §7.1
+
+### G-046: Metadata Update Principle
+
+> **Metadata includes Canonical Name, Alias List, and other metadata. Rename only changes Metadata.**
+
+元数据包括 Canonical Name、Alias List 和其他元数据。Rename 只更改元数据，不改变 Entity 身份。
+
+**引用**：10_5 §7.2
+
+### G-047: Memory Reference Immutability Principle
+
+> **Memory references are immutable. Memory always keeps its original Entity reference. Entity Merge never rewrites historical Memory references.**
+
+Memory 引用不可变。Memory 始终保持其原始 Entity 引用。Entity Merge 从不重写历史 Memory 引用。
+
+**引用**：10_5 §3.4
+
+### G-048: QueryService Resolution Principle
+
+> **QueryService performs Alias Resolution, Canonical Resolution, and Merge Graph Expansion. Memory remains unchanged.**
+
+QueryService 执行 Alias Resolution、Canonical Resolution 和 Merge Graph Expansion。Memory 保持不变。
+
+**引用**：10_5 §3.5
+
+### G-049: Relationship Evolution Principle
+
+> **Relationship belongs to the current Identity Graph. Relationship may evolve together with Entity. Memory references never evolve.**
+
+Relationship 属于当前 Identity Graph。Relationship 可能与 Entity 一起演化。Memory 引用永不演化。
+
+**引用**：10_5 §3.6
+
+### G-050: Reflection Proposal Principle
+
+> **ReflectionService only produces Entity Evolution Proposals. Reflection never mutates Entity directly.**
+
+ReflectionService 仅产生 Entity Evolution Proposals。Reflection 从不直接修改 Entity。
+
+**引用**：10_4 §14.6
+
+### G-051: Proposal–Task Separation Principle
+
+> **Proposal and Task are independent concepts. Proposal = Business Recommendation. Task = Execution Scheduling.**
+
+Proposal 和 Task 是独立概念。Proposal = 业务建议。Task = 执行调度。
+
+**引用**：10_4 §14.6, 10_5 §11.6
+
+### G-052: Entity Transaction Scope Principle
+
+> **Entity transactions only modify Entity, Metadata, and Relationship Graph. Never Observation, Memory, or Evidence.**
+
+Entity 事务仅修改 Entity、Metadata 和 Relationship Graph。绝不修改 Observation、Memory 或 Evidence。
+
+**引用**：10_5 §11.5
+
+---
+
 | 编号 | 名称 | 首次出现 |
 |------|------|----------|
 | G-001 | One Capability, One Implementation | 13 §1 |
@@ -500,6 +576,15 @@ Reflection 失败保持局部。重试必须是安全的。每个增强能力独
 | G-035 | No Runtime Canonical Resolution | 10_5 |
 | G-036 | Entity Is Current Best Identity | 10_5 |
 | G-037 | Memory Fact ≠ Entity Reference | 10_5 |
+| G-044 | Entity Permanence Principle | 10_5 |
+| G-045 | Identity Consolidation Principle | 10_5 |
+| G-046 | Metadata Update Principle | 10_5 |
+| G-047 | Memory Reference Immutability Principle | 10_5 |
+| G-048 | QueryService Resolution Principle | 10_5 |
+| G-049 | Relationship Evolution Principle | 10_5 |
+| G-050 | Reflection Proposal Principle | 10_4 |
+| G-051 | Proposal–Task Separation Principle | 10_4 |
+| G-052 | Entity Transaction Scope Principle | 10_5 |
 | G-038 | Service Independence Principle | 13 |
 | G-039 | Capability Completeness Principle | 13 |
 | G-040 | Shared Aggregate Principle | 13 |
