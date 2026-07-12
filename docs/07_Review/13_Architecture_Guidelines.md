@@ -4,7 +4,7 @@
 > **日期**: 2026-07-10  
 > **阶段**: Phase B — 工程规范（Living Guideline）  
 > **状态**: 已确认  
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-095 + Error Taxonomy Draft V0。
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-064 + G-065~G-112 + Error Taxonomy V1。
 
 ---
 
@@ -696,6 +696,43 @@ Entity 事务仅修改 Entity、Metadata 和 Relationship Graph。绝不修改 O
 | G-068 | Entry Validation Layers | 10_7 |
 | G-069 | DTO Transformation | 10_7 |
 | G-070 | Memory Immutability at Entry | 10_7 |
+| G-071 | Testing Mirrors Architecture | 10_8 |
+| G-072 | Mock Mirrors Layer Boundary | 10_8 |
+| G-073 | Deterministic-by-Default | 10_8 |
+| G-074 | Semantic Equivalence Principle | 10_8 |
+| G-075 | Regression as Executable Memory | 10_8 |
+| G-076 | Golden Dataset Principle | 10_8 |
+| G-077 | Testability Is an Architectural Requirement | 10_8 |
+| G-078 | Quality Is Designed, Not Inspected | 10_8 |
+| G-079 | Tests Generated from Design | 10_8 |
+| G-080 | Test Data Is a First-Class Artifact | 10_8 |
+| G-081 | DTO Is a Service Contract | D3.7 |
+| G-082 | DTO Contains Data Only | D3.7 |
+| G-083 | All DTOs Are Immutable | D3.7 |
+| G-084 | One Capability Owns One Primary Contract | D3.7 |
+| G-085 | Command/Query Naming Convention | D3.7 |
+| G-086 | Query Purity Principle | 10_3 |
+| G-087 | Capability Composition Principle | 10_3 |
+| G-088 | Query Idempotence Principle | 10_3 |
+| G-089 | Language Preservation Principle | 10_3 |
+| G-090 | Observational Consistency | 10_3 |
+| G-091 | Repository Coordination Uniqueness | 10_3 |
+| G-092 | Read Pipeline Principles | 10_3 |
+| G-093 | Projection Three-Level Boundary | 10_3 |
+| G-094 | Transaction Strategy | 10_3 |
+| G-095 | Deterministic Error Mapping | 10_3 |
+| G-096 | Dual Result Principle | D3.7 |
+| G-097 | Error Is Part of Service Contract | D3.7 |
+| G-098 | Exceptions Never Cross Service Boundary | D3.7 |
+| G-099 | Service Owns Exception Mapping | D3.7 |
+| G-100 | Validation Layer Ownership | D3.7 |
+| G-101 | Business Validation Completes Before Transaction | D3.7 |
+| G-102 | Capability-Owned DTOs | D3.7 |
+| G-103 | Shared Objects Are Capability-Neutral | D3.7 |
+| G-104 | Backward-Compatible Evolution | D3.7 |
+| G-105 | Breaking Changes Require ADR | D3.7 |
+| G-106 | Serialization Belongs to Entry Layer | D3.7 |
+| G-107 | Protocol Version ≠ Service Contract Version | D3.7 |
 
 ---
 
@@ -806,6 +843,40 @@ Entity 事务仅修改 Entity、Metadata 和 Relationship Graph。绝不修改 O
 > Entry 层拒绝所有直接修改 Memory 的请求（update/delete）。修正通过 correctMemory() 完成，归档通过 archiveMemory() 完成。
 
 **引用**：10_7 §4, 08 §8.3
+
+---
+
+## 7. DTO & Service Contract Guidelines
+
+### G-081: DTO Is a Service Contract
+
+> DTO is a Service Contract, not a Domain Object. DTO contains data only — no business logic, no workflow, no persistence logic, no validation logic, no infrastructure references.
+
+**引用**：D3.7 §2
+
+### G-082: DTO Contains Data Only
+
+> DTOs are independent from Repository, Engine, Database, ORM, and Transport Protocol. DTO lifecycle exists only at the Service Boundary.
+
+**引用**：D3.7 §2
+
+### G-083: All DTOs Are Immutable
+
+> All DTO fields are final/readonly. No setters. DTOs contain serializable data fields only.
+
+**引用**：D3.7 §2.2
+
+### G-084: One Capability Owns One Primary Contract
+
+> Each Capability defines and owns its own DTOs. Business DTOs are never shared across Services.
+
+**引用**：D3.7 §2.1, §11.1
+
+### G-085: Command/Query Naming Convention
+
+> Commands follow `XXXCommand`, Queries follow `XXXQuery`, Results follow `XXXResult` naming convention.
+
+**引用**：D3.7 §3.3
 
 ---
 
@@ -942,6 +1013,78 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 **引用**：10_3 §11
 
+### G-096: Dual Result Principle
+
+> Business Result represents Domain Outcome. Execution Result represents Runtime Outcome. Business Success ≠ Execution Success. TaskService returns Execution Result. Domain Services return Business Result. Execution information must never pollute Business Contracts.
+
+**引用**：D3.7 §7
+
+### G-097: Error Is Part of Service Contract
+
+> Error represents failure to produce Business Result. Error is transport-independent, language-independent, and expresses stable business semantics. Error is immutable and may include business context. Error never contains recovery logic.
+
+**引用**：D3.7 §8
+
+### G-098: Exceptions Never Cross Service Boundary
+
+> Service boundary converts exceptions to Errors. Service owns exception mapping. Mapping is semantic rather than implementation-based. Infrastructure details are hidden. Unknown exceptions always map to a known Business Error.
+
+**引用**：D3.7 §9
+
+### G-099: Service Owns Exception Mapping
+
+> Exception categories map to frozen Error categories. Internal diagnostic chains may be preserved for logging. Mapping is deterministic. Protocol mapping occurs only in Entry Layer.
+
+**引用**：D3.7 §9
+
+### G-100: Validation Layer Ownership
+
+> Protocol Validation (Entry) → Business Validation (Service) → Persistence Validation (Repository) → Infrastructure Validation (Infrastructure). Each layer validates within its responsibility scope.
+
+**引用**：D3.7 §10.2
+
+### G-101: Business Validation Completes Before Transaction
+
+> Service owns Business Validation. Validation occurs before Business Execution. Validation produces Validation Error. Validation is deterministic, side-effect free, capability-oriented, and transport-independent.
+
+**引用**：D3.7 §10.1
+
+### G-102: Capability-Owned DTOs
+
+> Capability owns its own DTO. Business DTOs are never shared across Services. Only stable Shared Value Objects may be shared. Reuse semantic components rather than complete DTOs.
+
+**引用**：D3.7 §11
+
+### G-103: Shared Objects Are Capability-Neutral
+
+> Shared contracts belong to an independent Shared Contract layer. Shared contracts evolve independently. Shared DTOs must remain capability-neutral. Business DTOs must never become shared contracts.
+
+**引用**：D3.7 §11
+
+### G-104: Backward-Compatible Evolution
+
+> Service Contracts are stable public contracts. Prefer backward-compatible evolution. Capability contracts evolve independently. Infrastructure changes never affect Service Contracts.
+
+**引用**：D3.7 §12
+
+### G-105: Breaking Changes Require ADR
+
+> Semantic stability is more important than structural stability. Error Codes remain stable. Versioning follows Business Capability evolution. Deprecation precedes removal.
+
+**引用**：D3.7 §12
+
+### G-106: Serialization Belongs to Entry Layer
+
+> DTO is the serialization boundary. Serialization is protocol-specific. DTO must remain serialization-friendly. Serialization never changes business semantics. Domain Objects never cross serialization boundaries.
+
+**引用**：D3.7 §13
+
+### G-107: Protocol Version ≠ Service Contract Version
+
+> Protocol changes (HTTP/1.1 → HTTP/2, JSON → MessagePack) do not affect Service Contract Version. Service Contract changes require ADR. Infrastructure changes never affect Service Contracts.
+
+**引用**：D3.7 §13.3
+
 ---
 
 ## 附录：Testing Guidelines
@@ -1020,21 +1163,38 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 | G-078 | Quality Is Designed, Not Inspected | 10_8 |
 | G-079 | Tests Generated from Design | 10_8 |
 | G-080 | Test Data Is a First-Class Artifact | 10_8 |
-| G-081 | Knowledge Evolution Principle | 12 |
-| G-082 | Stateless AI Collaboration | 13_AI_Development_Workflow |
-| G-083 | Evidence-Based Verification | 13_AI_Development_Workflow |
-| G-084 | GitHub as Project State | 13_AI_Development_Workflow |
-| G-085 | Knowledge Refinement Over Proliferation | 13_AI_Development_Workflow |
-| G-086 | Query Purity Principle | 10_3 |
-| G-087 | Capability Composition Principle | 10_3 |
-| G-088 | Query Idempotence Principle | 10_3 |
-| G-089 | Language Preservation Principle | 10_3 |
-| G-090 | Observational Consistency | 10_3 |
-| G-091 | Repository Coordination Uniqueness | 10_3 |
-| G-092 | Read Pipeline Principles | 10_3 |
-| G-093 | Projection Three-Level Boundary | 10_3 |
-| G-094 | Transaction Strategy | 10_3 |
-| G-095 | Deterministic Error Mapping | 10_3 |
+| G-081 | DTO Is a Service Contract | D3.7 |
+| G-082 | DTO Contains Data Only | D3.7 |
+| G-083 | All DTOs Are Immutable | D3.7 |
+| G-084 | One Capability Owns One Primary Contract | D3.7 |
+| G-085 | Command/Query Naming Convention | D3.7 |
+| G-086 | Knowledge Evolution Principle | 12 |
+| G-087 | Stateless AI Collaboration | 13_AI_Development_Workflow |
+| G-088 | Evidence-Based Verification | 13_AI_Development_Workflow |
+| G-089 | GitHub as Project State | 13_AI_Development_Workflow |
+| G-090 | Knowledge Refinement Over Proliferation | 13_AI_Development_Workflow |
+| G-091 | Query Purity Principle | 10_3 |
+| G-092 | Capability Composition Principle | 10_3 |
+| G-093 | Query Idempotence Principle | 10_3 |
+| G-094 | Language Preservation Principle | 10_3 |
+| G-095 | Observational Consistency | 10_3 |
+| G-096 | Repository Coordination Uniqueness | 10_3 |
+| G-097 | Read Pipeline Principles | 10_3 |
+| G-098 | Projection Three-Level Boundary | 10_3 |
+| G-099 | Transaction Strategy | 10_3 |
+| G-100 | Deterministic Error Mapping | 10_3 |
+| G-101 | Dual Result Principle | D3.7 |
+| G-102 | Error Is Part of Service Contract | D3.7 |
+| G-103 | Exceptions Never Cross Service Boundary | D3.7 |
+| G-104 | Service Owns Exception Mapping | D3.7 |
+| G-105 | Validation Layer Ownership | D3.7 |
+| G-106 | Business Validation Completes Before Transaction | D3.7 |
+| G-107 | Capability-Owned DTOs | D3.7 |
+| G-108 | Shared Objects Are Capability-Neutral | D3.7 |
+| G-109 | Backward-Compatible Evolution | D3.7 |
+| G-110 | Breaking Changes Require ADR | D3.7 |
+| G-111 | Serialization Belongs to Entry Layer | D3.7 |
+| G-112 | Protocol Version ≠ Service Contract Version | D3.7 |
 
 ---
 
@@ -1068,14 +1228,12 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 ---
 
-## 附录：Service Error Taxonomy (Draft V0)
+## 附录：Service Error Taxonomy V1
 
-> **⚠️ Living Specification**
+> **Final Specification**
 > 
-> 此分类法将在 D3 期间持续演进。
-> 最终版本将在最终一致性审查（Final Consistency Review）中确定。
-> 
-> 后续 Service 文档应扩展此分类法，而不是重新定义它。
+> 此分类法已在 D3.7 中冻结。
+> 后续文档应扩展此分类法，而不是重新定义它。
 
 ### 分类法概览
 

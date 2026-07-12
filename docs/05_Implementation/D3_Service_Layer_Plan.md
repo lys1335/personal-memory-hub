@@ -65,6 +65,7 @@ The following outputs are expected upon D3 completion:
 | 11 | Verification Guide Update | `docs/06_Guides/` | Updated verification guide for D3 |
 | 12 | Exception Mapping Matrix | `docs/07_Architecture_Contracts/` | Architecture specification: Repository→Service→Entry exception mapping |
 | 13 | Logging Schema Specification | `docs/07_Architecture_Contracts/` | Architecture specification: structured logging contract |
+| 14 | D3.7 Error Handling & DTO Models | `docs/05_Implementation/D3.7_Error_Handling_DTO_Models.md` | Complete DTO design, error model, exception mapping, validation strategy, versioning, serialization boundaries, verification checklist |
 
 **Note**: Items 12–13 are architecture specifications, not implementation deliverables. They define version-controlled contracts for exception mapping and logging schema.
 
@@ -820,68 +821,35 @@ TaskService
 
 ### D3.7 Error Handling & DTO Models
 
+**Status**: ✅ **Completed** — 2026-07-12
+
 **Purpose**: Implement consistent error handling and DTO boundaries across all Services.
 
-**Dependencies**: D3.1–D3.6 (all Services implemented).
+**Deliverable**: `docs/05_Implementation/D3.7_Error_Handling_DTO_Models.md`
 
-**Expected outputs**:
+**Architecture Specification** (frozen):
 
-- `backend/src/backend/service/exceptions.py` — Domain exception hierarchy:
-  - `ServiceError` (base)
-  - `ValidationError` (invalid input)
-  - `NotFoundError` (entity not found)
-  - `DomainIntegrityError` (business rule violation)
-  - `DuplicateError` (duplicate entity)
-  - `ReadOnlyError` (write attempted on read-only resource)
-  - `EntrySafeError` (mapped to HTTP/protocol error codes)
+| Component | Description |
+|-----------|-------------|
+| DTO Design Principles | DTO is Service Contract, data only, immutable, capability-owned |
+| Service Contract Consistency | Uniform Command/Query/Result pattern, stable naming |
+| Command DTO | `XXXCommand` — business intent, immutable, no infrastructure |
+| Query DTO | `XXXQuery` — information need, side-effect free, deterministic |
+| Result Model | `XXXResult` — business outcome, explicit, never null |
+| Dual Result Principle | Business Result (domain) vs Execution Result (runtime) |
+| Error Taxonomy | 7 frozen categories: Validation, Conflict, Capability, Persistence, Background, Policy, Infrastructure |
+| Exception Mapping | Exceptions never cross Service boundary, semantic mapping |
+| Validation Strategy | 4-layer: Protocol → Business → Persistence → Infrastructure |
+| Cross-Service DTO Reuse | Capability owns DTO, shared Value Objects only |
+| Versioning Strategy | Backward-compatible evolution, ADR for breaking changes |
+| Serialization Boundary | Entry Layer owns serialization, DTO is boundary |
+| Verification Checklist | 8 categories: DTO consistency, layer boundaries, validation, error mapping, versioning, serialization, shared contracts, determinism |
 
-- `backend/src/backend/service/dto.py` — DTO models:
-  - Entry DTOs: `CaptureRequest`, `SearchRequest`, `ImportRequest`, `MergeRequest`, `ReflectRequest`, `TaskSubmitRequest`
-  - Internal Results: `CaptureResult`, `SearchResult`, `ImportReport`, `MergeResult`, `ReflectionExecutionResult`, `TaskInfo`
-  - Query Results: `QueryResult[T]`, `MemoryView`, `EntityView`, `RankedMemoryView`
+**Guidelines Added**: G-081 through G-085 (DTO & Service Contract), G-096 through G-107 (Error, Validation, Versioning, Serialization)
 
-- **Exception Mapping Matrix** (architecture specification, not implementation):
-  ```
-  Repository Exception
-    ↓
-  Service Exception
-    ↓
-  HTTP / MCP / CLI
-  ```
-  Documented as a version-controlled architecture contract.
+**Error Taxonomy**: Promoted from Draft V0 to V1 (frozen).
 
-- **Logging Schema Specification** (architecture specification, not implementation):
-  - Structured Logging adopted
-  - Never log: Memory Content, Reflection Content, Embeddings, Prompts, Secrets, API Keys, Tokens
-  - Prefer logging identifiers
-  - Introduce Correlation ID
-  - Define standard log levels
-  - Logging belongs to Service layer
-  - Repository logs persistence
-  - Entry logs protocol/access
-
-**Layer Responsibilities**:
-- **Repository**: Repository Exception only
-- **Service**: Domain Exception only
-- **Entry**: Entry-safe Exception only
-- **Exception translation responsibility belongs to Service**
-
-**Constraints**:
-- No ORM Model leakage to Entry layer
-- No Entry DTO propagation between Services
-- Entry DTO ↔ Domain Model ↔ Repository ORM Model (three distinct layers)
-- All error codes are protocol-agnostic (Entry layer maps to HTTP/MCP/CLI codes)
-- Single Translation Responsibility: Each layer translates once into the exception model of the next layer
-- Preserve Root Cause in exception chaining
-- Stable Exception Taxonomy as version-controlled architecture contract
-
-**Engineering decisions referenced**:
-- 10_1 §3.3: Call direction rules (Entry → Service → Engine/Repository)
-- 10_1 §8: API Entry Layer (DTO conversion, protocol adaptation)
-- 10_7 §4: Error code catalog
-- IR-005: Stable Result Contract
-
-**Verification**: All Services use the same exception hierarchy. No Service returns ORM models directly. All Entry DTOs have corresponding internal result models.
+**Consistency Verified Against**: D3.1 through D3.6 — no contradictions, no duplicated principles, no conflicting terminology.
 
 ---
 
@@ -1171,7 +1139,7 @@ The recommended implementation order follows dependency resolution:
 | 4 | D3.5 | EntityService (identity management) | ~4 hours |
 | 5 | D3.4 | ReflectionService (evolution orchestration) | ~5 hours |
 | 6 | D3.6 | TaskService (task scheduling) | ~3 hours |
-| 7 | D3.7 | Error Handling & DTO Models | ~2 hours |
+| 7 | D3.7 | Error Handling & DTO Models | ~2 hours | ✅ Completed 2026-07-12 |
 | 8 | D3.8 | Service Test Suite | ~8 hours |
 | 9 | D3.9 | Documentation Updates | ~1 hour |
 
