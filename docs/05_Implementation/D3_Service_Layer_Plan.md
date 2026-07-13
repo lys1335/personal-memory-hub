@@ -61,11 +61,12 @@ The following outputs are expected upon D3 completion:
 | 7 | TaskService | `backend/src/backend/service/task_service.py` | Task submission, status tracking, runtime health |
 | 8 | Error Translation | `backend/src/backend/service/exceptions.py` | Domain exceptions, entry-safe error codes, retry classification |
 | 9 | DTO Models | `backend/src/backend/service/dto.py` | Entry DTOs, internal result models, query result models |
-| 10 | Test Suite | `backend/tests/` | Service unit tests, integration tests, capability compliance tests |
+| 10 | Service Test Suite | `backend/tests/` | Service unit tests, integration tests, capability compliance tests |
 | 11 | Verification Guide Update | `docs/06_Guides/` | Updated verification guide for D3 |
 | 12 | Exception Mapping Matrix | `docs/07_Architecture_Contracts/` | Architecture specification: Repository→Service→Entry exception mapping |
 | 13 | Logging Schema Specification | `docs/07_Architecture_Contracts/` | Architecture specification: structured logging contract |
 | 14 | D3.7 Error Handling & DTO Models | `docs/05_Implementation/D3.7_Error_Handling_DTO_Models.md` | Complete DTO design, error model, exception mapping, validation strategy, versioning, serialization boundaries, verification checklist |
+| 15 | D3.8 Service Test Suite | `docs/05_Implementation/D3.8_Service_Test_Suite.md` | Service test architecture: contract testing, command/query testing, result verification, error contract testing, validation testing, exception mapping testing, boundary testing, determinism testing, compatibility testing, test taxonomy, verification strategy, documentation synchronization |
 
 **Note**: Items 12–13 are architecture specifications, not implementation deliverables. They define version-controlled contracts for exception mapping and logging schema.
 
@@ -855,83 +856,34 @@ TaskService
 
 ### D3.8 Service Test Suite
 
-**Purpose**: Implement comprehensive tests for all Services.
+**Status**: ✅ **Completed** — 2026-07-13
 
-**Dependencies**: D3.1–D3.7 (all Services and infrastructure implemented).
+**Purpose**: Define comprehensive Service-level test architecture.
 
-**Verification Strategy** (expanded by human review):
+**Deliverable**: `docs/05_Implementation/D3.8_Service_Test_Suite.md`
 
-Include the following test categories:
-- Unit Test
-- Transaction Verification
-- Boundary Verification
-- Dependency Verification
-- Exception Contract Verification
-- Logging Contract Verification
-- Capability Verification
-- Architecture Compliance Test
+**Architecture Specification** (frozen):
 
-**Architecture tests should verify**:
-- Layer Dependency
-- Service DAG
-- Engine DAG
-- Repository Frozen
-- Stateless Service
-- DTO Boundary
-- Exception Mapping
-- Logging Contract
+| Component | Description |
+|-----------|-------------|
+| Service Testing Principles | Contract-based black-box testing, testing mirrors architecture, capability-oriented |
+| Test Layer Responsibilities | Entry / Service / Engine / Repository / Integration / E2E — strict boundaries |
+| Contract Testing | DTO, Result, Error, Serialization, Version Compatibility |
+| Command / Query Testing | Separate verification: Commands → Identity/Result, Queries → State |
+| Result Verification | Success/Failure results, invariants, metadata verification |
+| Error Contract Testing | Unified Error Contract, classification, stability, information boundary |
+| Validation Testing | Service owns validation, business validation, before side effects, 4-layer model |
+| Exception Mapping Testing | Infrastructure vs domain vs unknown, mapping stability |
+| Boundary Testing | Layer, serialization, transaction, capability, dependency boundaries |
+| Determinism Testing | Contract, behavioral, controlled non-determinism, repeatability |
+| Compatibility Testing | Backward compatibility, stable versioning, compatibility matrix, semantic |
+| Test Taxonomy | 7 types: Contract, Behavior, Validation, Exception, Boundary, Determinism, Compatibility |
+| Verification Strategy | Architecture-driven, specification before test, positive/negative, traceability |
+| Documentation Synchronization | Doc-first, contract sync, ADR sync, bidirectional traceability, frozen doc protection |
 
-**Expected outputs**:
+**Guidelines Referenced**: G-038~G-041 (Service), G-081~G-107 (D3.7 DTO/Error/Validation/Serialization), G-056~G-064 (Testing)
 
-- `tests/test_memory_service.py` — MemoryService tests:
-  - Capture capability tests (valid capture, duplicate detection, evidence linking)
-  - Import capability tests (batch import, continue-on-error, idempotency)
-  - Merge capability tests (merge workflow, reference migration trigger)
-  - Archive capability tests (archive creation, source update)
-  - Lifecycle capability tests (reflection trigger, schedule archive)
-  - Restore capability tests (archived memory restoration)
-
-- `tests/test_query_service.py` — QueryService tests:
-  - Retrieval capability tests (by ID, by entity, by relationship)
-  - Search capability tests (keyword, similarity placeholder, combined)
-  - Browse capability tests (time range, category, tag)
-  - Projection capability tests (summary, detail, graph, timeline views)
-  - Analytics capability tests (statistics, insights)
-  - Side-effect free verification (no write operations)
-
-- `tests/test_entity_service.py` — EntityService tests:
-  - Identity management tests (create, resolve, profile)
-  - Merge tests (merge workflow, reference migration)
-  - Alias tests (add, remove, get)
-  - Relationship tests (add, remove, get)
-  - Profile update tests (canonical name, metadata)
-
-- `tests/test_reflection_service.py` — ReflectionService tests:
-  - Reflect capability tests (full scope, by entity, by time window)
-  - Consolidate tests (manual consolidation, entity-scoped)
-  - Summarize tests (by level, auto-summarization)
-  - Evaluate tests (importance, confidence, freshness, archive candidate)
-  - Raw evidence preservation tests (L0 memories unchanged)
-
-- `tests/test_task_service.py` — TaskService tests:
-  - Submission tests (valid task, invalid payload)
-  - Tracking tests (status lookup, workspace filter)
-  - Health tests (runtime status query)
-  - Recovery tests (retry failed task)
-
-- `tests/test_service_errors.py` — Error handling tests:
-  - Repository exception translation
-  - Domain exception propagation
-  - Entry-safe error mapping
-  - Retryable vs non-retryable classification
-
-- `tests/test_service_boundaries.py` — Boundary tests:
-  - No ORM leakage (Services return Domain Models, not ORM objects)
-  - No cross-Service calls (Service Independence Principle)
-  - Workspace isolation enforcement
-  - Capability API compliance (no CRUD-style methods exposed)
-
-**Verification**: All 6 test files pass. Coverage meets project standards. No cross-layer violations detected.
+**Consistency Verified Against**: D3.1 through D3.7, 10_8_Implementation_Testing.md — no contradictions, no duplicated principles, no conflicting terminology.
 
 ---
 
@@ -1140,8 +1092,8 @@ The recommended implementation order follows dependency resolution:
 | 5 | D3.4 | ReflectionService (evolution orchestration) | ~5 hours |
 | 6 | D3.6 | TaskService (task scheduling) | ~3 hours |
 | 7 | D3.7 | Error Handling & DTO Models | ~2 hours | ✅ Completed 2026-07-12 |
-| 8 | D3.8 | Service Test Suite | ~8 hours |
-| 9 | D3.9 | Documentation Updates | ~1 hour |
+| 8 | D3.8 | Service Test Suite | ~6 hours | ✅ Completed 2026-07-13 |
+| 9 | D3.9 | Documentation Updates | ~1 hour | ⏳ Planned |
 
 **Total estimated effort**: ~36 hours
 

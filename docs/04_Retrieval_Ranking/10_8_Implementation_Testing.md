@@ -621,6 +621,10 @@ tests/
 | 19 | **Engineering Register (12)** | All testing-related decisions cross-referenced in 12 ENG-006~ENG-008, ENG-020 | 12 |
 | 20 | **AI Development Workflow (13)** | Testing verification aligns with workflow verification levels (self/architecture/testing/human) | 13 |
 | 21 | **Final Implementation Review (14)** | Testing readiness is Domain 5 of the Exit Gate review | 14 |
+| 22 | **Service Contract Testing (D3.8)** | Service tests verify DTO/Result/Error contracts defined in D3.7 | D3.8 |
+| 23 | **Command/Query Test Separation (D3.8)** | Commands and Queries have fundamentally different verification requirements | D3.8 §5 |
+| 24 | **Determinism Beyond QueryService (D3.8)** | Contract and behavioral determinism applies to all Services, not just QueryService | D3.8 §11 |
+| 25 | **Documentation Synchronization (D3.8)** | Tests, documents, ADRs kept in bidirectional sync | D3.8 §15 |
 
 ---
 
