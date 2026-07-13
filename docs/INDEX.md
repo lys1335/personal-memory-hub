@@ -183,6 +183,18 @@ D3.9 — Documentation governance: cross-reference verification, terminology con
 
 D4 — Domain Engine Layer planning: Engine position, principles, composition, collaboration rules, transaction/consistency boundaries, testing strategy, documentation strategy, engine inventory, milestones, freeze checklist.
 
+### D4_Engine_Inventory_Review.md
+
+D4 review — Engine inventory architecture review: boundary validation, naming validation, dependency validation, completeness validation, future evolution assessment.
+
+### D4_Engine_Classification_Review.md
+
+D4 review — Engine classification review: all Engine terms classified into Categories A-E, historical mapping, D4 validation, classification principles.
+
+### D4.2_MemoryEngine_Architecture.md
+
+D4.2 — MemoryEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants, Internal Composition, Extension Points, Testing Strategy, Future Evolution.
+
 ## 06_Guides/
 
 ### D1_Verification_Guide.md
