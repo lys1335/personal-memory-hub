@@ -710,3 +710,215 @@ D4 completion enables D5 (Entry & API Layer):
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-07-13 | Initial D4 Domain Engine Plan |
+| 1.1 | 2026-07-13 | Added Appendix A (QueryEngine Decomposition) and Appendix B (Engine Classification Principles) |
+
+---
+
+## Appendix A: Historical Evolution — QueryEngine Decomposition
+
+> **Purpose**: This appendix explains why QueryEngine does not appear in the D4 Engine Inventory.
+> It serves as a reference for future readers (human or AI) to understand the design evolution.
+
+### A.1 Origin
+
+QueryEngine was referenced in D3 Service Layer documents (10_2, 10_3, 10_4, 10_5) as a monolithic Engine responsible for query processing.
+
+**Examples of D3 references**:
+
+- `10_3_Implementation_QueryService.md` §3.2: "详细的领域处理逻辑属于 D4 QueryEngine"
+- `10_4_Implementation_ReflectionService.md` §6.3: "ReflectionService does not depend on QueryEngine for domain analysis"
+- `10_5_Implementation_EntityService.md` §4.2: "QueryEngine 面向读取视图"
+
+### A.2 Problem with QueryEngine
+
+QueryEngine attempted to combine two distinct Domain Capabilities:
+
+1. **Search** — Domain algorithms for retrieval, relevance ranking, query processing
+2. **Projection** — Domain algorithms for read model generation, view assembly, timeline construction
+
+This violated the D4 principle: **One Domain Capability → One Engine**.
+
+### A.3 D4 Decomposition
+
+In D4, QueryEngine was decomposed into two independent Domain Engines:
+
+```
+QueryEngine (D3 Historical)
+  ↓
+SearchEngine + ProjectionEngine (D4 Current)
+```
+
+**SearchEngine** owns:
+- Search domain algorithms
+- Relevance ranking
+- Query processing
+- Retrieval domain rules
+
+**ProjectionEngine** owns:
+- Projection domain algorithms
+- Read model generation
+- View assembly
+- Timeline construction
+- Projection domain rules
+
+### A.4 Why This Is Correct
+
+| Criterion | QueryEngine | SearchEngine + ProjectionEngine |
+|-----------|-------------|--------------------------------|
+| One Capability → One Engine | ❌ Combined two capabilities | ✅ Each Engine owns one capability |
+| God Engine Risk | High | Low |
+| Maintainability | Poor (mixed concerns) | Good (separated concerns) |
+| Evolution Freedom | Limited (changes affect both) | High (evolve independently) |
+| Testability | Complex (mixed scenarios) | Simple (focused scenarios) |
+
+### A.5 D3 Documents Still Reference QueryEngine
+
+Some D3 Service documents still contain references to QueryEngine:
+
+- `10_3_Implementation_QueryService.md` — references QueryEngine in context
+- `10_4_Implementation_ReflectionService.md` — explicitly states "does not depend on QueryEngine"
+- `10_5_Implementation_EntityService.md` — references QueryEngine as "面向读取视图"
+
+**These references are historical artifacts**. They do not represent architectural decisions that need to be changed. The D3 Services remain frozen; the Engine decomposition simply evolved from a monolithic concept to a proper domain-driven decomposition.
+
+### A.6 Future Documentation Guidance
+
+When creating individual Engine documents:
+
+- **Do NOT** create a QueryEngine document
+- **DO** create SearchEngine and ProjectionEngine documents
+- **DO** reference this appendix when explaining the decomposition
+
+---
+
+## Appendix B: Engine Classification Principles
+
+> **Purpose**: This appendix defines the classification system used to determine which terms become Domain Engines, which are internal components, and which are policies/strategies.
+> It serves as a reference for future architectural decisions.
+
+### B.1 Classification Categories
+
+Every Engine-related term must be classified into exactly one category:
+
+| Category | Name | Description | Example |
+|----------|------|-------------|---------|
+| **A** | Stable Domain Engine | Represents an independent Domain Capability. Receives its own architecture document. | EntityEngine, MemoryEngine |
+| **B** | Engine Component | Private implementation inside a Domain Engine. Not independently exposed. | ArchiveEngine, EvidenceEngine (components of MemoryEngine) |
+| **C** | Engine Policy | Represents configurable domain behavior. Lives inside an Engine. | RankingEngine, TimelineEngine (policies of SearchEngine/ProjectionEngine) |
+| **D** | Engine Strategy | Represents an interchangeable algorithm. Lives inside an Engine. | DetailEngine, GraphEngine (future strategies) |
+| **E** | Historical/Legacy Name | Represents an earlier architectural concept. Already replaced or refined by the current design. | QueryEngine (replaced by SearchEngine + ProjectionEngine) |
+
+### B.2 Classification Criteria
+
+#### Category A: Stable Domain Engine
+
+An Engine qualifies as Category A when **all** of the following are true:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Independent Domain Capability** | The Engine owns a distinct domain capability that cannot be meaningfully combined with another capability |
+| **Service Dependency** | At least one D3 Service depends on this Engine for domain computation |
+| **Clear Boundary** | The Engine's responsibility is well-defined and does not overlap with other Engines |
+| **No God Engine Risk** | The Engine does not accumulate unrelated responsibilities |
+
+**Verification**: Before creating a new Category A Engine, verify that it satisfies all four criteria. If any criterion fails, consider Category B, C, or D.
+
+#### Category B: Engine Component
+
+An Engine-related term qualifies as Category B when:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Supports Domain** | The term supports a domain capability but is not itself a domain capability |
+| **Not Independent** | The term cannot exist without its parent Engine |
+| **Internal Implementation** | The term is an implementation detail, not a public contract |
+
+**Example**: ArchiveEngine supports Memory domain but is not an independent capability. It lives inside MemoryEngine.
+
+#### Category C: Engine Policy
+
+An Engine-related term qualifies as Category C when:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Configurable Behavior** | The term represents configurable behavior within an Engine |
+| **Not Algorithm** | The term is not a domain algorithm but a policy that controls algorithm behavior |
+| **Change Frequency** | The term changes more frequently than the Engine itself |
+
+**Example**: RankingEngine is a policy that controls how SearchEngine ranks results.
+
+#### Category D: Engine Strategy
+
+An Engine-related term qualifies as Category D when:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Interchangeable Algorithm** | The term represents an algorithm that could be swapped with alternatives |
+| **Future Consideration** | The term is not yet implemented but may become relevant |
+| **Warning Flag** | The term was mentioned as a potential responsibility inflation risk |
+
+**Example**: DetailEngine, GraphEngine, SummaryEngine are mentioned as potential future strategies but are not yet implemented.
+
+#### Category E: Historical/Legacy Name
+
+An Engine-related term qualifies as Category E when:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Superseded** | The term has been replaced by a better design |
+| **Historical Artifact** | The term appears in older documents but not in current design |
+| **No Implementation** | The term does not correspond to any current or planned implementation |
+
+**Example**: QueryEngine is a historical reference. It was replaced by SearchEngine + ProjectionEngine in D4.
+
+### B.3 Classification Process
+
+When encountering a new Engine-related term:
+
+1. **Check Category A criteria** — Does it represent an independent Domain Capability?
+   - Yes → Category A (Stable Domain Engine)
+   - No → Continue
+
+2. **Check Category B criteria** — Is it an internal component of an existing Engine?
+   - Yes → Category B (Engine Component)
+   - No → Continue
+
+3. **Check Category C/D criteria** — Is it a policy or strategy within an Engine?
+   - Yes → Category C or D (Policy/Strategy)
+   - No → Continue
+
+4. **Check Category E criteria** — Is it a historical reference?
+   - Yes → Category E (Historical/Legacy)
+   - No → Re-evaluate or create new category
+
+### B.4 Anti-Patterns
+
+The following patterns indicate classification errors:
+
+| Anti-Pattern | Symptom | Correction |
+|--------------|---------|------------|
+| **God Engine** | Category A Engine has too many responsibilities | Decompose into multiple Category A Engines |
+| **Leaky Abstraction** | Category B/C/D term is exposed in public API | Move to Category A or hide in Category B |
+| **Orphan Engine** | Category A Engine has no Service dependency | Remove or merge into another Engine |
+| **Historical Drift** | Category E term still appears in new documentation | Update documentation to use current terminology |
+
+### B.5 Current Classification Summary
+
+| Category | Count | Engines |
+|----------|-------|---------|
+| A - Stable Domain Engine | 6 | EntityEngine, MemoryEngine, RelationshipEngine, ReflectionEngine, SearchEngine, ProjectionEngine |
+| B - Engine Component | 2 | ArchiveEngine, EvidenceEngine |
+| C - Engine Policy | 2 | RankingEngine, TimelineEngine |
+| D - Engine Strategy | 3 | DetailEngine, GraphEngine, SummaryEngine |
+| E - Historical/Legacy | 1 | QueryEngine |
+
+### B.6 Future Maintenance
+
+When new Engine-related terms are introduced:
+
+1. **Classify** using the criteria in this appendix
+2. **Document** the classification decision with reasoning
+3. **Update** this appendix if new categories emerge
+4. **Review** periodically during architecture reviews
+
+---
