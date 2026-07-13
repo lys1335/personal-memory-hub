@@ -4,7 +4,7 @@
 > **日期**: 2026-07-10  
 > **阶段**: Phase B — 工程规范（Living Guideline）  
 > **状态**: 已确认  
-> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-064 + G-065~G-112 + Error Taxonomy V1。
+> **说明**: 本文档是项目的规范中心（Normative Reference），后续 10_x 文档持续更新。当前包含 G-001~G-064 + G-065~G-112 + G-113~G-118 (Documentation Governance) + Error Taxonomy V1。
 
 ---
 
@@ -1195,6 +1195,52 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 | G-110 | Breaking Changes Require ADR | D3.7 |
 | G-111 | Serialization Belongs to Entry Layer | D3.7 |
 | G-112 | Protocol Version ≠ Service Contract Version | D3.7 |
+| G-113 | GitHub is Single Source of Truth | D3.9 |
+| G-114 | Documentation Never Changes Architecture | D3.9 |
+| G-115 | Synchronize Before Enhancement | D3.9 |
+| G-116 | Traceability First | D3.9 |
+| G-117 | Consistency Over Completeness | D3.9 |
+| G-118 | Frozen Documents Protected | D3.9 |
+
+---
+
+## Documentation Governance Guidelines
+
+### G-113: GitHub is Single Source of Truth
+
+> GitHub HEAD is the authoritative representation of project state. All documentation must reflect what is on GitHub, not conversation history, AI memory, or informal notes.
+
+**引用**：D3.9 §2.1
+
+### G-114: Documentation Never Changes Architecture
+
+> Documentation updates are governance, not design. They synchronize text, fix references, unify terminology. They never modify architecture.
+
+**引用**：D3.9 §2.2
+
+### G-115: Synchronize Before Enhancement
+
+> Synchronize existing documentation before adding new content. A consistent baseline is more valuable than an extensive but inconsistent one.
+
+**引用**：D3.9 §2.3
+
+### G-116: Traceability First
+
+> Every document must be traceable. Readers must follow a chain from any statement back to its source. All references (§X.Y, G-NNN, ADR-NNN) must resolve.
+
+**引用**：D3.9 §2.4
+
+### G-117: Consistency Over Completeness
+
+> A consistent incomplete document is better than an inconsistent complete one. Fix contradictions before adding new content.
+
+**引用**：D3.9 §2.5
+
+### G-118: Frozen Documents Protected
+
+> Once a document is marked Frozen, no content changes are allowed without an ADR. Governance-only updates (typos, references, terminology) are permitted.
+
+**引用**：D3.9 §2.6
 
 ---
 

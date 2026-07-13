@@ -93,7 +93,7 @@ Task Runtime + TaskService — Generic task execution infrastructure with TaskSe
 
 ### 13_Architecture_Guidelines.md
 
-Living Guideline — 80 numbered guidelines (G-001~G-080) covering Public API, Service Design, Engine Design, Repository Design, Query Design, Language Preservation, Reflection & Memory Evolution, Entity Identity, Task Runtime, API Entry Layer, Testing, Review Rules, Evolution Rules.
+Living Guideline — 118 numbered guidelines (G-001~G-118) covering Foundation, Service Design, Engine Design, Repository Design, Query Design, Entity Design, Error/Validation, Testing, Evolution, and Documentation Governance (G-113~G-118).
 
 ### 10_8_Implementation_Testing.md
 
@@ -139,11 +139,12 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * 13_AI_Development_Workflow（Phase B-11）
 * 13_Architecture_Guidelines（Phase B Living Guideline）
 * 14_Final_Implementation_Review（Phase B-12）
-* ChangeReport_PhaseC_Stage2（Phase C Stage 2 架构审查决议执行报告）
+* D3.7_Error_Handling_DTO_Models（D3.7 — 已完成 2026-07-12）
+* D3.8_Service_Test_Suite（D3.8 — 已完成 2026-07-13）
+* D3.9_Documentation_Updates（D3.9 — 已完成 2026-07-13）
 
-Current Progress: 22 / 22 completed + Phase C Stage 2
-Phase D: D1 Infrastructure Foundation — Planning (2026-07-04)
-Phase D: D1 Infrastructure Foundation — Implementation Complete (2026-07-04)
+Current Progress: 25 / 25 completed
+Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen
 ---
 
 # Phase D — Implementation
@@ -158,6 +159,26 @@ Implementation phase overview — milestones, coding order, review workflow, CI 
 
 D1 planning document — purpose, deliverables, work breakdown, definition of done, risks, handoff to D2.
 
+### D2_Repository_Layer_Plan.md
+
+D2 planning document — Repository Layer architecture, frozen design, verification guide.
+
+### D3_Service_Layer_Plan.md
+
+D3 planning document — Service Layer architecture, D3.1–D3.9 substages, definition of done, risks, handoff to D4. 🧊 Frozen.
+
+### D3.7_Error_Handling_DTO_Models.md
+
+D3.7 — DTO design, error model, exception mapping, validation strategy, versioning, serialization boundaries, verification checklist.
+
+### D3.8_Service_Test_Suite.md
+
+D3.8 — Service test architecture: contract testing, command/query testing, result verification, error contract testing, validation testing, exception mapping testing, boundary testing, determinism testing, compatibility testing, test taxonomy, verification strategy, documentation synchronization.
+
+### D3.9_Documentation_Updates.md
+
+D3.9 — Documentation governance: cross-reference verification, terminology consistency, document structure, guideline/ADR validation, README/INDEX/Roadmap synchronization, phase exit criteria, D3 freeze, architecture glossary, style guide, architecture registry.
+
 ## 06_Guides/
 
 ### D1_Verification_Guide.md
@@ -171,7 +192,9 @@ Complete human verification guide for D1 Infrastructure Foundation. Allows any d
 ---
 
 # Planned Documents
-* (None remaining — Phase B complete; Phase D planning and D1 implementation complete)
+* D4 — Domain Engine documents (planned)
+* D5 — Entry & API documents (planned)
+* D6 — Testing & Stabilization documents (planned)
 
 ---
 
