@@ -24,7 +24,7 @@ Implementation follows the coding order defined in `../04_Retrieval_Ranking/11_I
 | **D1: Infrastructure Foundation** | D1 | ✅ Complete | `D1_Infrastructure_Foundation_Plan.md` |
 | **D2: Repository Layer** | D2 | ✅ Complete | `D2_Repository_Layer_Plan.md` |
 | **D3: Service Layer** | D3 | ✅ Complete (D3.1–D3.9) 🧊 Frozen | `D3_Service_Layer_Plan.md` |
-| **D4: Domain Engine** | D4 | ⏳ Planned | — |
+| **D4: Domain Engine** | D4 | ⏳ Planned | `D4_Domain_Engine_Plan.md` |
 | **D5: Entry & API** | D5 | ⏳ Planned | — |
 | **D6: Testing & Stabilization** | D6 | ⏳ Planned | — |
 

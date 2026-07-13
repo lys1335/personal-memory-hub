@@ -144,7 +144,7 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * D3.9_Documentation_Updates（D3.9 — 已完成 2026-07-13）
 
 Current Progress: 25 / 25 completed
-Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen
+Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ Planned
 ---
 
 # Phase D — Implementation
@@ -177,7 +177,11 @@ D3.8 — Service test architecture: contract testing, command/query testing, res
 
 ### D3.9_Documentation_Updates.md
 
-D3.9 — Documentation governance: cross-reference verification, terminology consistency, document structure, guideline/ADR validation, README/INDEX/Roadmap synchronization, phase exit criteria, D3 freeze, architecture glossary, style guide, architecture registry.
+D3.9 — Documentation governance: cross-reference verification, terminology consistency, document structure, guideline/ADR validation, README/INDEX/Roadmap synchronization, phase exit criteria, D3 freeze, architecture glossary, style guide, architecture registry, phase closure checklist.
+
+### D4_Domain_Engine_Plan.md
+
+D4 — Domain Engine Layer planning: Engine position, principles, composition, collaboration rules, transaction/consistency boundaries, testing strategy, documentation strategy, engine inventory, milestones, freeze checklist.
 
 ## 06_Guides/
 
