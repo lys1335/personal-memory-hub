@@ -736,76 +736,6 @@ Entity 事务仅修改 Entity、Metadata 和 Relationship Graph。绝不修改 O
 
 ---
 
-## 附录：Task Runtime Guidelines
-
-### G-054: Task Runtime Is Infrastructure
-
-> Task Runtime 是通用基础设施层，不是业务逻辑。Task Runtime 不理解 Memory、Entity、Reflection 等业务概念。
-
-**引用**：10_6 §2
-
-### G-055: Task Runtime Domain Agnostic
-
-> Task Runtime 操作 exclusively on generic Task abstraction。Payload 属于 Task 实现，Runtime 从不解析 Payload。
-
-**引用**：10_6 §3
-
-### G-056: Task Chaining via Events
-
-> Task 从不直接创建另一个 Task。Task Chaining 通过 Domain Event → Event Dispatcher → Task Registry → Task Factory → New Task 实现。
-
-**引用**：10_6 §4
-
-### G-057: Retry vs Re-trigger
-
-> Retry = 同一 Task 的技术恢复（Runtime 责任）。Re-trigger = 新 Task 的业务决策（Service 责任）。
-
-**引用**：10_6 §5.4
-
-### G-058: Task Idempotency
-
-> Task Runtime 提供 At-Least-Once 执行保证。每个 Task 实现应该是幂等的。
-
-**引用**：10_6 §6
-
-### G-059: Operational Interface Principle
-
-> Task Runtime 仅暴露操作接口（submit/getTask/queryRuntimeStatus/retry）。不暴露业务接口。
-
-**引用**：10_6 §12
-
-### G-060: Scheduler Is Unified Task Dispatcher
-
-> Scheduler 不是 Cron。Scheduler 是统一的 Task 分发协调器，支持 Domain Event / Cron / Startup Recovery / User Async Request 四种触发源。
-
-**引用**：10_6 §7
-
-### G-061: Recovery Never Re-evaluates Business Logic
-
-> Startup Recovery 只恢复执行，不重新评估业务逻辑。依靠 Task 幂等性保证安全。
-
-**引用**：10_6 §9.4
-
-### G-062: Maintenance Manager Scope
-
-> Maintenance Manager 仅负责 Runtime 维护（Task Cleanup / Lock Cleanup / Statistics / Health / Log Retention）。业务维护属于 Service 层。
-
-**引用**：10_6 §10
-
-### G-063: Observability Layering
-
-> Runtime Metadata / Logging / Metrics / Dashboard 是分层独立的。Dashboard 是消费者，不是 Runtime 的一部分。
-
-**引用**：10_6 §13
-
-### G-064: Infrastructure Isolation
-
-> Task Runtime 与业务逻辑完全隔离。基础设施关注执行，Service 关注业务。
-
-**引用**：10_6 §15.1
-
----
-
 ## 附录：API Entry Layer Guidelines
 
 ### G-065: API Entry Layer 职责
@@ -1087,6 +1017,40 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 
 ---
 
+## 附录：Service Contract Guidelines
+
+### G-108: Shared Objects Are Capability-Neutral
+
+> Shared contracts belong to an independent Shared Contract layer. Shared contracts evolve independently. Shared DTOs must remain capability-neutral. Business DTOs must never become shared contracts.
+
+**引用**：D3.7 §11
+
+### G-109: Backward-Compatible Evolution
+
+> Service Contracts are stable public contracts. Prefer backward-compatible evolution. Capability contracts evolve independently. Infrastructure changes never affect Service Contracts.
+
+**引用**：D3.7 §12
+
+### G-110: Breaking Changes Require ADR
+
+> Semantic stability is more important than structural stability. Error Codes remain stable. Versioning follows Business Capability evolution. Deprecation precedes removal.
+
+**引用**：D3.7 §12
+
+### G-111: Serialization Belongs to Entry Layer
+
+> DTO is the serialization boundary. Serialization is protocol-specific. DTO must remain serialization-friendly. Serialization never changes business semantics. Domain Objects never cross serialization boundaries.
+
+**引用**：D3.7 §13
+
+### G-112: Protocol Version ≠ Service Contract Version
+
+> Protocol changes (HTTP/1.1 → HTTP/2, JSON → MessagePack) do not affect Service Contract Version. Service Contract changes require ADR. Infrastructure changes never affect Service Contracts.
+
+**引用**：D3.7 §13.3
+
+---
+
 ## 附录：Testing Guidelines
 
 ### G-071: Testing Mirrors Architecture
@@ -1182,19 +1146,14 @@ QueryService 的职责是观察（Observe）和组织（Orchestrate），而不�
 | G-097 | Read Pipeline Principles | 10_3 |
 | G-098 | Projection Three-Level Boundary | 10_3 |
 | G-099 | Transaction Strategy | 10_3 |
-| G-100 | Deterministic Error Mapping | 10_3 |
-| G-101 | Dual Result Principle | D3.7 |
-| G-102 | Error Is Part of Service Contract | D3.7 |
-| G-103 | Exceptions Never Cross Service Boundary | D3.7 |
-| G-104 | Service Owns Exception Mapping | D3.7 |
-| G-105 | Validation Layer Ownership | D3.7 |
-| G-106 | Business Validation Completes Before Transaction | D3.7 |
-| G-107 | Capability-Owned DTOs | D3.7 |
-| G-108 | Shared Objects Are Capability-Neutral | D3.7 |
-| G-109 | Backward-Compatible Evolution | D3.7 |
-| G-110 | Breaking Changes Require ADR | D3.7 |
-| G-111 | Serialization Belongs to Entry Layer | D3.7 |
-| G-112 | Protocol Version ≠ Service Contract Version | D3.7 |
+| G-100 | Validation Layer Ownership | D3.7 |
+| G-101 | Business Validation Completes Before Transaction | D3.7 |
+| G-102 | Capability-Owned DTOs | D3.7 |
+| G-103 | Shared Objects Are Capability-Neutral | D3.7 |
+| G-104 | Backward-Compatible Evolution | D3.7 |
+| G-105 | Breaking Changes Require ADR | D3.7 |
+| G-106 | Serialization Belongs to Entry Layer | D3.7 |
+| G-107 | Protocol Version ≠ Service Contract Version | D3.7 |
 | G-113 | GitHub is Single Source of Truth | D3.9 |
 | G-114 | Documentation Never Changes Architecture | D3.9 |
 | G-115 | Synchronize Before Enhancement | D3.9 |
