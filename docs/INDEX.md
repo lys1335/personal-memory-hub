@@ -199,6 +199,10 @@ D4.2b — MemoryEngine architecture: Purpose, Responsibilities, Public Contract,
 
 D4.2a — EntityEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants, Internal Composition (Identity, State, Evolution, Validation, Semantic, Invariant Capabilities), Extension Points, Testing Strategy, Documentation Review, Canonical Merge Model.
 
+### D4.2c_RelationshipEngine_Architecture.md
+
+D4.2c — RelationshipEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants (Valid Endpoint, Relationship Type, Semantic Integrity, Structural Integrity, Canonical Representation, Domain Consistency), Internal Composition (Identity, Validation, Semantic, Lifecycle, Normalization, Invariant Capabilities), Extension Points, Testing Strategy, Documentation Review, Canonical Relationship Model.
+
 ## 06_Guides/
 
 ### D1_Verification_Guide.md
