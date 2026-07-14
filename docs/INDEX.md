@@ -195,6 +195,10 @@ D4 review — Engine classification review: all Engine terms classified into Cat
 
 D4.2b — MemoryEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants, Internal Composition, Extension Points, Testing Strategy, Future Evolution.
 
+### D4.2a_EntityEngine_Architecture.md
+
+D4.2a — EntityEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants, Internal Composition (Identity, State, Evolution, Validation, Semantic, Invariant Capabilities), Extension Points, Testing Strategy, Documentation Review, Canonical Merge Model.
+
 ## 06_Guides/
 
 ### D1_Verification_Guide.md

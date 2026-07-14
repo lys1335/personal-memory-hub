@@ -24,8 +24,8 @@ Implementation follows the coding order defined in `../04_Retrieval_Ranking/11_I
 | **D1: Infrastructure Foundation** | D1 | ✅ Complete | `D1_Infrastructure_Foundation_Plan.md` |
 | **D2: Repository Layer** | D2 | ✅ Complete | `D2_Repository_Layer_Plan.md` |
 | **D3: Service Layer** | D3 | ✅ Complete (D3.1–D3.9) 🧊 Frozen | `D3_Service_Layer_Plan.md` |
-| **D4: Domain Engine** | D4 | ⏳ In Progress (D4.2b ✅) | `D4_Domain_Engine_Plan.md` |
-| **D4.2a: EntityEngine** | D4 | ⏳ Planned | — |
+| **D4: Domain Engine** | D4 | ⏳ In Progress (D4.2a ✅, D4.2b ✅) | `D4_Domain_Engine_Plan.md` |
+| **D4.2a: EntityEngine** | D4 | ✅ Complete | `D4.2a_EntityEngine_Architecture.md` |
 | **D4.2b: MemoryEngine** | D4 | ✅ Complete | `D4.2b_MemoryEngine_Architecture.md` |
 | **D4.2c: RelationshipEngine** | D4 | ⏳ Planned | — |
 | **D4.2d: ReflectionEngine** | D4 | ⏳ Planned | — |
