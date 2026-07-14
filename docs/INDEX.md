@@ -144,7 +144,7 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * D3.9_Documentation_Updates（D3.9 — 已完成 2026-07-13）
 
 Current Progress: 25 / 25 completed
-Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ Planned
+Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ In Progress (D4.2b ✅)
 ---
 
 # Phase D — Implementation
@@ -191,9 +191,9 @@ D4 review — Engine inventory architecture review: boundary validation, naming 
 
 D4 review — Engine classification review: all Engine terms classified into Categories A-E, historical mapping, D4 validation, classification principles.
 
-### D4.2_MemoryEngine_Architecture.md
+### D4.2b_MemoryEngine_Architecture.md
 
-D4.2 — MemoryEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants, Internal Composition, Extension Points, Testing Strategy, Future Evolution.
+D4.2b — MemoryEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants, Internal Composition, Extension Points, Testing Strategy, Future Evolution.
 
 ## 06_Guides/
 
