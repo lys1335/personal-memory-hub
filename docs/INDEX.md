@@ -144,7 +144,7 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * D3.9_Documentation_Updates（D3.9 — 已完成 2026-07-13）
 
 Current Progress: 25 / 25 completed
-Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ In Progress (D4.2a ✅ · D4.2b ✅ · D4.2c ✅ · D4.2d ✅)
+Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ In Progress (D4.2a ✅ · D4.2b ✅ · D4.2c ✅ · D4.2d ✅ · D4.2e ✅)
 ---
 
 # Phase D — Implementation
@@ -206,6 +206,10 @@ D4.2c — RelationshipEngine architecture: Purpose, Responsibilities, Public Con
 ### D4.2d_ReflectionEngine_Architecture.md
 
 D4.2d — ReflectionEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules (Open-Ended Knowledge Evolution Model), Domain Invariants (Evidence Requirement, Semantic Coherence, Evolution Monotonicity, Traceability Preservation, Idempotency, Model Independence), Internal Composition (7 Capabilities), Extension Points, Testing Strategy, Documentation Review, Freeze Decision.
+
+### D4.2e_SearchEngine_Architecture.md
+
+D4.2e — SearchEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules (Discovery ≠ Retrieval, Candidate-Centric Discovery), Domain Invariants (8 invariants), Internal Composition (Intent Analyzer, Discovery Planner, Candidate Validator, Candidate Ranker, Candidate Assembler), Extension Points, Testing Strategy, Documentation Review, Knowledge Evolution Model Compatibility.
 
 ## 06_Guides/
 
