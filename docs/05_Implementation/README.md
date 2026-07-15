@@ -23,7 +23,7 @@ Implementation follows the coding order defined in `../04_Retrieval_Ranking/11_I
 |-----------|-------|--------|----------|
 | **D1: Infrastructure Foundation** | D1 | ✅ Complete | `D1_Infrastructure_Foundation_Plan.md` |
 | **D2: Repository Layer** | D2 | ✅ Complete | `D2_Repository_Layer_Plan.md` |
-| **D4: Domain Engine** | D4 | ⏳ In Progress (D4.2a ✅ · D4.2b ✅ · D4.2c ✅ · D4.2d ✅ · D4.2e ✅ · D4.2f ✅ · D4.3 ✅) | `D4_Domain_Engine_Plan.md` |
+| **D4: Domain Engine** | D4 | ⏳ In Progress (D4.2a ✅ · D4.2b ✅ · D4.2c ✅ · D4.2d ✅ · D4.2e ✅ · D4.2f ✅ · D4.3 ✅ · D4.4 ✅) | `D4_Domain_Engine_Plan.md` |
 | **D4.2a: EntityEngine** | D4 | ✅ Complete | `D4.2a_EntityEngine_Architecture.md` |
 | **D4.2b: MemoryEngine** | D4 | ✅ Complete | `D4.2b_MemoryEngine_Architecture.md` |
 | **D4.2c: RelationshipEngine** | D4 | ✅ Complete | `D4.2c_RelationshipEngine_Architecture.md` |
@@ -31,6 +31,7 @@ Implementation follows the coding order defined in `../04_Retrieval_Ranking/11_I
 | **D4.2e: SearchEngine** | D4 | ✅ Complete | `D4.2e_SearchEngine_Architecture.md` |
 | **D4.2f: ProjectionEngine** | D4 | ✅ Complete | `D4.2f_ProjectionEngine_Architecture.md` |
 | **D4.3: Engine Testing** | D4 | ✅ Complete | `D4.3_Engine_Testing_Architecture.md` |
+| **D4.4: Engine Documentation** | D4 | ✅ Complete | `D4.4_Engine_Documentation_Architecture.md` |
 
 ---
 
