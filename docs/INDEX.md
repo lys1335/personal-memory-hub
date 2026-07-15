@@ -144,7 +144,7 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * D3.9_Documentation_Updates（D3.9 — 已完成 2026-07-13）
 
 Current Progress: 25 / 25 completed
-Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ In Progress (D4.2a ✅ · D4.2b ✅ · D4.2c ✅ · D4.2d ✅ · D4.2e ✅ · D4.2f ✅)
+Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ In Progress (D4.2a ✅ · D4.2b ✅ · D4.2c ✅ · D4.2d ✅ · D4.2e ✅ · D4.2f ✅ · D4.3 ✅)
 ---
 
 # Phase D — Implementation
@@ -214,6 +214,10 @@ D4.2e — SearchEngine architecture: Purpose, Responsibilities, Public Contract,
 ### D4.2f_ProjectionEngine_Architecture.md
 
 D4.2f — ProjectionEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules (Projection Preservation, Aggregate Safety, Determinism, Independence), Domain Invariants (9 invariants), Internal Composition (ProjectionValidator, ProjectionPolicyResolver, ProjectionBuilder, ProjectionVerifier), Extension Points, Testing Strategy, Documentation Review, Builder Monopoly Principle.
+
+### D4.3_Engine_Testing_Architecture.md
+
+D4.3 — Engine Testing Architecture: Unified testing taxonomy for all 6 Engines. Testing Philosophy (Domain Behavior First, Public Facade Only, Stateless, etc.). Test Classification (Contract, Domain Rule, Domain Invariant, Component, Regression, Cross-Engine Consistency). Shared Domain Concerns validation. NOT Engine Integration Testing. Regression Baseline definition. Documentation Review workflow with Architecture-to-Test Traceability. Freeze declaration.
 
 ## 06_Guides/
 
