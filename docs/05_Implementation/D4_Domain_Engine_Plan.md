@@ -711,6 +711,8 @@ D4 completion enables D5 (Entry & API Layer):
 |---------|------|---------|
 | 1.0 | 2026-07-13 | Initial D4 Domain Engine Plan |
 | 1.1 | 2026-07-13 | Added Appendix A (QueryEngine Decomposition) and Appendix B (Engine Classification Principles) |
+| 1.2 | 2026-07-13 | D4.2a EntityEngine, D4.2b MemoryEngine, D4.2c RelationshipEngine, D4.2d ReflectionEngine architectures completed
+| 1.1 | 2026-07-13 | Added Appendix A (QueryEngine Decomposition) and Appendix B (Engine Classification Principles) |
 
 ---
 
