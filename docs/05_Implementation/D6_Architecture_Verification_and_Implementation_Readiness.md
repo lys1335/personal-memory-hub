@@ -458,23 +458,55 @@ Evaluate whether human developers can implement from the certified architecture.
 The following requirements MUST be satisfied to exit Phase D:
 
 | Requirement | Description |
+|-------------|-------------|
+| **All Stages PASS** | Stages 1–5 must all produce PASS results |
+| **No Blockers** | Zero Blocker findings in any stage |
+| **No Critical Findings** | Zero Critical findings in any stage |
+| **Certified Architecture Baseline** | GitHub HEAD committed with all D1–D6 documents |
+| **Phase D Officially Closed** | Formal declaration that Phase D is complete |
+| **Phase E Officially Approved** | Formal authorization for Phase E to begin |
 
-**Purpose**: Produce official Architecture Certification.
+### 6.2 Global Pass Conditions
 
-**Inputs**: Stage 4 PASS result, all verification reports
+Global pass conditions:
 
-**Outputs**: Architecture Certification, Phase E Entry Authorization
+1. **All stages complete** — Stages 1–5 executed in sequence, all passed
+2. **No unresolved Blockers** — Every Blocker finding resolved before proceeding
+3. **No unresolved Criticals** — Every Critical finding resolved before stage exit
+4. **All Warnings documented** — Every Warning finding logged with acceptance
+5. **All Observations logged** — Every Observation recorded for awareness
+6. **Architecture Certification produced** — Formal certification document generated
+7. **Phase E Entry Authorization produced** — Formal authorization document generated
+8. **Certified Architecture Baseline established** — GitHub HEAD committed as baseline
 
-**Verification Rules**:
-- All stages completed successfully
-- No Blocker findings remain
-- No Critical findings remain
-- All Warnings are documented and accepted
-- All Observations are logged
-- Architecture Certification is produced
-- Phase E Entry Authorization is produced
+### 6.3 Certification Approval
 
-**Exit Criteria**: CERTIFIED or NOT CERTIFIED (binary outcome)
+Architecture Certification requires:
+
+- Verification Report signed off (all stages PASS)
+- Readiness Assessment completed (Ready or Conditionally Ready)
+- All mandatory requirements satisfied
+- All global pass conditions met
+
+Certification is binary:
+
+- **CERTIFIED** — All conditions met, Phase E authorized
+- **NOT CERTIFIED** — Any condition not met, Phase D not closed
+
+No conditional certification.
+No temporary approval.
+No partial approval.
+
+### 6.4 Phase E Entry Approval
+
+Phase E Entry Authorization requires:
+
+- Architecture Certification obtained
+- Certified Architecture Baseline established
+- Implementation plan reviewed and approved
+- Resources allocated (human and AI)
+- CI/CD pipeline configured
+- Testing infrastructure ready
 
 ---
 
@@ -483,8 +515,6 @@ The following requirements MUST be satisfied to exit Phase D:
 ### 5.1 Architecture Completeness
 
 Evaluate whether the Architecture Graph contains all necessary components for implementation.
-
-## 5.1 Architecture Completeness
 
 | Check | Status | Notes |
 |-------|--------|-------|
@@ -571,9 +601,6 @@ Evaluate whether human developers can implement from the certified architecture.
 
 ### 5.6 Overall Readiness Assessment
 
-### 5.6 Overall Readiness Assessment
-### 5.6 Overall Readiness Assessment
-
 Based on the above evaluations, determine overall readiness:
 
 | Readiness Level | Description |
@@ -591,7 +618,7 @@ Based on the above evaluations, determine overall readiness:
 > **Status**: D6 Architecture Verification & Implementation Readiness — ✅ CERTIFIED
 > **Date**: 2026-07-17
 > **Next**: Phase E — Implementation (Authorized)
-> **Certified Architecture Baseline**: GitHub HEAD `ff2de4c`
+> **Certified Architecture Baseline**: GitHub HEAD `dd25696`
 
 ---
 
