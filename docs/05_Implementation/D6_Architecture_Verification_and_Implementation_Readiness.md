@@ -829,7 +829,6 @@ Notes:
 > **Date**: 2026-07-17
 > **Next**: Phase E — Implementation (Authorized)
 > **Certified Architecture Baseline**: GitHub HEAD `3522a77`
-> **Certified Architecture Baseline**: GitHub HEAD `3522a77`
 
 ---
 
