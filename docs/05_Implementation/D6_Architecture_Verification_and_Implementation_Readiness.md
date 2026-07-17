@@ -333,6 +333,7 @@ Findings are classified as:
 **Inputs**: Stage 1 PASS result, all D1–D5 documents
 
 **Outputs**: Consistency verification report
+
 | Check | Status | Notes |
 |-------|--------|-------|
 | Layer boundaries consistent across all documents | ✅ | Verified in D5 §3.1, D3 §3.1, D4 §3 |
@@ -396,6 +397,22 @@ Findings are classified as:
 - No pending architectural decisions
 - No open ADRs requiring resolution
 - No conflicting requirements identified
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| D1–D5 all marked as Frozen | ✅ | D1🧊 · D2🧊 · D3🧊 · D4🧊 · D5🧊 |
+| No pending architectural decisions | ✅ | All D1–D5 closed |
+| No open ADRs requiring resolution | ✅ | 12_Architecture_Decisions.md complete |
+| No conflicting requirements identified | ✅ | Verified in Stage 2 |
+| Architecture documents are internally consistent | ✅ | Cross-references validated |
+| Architecture documents are cross-referenced correctly | ✅ | INDEX.md updated |
+
+### 5.4 AI Coding Readiness
+
+Evaluate whether AI coding agents can implement from the certified architecture.
+
+**Checklist:**
+
 | Check | Status | Notes |
 |-------|--------|-------|
 | Architecture documents are self-contained | ✅ | All D1–D5 ≥ 1000 chars |
@@ -408,6 +425,13 @@ Findings are classified as:
 | Validation rules are documented | ✅ | D5 §6.2, D4.3 §6 |
 | Guidelines are actionable | ✅ | 13_Architecture_Guidelines.md G-001~G-118 |
 | ADRs provide sufficient context for decisions | ✅ | 12_Architecture_Decisions.md complete |
+
+### 5.5 Human Implementation Readiness
+
+Evaluate whether human developers can implement from the certified architecture.
+
+**Checklist:**
+
 | Check | Status | Notes |
 |-------|--------|-------|
 | Architecture is understandable to developers | ✅ | Documented in Phase A–D |
@@ -427,7 +451,13 @@ Findings are classified as:
 
 ---
 
-#### Stage 5: Architecture Certification
+## 6. Exit Gate
+
+### 6.1 Mandatory Requirements
+
+The following requirements MUST be satisfied to exit Phase D:
+
+| Requirement | Description |
 
 **Purpose**: Produce official Architecture Certification.
 
@@ -542,6 +572,9 @@ Evaluate whether human developers can implement from the certified architecture.
 ### 5.6 Overall Readiness Assessment
 
 ### 5.6 Overall Readiness Assessment
+### 5.6 Overall Readiness Assessment
+
+Based on the above evaluations, determine overall readiness:
 
 | Readiness Level | Description |
 |----------------|-------------|
@@ -558,58 +591,7 @@ Evaluate whether human developers can implement from the certified architecture.
 > **Status**: D6 Architecture Verification & Implementation Readiness — ✅ CERTIFIED
 > **Date**: 2026-07-17
 > **Next**: Phase E — Implementation (Authorized)
-> **Certified Architecture Baseline**: GitHub HEAD `3522a77`
-
----
-|-------------|-------------|
-| **All Stages PASS** | Stages 1–5 must all produce PASS results |
-| **No Blockers** | Zero Blocker findings in any stage |
-| **No Critical Findings** | Zero Critical findings in any stage |
-| **Certified Architecture Baseline** | GitHub HEAD committed with all D1–D6 documents |
-| **Phase D Officially Closed** | Formal declaration that Phase D is complete |
-| **Phase E Officially Approved** | Formal authorization for Phase E to begin |
-
-### 6.2 Global Pass Conditions
-
-Global pass conditions:
-
-1. **All stages complete** — Stages 1–5 executed in sequence, all passed
-2. **No unresolved Blockers** — Every Blocker finding resolved before proceeding
-3. **No unresolved Criticals** — Every Critical finding resolved before stage exit
-4. **All Warnings documented** — Every Warning finding logged with acceptance
-5. **All Observations logged** — Every Observation recorded for awareness
-6. **Architecture Certification produced** — Formal certification document generated
-7. **Phase E Entry Authorization produced** — Formal authorization document generated
-8. **Certified Architecture Baseline established** — GitHub HEAD committed as baseline
-
-### 6.3 Certification Approval
-
-Architecture Certification requires:
-
-- Verification Report signed off (all stages PASS)
-- Readiness Assessment completed (Ready or Conditionally Ready)
-- All mandatory requirements satisfied
-- All global pass conditions met
-
-Certification is binary:
-
-- **CERTIFIED** — All conditions met, Phase E authorized
-- **NOT CERTIFIED** — Any condition not met, Phase D not closed
-
-No conditional certification.
-No temporary approval.
-No partial approval.
-
-### 6.4 Phase E Entry Approval
-
-Phase E Entry Authorization requires:
-
-- Architecture Certification obtained
-- Certified Architecture Baseline established
-- Implementation plan reviewed and approved
-- Resources allocated (human and AI)
-- CI/CD pipeline configured
-- Testing infrastructure ready
+> **Certified Architecture Baseline**: GitHub HEAD `ff2de4c`
 
 ---
 
