@@ -36,6 +36,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import (
     CheckConstraint,
@@ -73,17 +74,17 @@ class Evidence(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    entity_id: Mapped[Any] = mapped_column(
+    entity_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
     )
-    area_id: Mapped[Any | None] = mapped_column(
+    area_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
     )
-    user_id: Mapped[Any | None] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.user_profiles.id", ondelete="SET NULL")
     )
 
@@ -98,10 +99,10 @@ class Evidence(Base):
     source: Mapped[str] = mapped_column(
         String(50), nullable=False, default="conversation"
     )
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     memory_evidences: Mapped[list[MemoryEvidence]] = relationship(
@@ -162,17 +163,17 @@ class MemoryNode(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    entity_id: Mapped[Any] = mapped_column(
+    entity_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
     )
-    parent_node_id: Mapped[Any | None] = mapped_column(
+    parent_node_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.memory_nodes.id", ondelete="SET NULL")
     )
-    user_id: Mapped[Any | None] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.user_profiles.id", ondelete="SET NULL")
     )
 
@@ -194,16 +195,16 @@ class MemoryNode(Base):
 
     evidence_links: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     contradict_evidence: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     memory_evidences: Mapped[list[MemoryEvidence]] = relationship(
         "MemoryEvidence", back_populates="memory_node", lazy="selectin"
     )
-    parent: Mapped[Any | None] = relationship(
+    parent: Mapped[UUID] = relationship(
         "MemoryNode", remote_side=[id], lazy="select"
     )
     children: Mapped[list[MemoryNode]] = relationship(
@@ -238,21 +239,21 @@ class MemoryEvidence(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    memory_node_id: Mapped[Any] = mapped_column(
+    memory_node_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
     )
-    evidence_id: Mapped[Any] = mapped_column(
+    evidence_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.evidences.id", ondelete="CASCADE"), nullable=False
     )
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False, default="supports")
     contribution_weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     memory_node: Mapped[MemoryNode] = relationship("MemoryNode", back_populates="memory_evidences")
@@ -285,11 +286,11 @@ class Archive(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    source_archive_id: Mapped[Any | None] = mapped_column(
+    source_archive_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.archives.id", ondelete="SET NULL")
     )
 
@@ -299,10 +300,10 @@ class Archive(Base):
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     source_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
-    parent_archive: Mapped[Any | None] = relationship(
+    parent_archive: Mapped[UUID] = relationship(
         "Archive", remote_side=[id], lazy="select"
     )
     child_archives: Mapped[list[Archive]] = relationship(
@@ -332,8 +333,8 @@ class Tag(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
 
@@ -341,7 +342,7 @@ class Tag(Base):
     tag_type: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     color: Mapped[str | None] = mapped_column(String(7))
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     tag_links: Mapped[list[TagLink]] = relationship(
@@ -373,18 +374,18 @@ class TagLink(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    tag_id: Mapped[Any] = mapped_column(
+    tag_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.tags.id", ondelete="CASCADE"), nullable=False
     )
 
     target_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    target_id: Mapped[Any] = mapped_column(nullable=False)
+    target_id: Mapped[UUID] = mapped_column(nullable=False)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     tag: Mapped[Tag] = relationship("Tag", back_populates="tag_links")
@@ -424,17 +425,17 @@ class Entity(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    area_id: Mapped[Any | None] = mapped_column(
+    area_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
     )
-    parent_entity_id: Mapped[Any | None] = mapped_column(
+    parent_entity_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
     )
-    user_id: Mapped[Any | None] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.user_profiles.id", ondelete="SET NULL")
     )
 
@@ -442,18 +443,18 @@ class Entity(Base):
     canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
     aliases: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     description: Mapped[str | None] = mapped_column(Text)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
 
     observation_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     belief_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     pattern_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     relationship_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
-    parent: Mapped[Any | None] = relationship(
+    parent: Mapped[UUID] = relationship(
         "Entity", remote_side=[id], lazy="select"
     )
     children: Mapped[list[Entity]] = relationship(
@@ -481,11 +482,11 @@ class Area(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    parent_area_id: Mapped[Any | None] = mapped_column(
+    parent_area_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
     )
 
@@ -494,11 +495,11 @@ class Area(Base):
     color: Mapped[str | None] = mapped_column(String(7))
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
-    parent_area: Mapped[Any | None] = relationship(
+    parent_area: Mapped[UUID] = relationship(
         "Area", remote_side=[id], lazy="select"
     )
     child_areas: Mapped[list[Area]] = relationship(
@@ -525,12 +526,12 @@ class Workspace(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -553,18 +554,18 @@ class UserProfile(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
     external_user_id: Mapped[str | None] = mapped_column(String(255))
     display_name: Mapped[str | None] = mapped_column(String(255))
     email: Mapped[str | None] = mapped_column(String(255))
     avatar_url: Mapped[str | None] = mapped_column(Text)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -600,23 +601,23 @@ class EntityRelationship(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    source_id: Mapped[Any] = mapped_column(
+    source_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
     )
-    target_id: Mapped[Any] = mapped_column(
+    target_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
     )
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
     strength: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -654,22 +655,22 @@ class MemoryRelationship(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    source_node_id: Mapped[Any] = mapped_column(
+    source_node_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
     )
-    target_node_id: Mapped[Any] = mapped_column(
+    target_node_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
     )
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
     contribution_weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -716,14 +717,14 @@ class Candidate(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    entity_id: Mapped[Any] = mapped_column(
+    entity_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
     )
-    area_id: Mapped[Any | None] = mapped_column(
+    area_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
     )
 
@@ -731,7 +732,7 @@ class Candidate(Base):
     candidate_type: Mapped[str] = mapped_column(String(20), nullable=False)
 
     evidence_source: Mapped[str] = mapped_column(String(50), nullable=False, default="observation")
-    evidence_id: Mapped[Any | None] = mapped_column()
+    evidence_id: Mapped[UUID] = mapped_column()
     evidence_chain: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
     evidence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     evidence_strength: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
@@ -739,16 +740,16 @@ class Candidate(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="candidate")
 
     ingested_by: Mapped[str] = mapped_column(String(50), nullable=False, default="ingestion_pipeline")
-    ingestion_timestamp: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    ingestion_timestamp: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
-    verified_at: Mapped[Any | None] = mapped_column()
+    verified_at: Mapped[UUID] = mapped_column()
     verified_by: Mapped[str | None] = mapped_column(String(50))
 
     modified_by: Mapped[str | None] = mapped_column(String(50))
     modification_reason: Mapped[str | None] = mapped_column(Text)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -789,21 +790,21 @@ class Task(Base):
         UniqueConstraint(
             "workspace_id", "task_type", "debounce_key",
             name="uk_tasks_debounce",
-            postgresql_where=text("status IN ('pending', 'running')"),
+
         ),
         {
             "schema": "memory_hub",
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
-    entity_id: Mapped[Any | None] = mapped_column(
+    entity_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
     )
-    area_id: Mapped[Any | None] = mapped_column(
+    area_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
     )
 
@@ -818,9 +819,9 @@ class Task(Base):
 
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    completed_at: Mapped[Any | None] = mapped_column()
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    completed_at: Mapped[UUID] = mapped_column()
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -867,16 +868,16 @@ class VectorDoc(Base):
         },
     )
 
-    id: Mapped[Any] = mapped_column(primary_key=True)
-    workspace_id: Mapped[Any] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
     )
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    source_id: Mapped[Any] = mapped_column(nullable=False)
-    area_id: Mapped[Any | None] = mapped_column(
+    source_id: Mapped[UUID] = mapped_column(nullable=False)
+    area_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
     )
-    entity_id: Mapped[Any | None] = mapped_column(
+    entity_id: Mapped[UUID] = mapped_column(
         ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
     )
 
@@ -887,8 +888,8 @@ class VectorDoc(Base):
     # The pgvector extension is enabled at DB level via engine.py.
     embedding: Mapped[str | None] = mapped_column(String)
 
-    created_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[Any] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
