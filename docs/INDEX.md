@@ -144,7 +144,7 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * D3.9_Documentation_Updates（D3.9 — 已完成 2026-07-13）
 
 Current Progress: 25 / 25 completed
-Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ⏳ In Progress (D4.2a ✅ · D4.2b ✅ · D4.2c ✅ · D4.2d ✅ · D4.2e ✅ · D4.2f ✅ · D4.3 ✅ · D4.4 ✅)
+Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ✅ 🧊 Frozen · D5 ✅ 🧊 Frozen · D6 ✅ Certified
 ---
 
 # Phase D — Implementation
@@ -236,9 +236,9 @@ Complete human verification guide for D1 Infrastructure Foundation. Allows any d
 ---
 
 # Planned Documents
-* D4 — Domain Engine documents (planned)
-* D5 — Entry Layer ✅
-* D6 — Architecture Verification & Implementation Readiness ✅
+* D4 — Domain Engine documents ✅ 🧊 Frozen
+* D5 — Entry Layer documents ✅ 🧊 Frozen
+* D6 — Architecture Verification & Implementation Readiness ✅ Certified
 
 ---
 
