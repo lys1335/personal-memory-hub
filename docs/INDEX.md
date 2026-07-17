@@ -237,8 +237,8 @@ Complete human verification guide for D1 Infrastructure Foundation. Allows any d
 
 # Planned Documents
 * D4 — Domain Engine documents (planned)
-* D5 — Entry Layer documents (planned)
-* D6 — Architecture Verification & Implementation Readiness documents (planned)
+* D5 — Entry Layer ✅
+* D6 — Architecture Verification & Implementation Readiness ✅
 
 ---
 
