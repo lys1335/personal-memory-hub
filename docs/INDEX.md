@@ -101,7 +101,7 @@ Testing Implementation Design — 19 Testing Principles, Testing Responsibilitie
 
 ### 11_Implementation_Roadmap.md
 
-Implementation Roadmap — Six engineering milestones (Foundation/Core Memory/Query&Reflection/Entry&API/Testing&MVP), MVP lifecycle definition, coding order (dependency-driven), repository strategy, branch strategy, four-level review workflow, CI strategy, milestone completion criteria, AI engineering risks, implementation gate system, state-driven workflow, AI-driven engineering principles.
+Implementation Roadmap — Six engineering milestones (Foundation/Core Memory/Query&Reflection/Entry Layer/Testing&MVP), MVP lifecycle definition, coding order (dependency-driven), repository strategy, branch strategy, four-level review workflow, CI strategy, milestone completion criteria, AI engineering risks, implementation gate system, state-driven workflow, AI-driven engineering principles.
 
 ### 12_Engineering_Register.md
 
@@ -237,8 +237,8 @@ Complete human verification guide for D1 Infrastructure Foundation. Allows any d
 
 # Planned Documents
 * D4 — Domain Engine documents (planned)
-* D5 — Entry & API documents (planned)
-* D6 — Testing & Stabilization documents (planned)
+* D5 — Entry Layer documents (planned)
+* D6 — Architecture Verification & Implementation Readiness documents (planned)
 
 ---
 

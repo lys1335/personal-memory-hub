@@ -130,7 +130,7 @@ This document covers:
 - [ ] Entry Independence Principle enforced
 - [ ] Unified Request Lifecycle operational
 
-### Milestone 5: Testing & Stabilization
+### Milestone 5: Architecture Verification & Implementation Readiness
 
 **Goal**: Achieve test coverage and architectural compliance.
 
@@ -758,7 +758,7 @@ The following documents require backport updates after 11 is finalized:
 | **10_5** | EntityService → Deferred (beyond MVP) |
 | **10_6** | TaskRuntime → Milestone 3 (Reflection orchestration) |
 | **10_7** | API Entry Layer → Milestone 4 (Entry & API) |
-| **10_8** | Testing Architecture → Milestone 5 (Testing & Stabilization) |
+| **10_8** | Testing Architecture → Milestone 5 (Architecture Verification & Implementation Readiness) |
 | **13** | Architecture Guidelines → All milestones enforce G-NNN compliance |
 
 ---

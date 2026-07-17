@@ -46,9 +46,9 @@ D3 Service Layer
     ↓
 D4 Domain Engine
     ↓
-D5 Entry & API
+D5 Entry Layer
     ↓
-D6 Testing & Stabilization
+D6 Architecture Verification & Implementation Readiness
 ```
 
 Each milestone must be architecturally complete before the next begins. No parallel implementation across layers.
