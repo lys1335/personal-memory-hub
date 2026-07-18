@@ -25,6 +25,7 @@ from backend.entry.dto import (
     CaptureMemoryRequest,
     CreateEntityRequest,
     ErrorCategory,
+    ImportRequest,
     RetrieveRequest,
     SearchRequest,
     SubmitTaskRequest,
@@ -264,6 +265,42 @@ class RESTAdapter:
             data={
                 "task_id": str(result.task_id),
                 "status": result.status.value,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Import Endpoints
+    # ------------------------------------------------------------------
+
+    async def handle_import_memories(
+        self,
+        body: dict[str, Any],
+    ) -> BaseResponse[dict[str, Any]]:
+        """Handle POST /memories/import - import memories from external source."""
+        request_id = str(uuid4())
+
+        errors = self._validator.validate_import_request(body)
+        if errors:
+            return self._contract_validation_response(request_id, errors)
+
+        request = ImportRequest(**body)
+        cmd = request.to_internal_dict()
+
+        try:
+            result = await self._services["memory"].import_memories(**cmd)
+        except Exception as exc:
+            return self._domain_error_response(request_id, exc)
+
+        return BaseResponse.success(
+            request_id=request_id,
+            data={
+                "job_id": str(result.job_id),
+                "status": result.status.value,
+                "total_count": result.total_count,
+                "processed_count": result.processed_count,
+                "success_count": result.success_count,
+                "failure_count": result.failure_count,
+                "error_messages": result.error_messages,
             },
         )
 

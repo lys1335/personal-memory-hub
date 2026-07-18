@@ -312,3 +312,33 @@ class SubmitTaskRequest:
             "max_retries": self.max_retries,
             "debounce_key": self.debounce_key,
         }
+
+
+# ---------------------------------------------------------------------------
+# Import Entry DTOs (External)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ImportRequest:
+    """External DTO for importing data from a source.
+
+    Maps to MemoryService.import_memories() command via the ingest framework.
+
+    Per D5 §3.3 One Operation → One Capability:
+    Each import request targets exactly one source adapter.
+    """
+
+    workspace_id: str
+    source_type: str  # e.g., "open_webui"
+    data: str  # Raw text or base64-encoded payload
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_internal_dict(self) -> dict[str, Any]:
+        """Translate to Service Layer command dict."""
+        return {
+            "workspace_id": UUID(self.workspace_id),
+            "source_type": self.source_type,
+            "data": self.data,
+            "metadata": self.metadata,
+        }

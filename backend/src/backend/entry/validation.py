@@ -284,3 +284,45 @@ class ContractValidator:
             self.add_error("CONTRACT_INVALID_TYPE", "payload", "Must be a JSON object")
 
         return self.errors
+
+    # ------------------------------------------------------------------
+    # Import Validation
+    # ------------------------------------------------------------------
+
+    def validate_import_request(self, data: dict[str, Any]) -> list[ContractValidationError]:
+        """Validate an import request against contract.
+
+        Per D5 §6.1: Entry Layer validates contract structure only.
+        Service Layer handles domain validation of parsed items.
+
+        Args:
+            data: Parsed request data dict.
+
+        Returns:
+            List of validation errors (empty if valid).
+        """
+        self.reset()
+
+        if "workspace_id" not in data:
+            self.add_error("CONTRACT_MISSING_FIELD", "workspace_id", "Required field missing")
+        if "source_type" not in data:
+            self.add_error("CONTRACT_MISSING_FIELD", "source_type", "Required field missing")
+        if "data" not in data:
+            self.add_error("CONTRACT_MISSING_FIELD", "data", "Required field missing")
+
+        if not self.is_valid:
+            return self.errors
+
+        # Validate source_type is a string
+        source_type = data.get("source_type", "")
+        if not isinstance(source_type, str) or not source_type.strip():
+            self.add_error("CONTRACT_INVALID_TYPE", "source_type", "Must be a non-empty string")
+
+        # Validate data is a string (will be parsed by adapter)
+        data_field = data.get("data")
+        if not isinstance(data_field, str):
+            self.add_error("CONTRACT_INVALID_TYPE", "data", "Must be a JSON string")
+        elif len(data_field) > self.MAX_CONTENT_LENGTH:
+            self.add_error("CONTRACT_RANGE_EXCEEDED", "data", f"Data exceeds max length of {self.MAX_CONTENT_LENGTH}")
+
+        return self.errors

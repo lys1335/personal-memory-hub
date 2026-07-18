@@ -44,6 +44,12 @@ from backend.service.exceptions import (
     ValidationError,
 )
 
+
+# Import from ingest framework (Phase F)
+from backend.ingest.base import ImportSource
+from backend.ingest.registry import ImportRegistry
+from backend.ingest.adapters.open_webui import OpenWebUIAdapter
+
 if TYPE_CHECKING:
     from backend.repository.archive_repository import ArchiveRepository
     from backend.repository.evidence_repository import EvidenceRepository
@@ -308,28 +314,50 @@ class MemoryService(BaseService):
         self,
         *,
         workspace_id: UUID,
-        items: list[dict[str, Any]],
+        source_type: str = "open_webui",
+        data: str | None = None,
+        items: list[dict[str, Any]] | None = None,
         job_id: UUID | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ImportJobStatus:
-        """Import multiple memories with continue-on-error.
+        """Import memories from external source using the ingest framework.
 
-        Each memory within the batch is an independent transaction.
-        Failed items are recorded but do not invalidate successful ones.
+        This method supports both the new ingest framework (for structured imports
+        from external sources like Open WebUI) and the legacy items-based import.
+
+        When source_type and data are provided, the ingest framework parses and
+        validates the data before importing. When items is provided directly,
+        it uses the legacy continue-on-error logic.
 
         Per IR-010 (Continue-on-Error): Import batch continues on failure.
         Per IR-012 (Idempotent Import): Batch-level uniqueness check.
 
         Args:
             workspace_id: Workspace scope.
-            items: List of memory dictionaries to import.
-                Each dict should have: content, entity_id (optional),
-                level (default 1), source (default "import").
+            source_type: Import source type (e.g., "open_webui").
+            data: Raw data string from the external source.
+            items: Legacy parameter - list of memory dicts (deprecated).
             job_id: Optional import job UUID for tracking.
+            metadata: Additional metadata for the import.
 
         Returns:
             ImportJobStatus with success/failure counts.
         """
         self._validate_workspace_id(workspace_id)
+
+        # Use ingest framework if source_type and data are provided
+        if source_type and data:
+            return await self._import_via_ingest(
+                workspace_id=workspace_id,
+                source_type=source_type,
+                data=data,
+                job_id=job_id,
+                metadata=metadata or {},
+            )
+
+        # Legacy path: direct items import
+        if items is None:
+            items = []
 
         if not items:
             return ImportJobStatus(
@@ -370,6 +398,86 @@ class MemoryService(BaseService):
             status=status,
             total_count=len(items),
             processed_count=len(items),
+            success_count=success_count,
+            failure_count=failure_count,
+            error_messages=error_messages,
+        )
+
+    async def _import_via_ingest(
+        self,
+        *,
+        workspace_id: UUID,
+        source_type: str,
+        data: str,
+        job_id: UUID | None,
+        metadata: dict[str, Any],
+    ) -> ImportJobStatus:
+        """Import via the ingest framework.
+
+        Uses the registered adapter for the given source_type to parse,
+        validate, and import memories through the normal pipeline.
+        """
+        job_id = job_id or self._generate_id()
+
+        # Create registry and register adapters
+        registry = ImportRegistry()
+        registry.register(OpenWebUIAdapter())
+
+        # Parse and validate using the pipeline
+        try:
+            from backend.ingest.base import ImportPipeline
+
+            pipeline = ImportPipeline(registry)
+            import_source = ImportSource(source_type)
+            result = pipeline.execute(import_source, data)
+        except ValueError as exc:
+            return ImportJobStatus(
+                job_id=job_id,
+                status=ImportStatus.FAILED,
+                total_count=0,
+                error_messages=[str(exc)],
+            )
+
+        if not result.items:
+            return ImportJobStatus(
+                job_id=job_id,
+                status=ImportStatus.COMPLETED,
+                total_count=0,
+            )
+
+        # Import each validated MemoryItem through the normal pipeline
+        success_count = 0
+        failure_count = 0
+        error_messages: list[str] = []
+
+        for idx, mem_item in enumerate(result.items):
+            try:
+                await self.capture_memory(
+                    workspace_id=workspace_id,
+                    entity_id=mem_item.entity_id,
+                    content=mem_item.content,
+                    level=mem_item.level,
+                    source=mem_item.source,
+                    metadata={**mem_item.metadata, **metadata},
+                )
+                success_count += 1
+            except Exception as exc:
+                failure_count += 1
+                error_messages.append(
+                    f"Item {idx}: {type(exc).__name__}: {exc}"
+                )
+                self._log.error("Import item %d failed: %s", idx, exc)
+
+        total = success_count + failure_count
+        status = ImportStatus.COMPLETED if failure_count == 0 else (
+            ImportStatus.FAILED
+        )
+
+        return ImportJobStatus(
+            job_id=job_id,
+            status=status,
+            total_count=total,
+            processed_count=total,
             success_count=success_count,
             failure_count=failure_count,
             error_messages=error_messages,

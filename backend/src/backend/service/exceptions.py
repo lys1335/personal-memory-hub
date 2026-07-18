@@ -29,7 +29,16 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 
-class DomainError(Exception):
+class MemoryHubError(Exception):
+    """Base exception for all MemoryHub errors.
+
+    All service-level exceptions inherit from this class.
+    Entry Layer translates MemoryHubError subclasses into protocol-specific
+    error responses.
+    """
+
+
+class DomainError(MemoryHubError):
     """Base exception for all domain-level errors.
 
     All service-level exceptions inherit from this class.
