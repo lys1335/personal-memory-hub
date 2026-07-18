@@ -225,9 +225,9 @@ class EntityEngine(EngineBase):
             })
 
         entity_type = entity.get("entity_type", "")
-        canonical_name = entity.get("canonical_name", "")
+        _canonical_name = entity.get("canonical_name", "")
         aliases = entity.get("aliases") or []
-        metadata = entity.get("metadata", {})
+        _metadata = entity.get("metadata", {})
         observation_count = entity.get("observation_count", 0)
         pattern_count = entity.get("pattern_count", 0)
         belief_count = entity.get("belief_count", 0)

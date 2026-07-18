@@ -149,8 +149,8 @@ class ReflectionEngine(EngineBase):
         candidate_type = candidate.get("candidate_type", "pattern")
         evidence_count = candidate.get("evidence_count", 0)
         evidence_strength = candidate.get("evidence_strength", 0.0)
-        evidence_chain = candidate.get("evidence_chain") or []
-        status = candidate.get("status", "candidate")
+        _evidence_chain = candidate.get("evidence_chain") or []
+        _status = candidate.get("status", "candidate")
 
         # Quality score: weighted combination
         quality_score = round(
@@ -212,22 +212,21 @@ class ReflectionEngine(EngineBase):
                 )
             )
 
-        action = evolution_action.get("action")
+        _action = evolution_action.get("action")
         source_level = evolution_action.get("source_level")
         target_level = evolution_action.get("target_level")
         evidence_chain = evolution_action.get("evidence_chain") or []
         justification = evolution_action.get("justification", "")
 
         # Evolution must be upward (monotonic): level increases
-        if source_level is not None and target_level is not None:
-            if target_level <= source_level:
-                return DomainResult.fail(
-                    DomainInvariantViolation(
-                        f"Evolution is not monotonic: {source_level} → {target_level}. "
-                        f"Target level must exceed source level.",
-                        invariant="evolution_monotonicity",
-                    )
+        if source_level is not None and target_level is not None and target_level <= source_level:
+            return DomainResult.fail(
+                DomainInvariantViolation(
+                    f"Evolution is not monotonic: {source_level} → {target_level}. "
+                    f"Target level must exceed source level.",
+                    invariant="evolution_monotonicity",
                 )
+            )
 
         # Evidence chain must not be empty
         if not evidence_chain:

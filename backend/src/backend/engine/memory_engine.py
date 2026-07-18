@@ -105,7 +105,7 @@ class MemoryEngine(EngineBase):
         evidence_strength = min(1.0, round(evidence_count * 0.2 + signal_strength * 0.5, 3))
 
         # Determine semantic category
-        node_type = memory.get("node_type", "Observation")
+        _node_type = memory.get("node_type", "Observation")
         if level == 1:
             category = "observation"
         elif level == 2:
@@ -155,7 +155,7 @@ class MemoryEngine(EngineBase):
             return DomainResult.ok(True)  # No memory to validate
 
         evidence_links = memory.get("evidence_links") or []
-        contradict_evidence = memory.get("contradict_evidence") or []
+        _contradict_evidence = memory.get("contradict_evidence") or []
 
         # Invariant: Every Memory Has Evidence
         if not evidence_links:

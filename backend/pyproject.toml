@@ -76,6 +76,12 @@ ignore = [
     "SIM105",
     # E501: test function signatures naturally long with type hints
     "E501",
+    # N818: Domain-specific exception names (DomainInvariantViolation, DomainRuleViolation)
+    #       follow domain-driven naming, not generic Error suffix convention
+    "N818",
+    # B024: EngineBase is an abstract base class without abstract methods —
+    #        intentional: provides shared implementation, subclasses add @abstractmethod
+    "B024",
 ]
 
 [tool.ruff.lint.isort]

@@ -105,7 +105,8 @@ def test_entry_calls_service_only():
     import backend.entry.rest_adapter as rest_mod
 
     # Check that RESTAdapter imports come from allowed sources
-    source = open(rest_mod.__file__, encoding="utf-8").read()
+    with open(rest_mod.__file__, encoding="utf-8") as f:
+        source = f.read()
 
     # Should import from service, entry, engine.base (for DomainResult)
     # Should NOT import from service (other than base types), engine (other than base), repository
@@ -119,7 +120,8 @@ def test_service_calls_engine_and_repository():
     """Verify Service Layer can call both Engine and Repository."""
     import backend.service.memory_service as ms_mod
 
-    source = open(ms_mod.__file__, encoding="utf-8").read()
+    with open(ms_mod.__file__, encoding="utf-8") as f:
+        source = f.read()
 
     # Should import from repository
     assert "from backend.repository" in source or "self._memory_node_repo" in source
@@ -132,7 +134,8 @@ def test_engine_calls_repository_only():
     import backend.engine.memory_engine as me_mod
 
     for mod in (ee_mod, me_mod):
-        source = open(mod.__file__, encoding="utf-8").read()
+        with open(mod.__file__, encoding="utf-8") as f:
+            source = f.read()
         # Should NOT call other engines
         for other_engine in ("EntityEngine", "MemoryEngine", "RelationshipEngine",
                               "ReflectionEngine", "SearchEngine", "ProjectionEngine"):
@@ -253,20 +256,24 @@ def test_dependency_dag():
     import backend.service.memory_service as svc_mod
 
     # Entry imports Service and Entry internals
-    entry_source = open(entry_mod.__file__, encoding="utf-8").read()
+    with open(entry_mod.__file__, encoding="utf-8") as f:
+        entry_source = f.read()
     assert "from backend.service." in entry_source
 
     # Service imports Engine and Repository
-    svc_source = open(svc_mod.__file__, encoding="utf-8").read()
+    with open(svc_mod.__file__, encoding="utf-8") as f:
+        svc_source = f.read()
     assert "from backend.repository" in svc_source
 
     # Engine imports Repository (via base)
-    eng_source = open(eng_mod.__file__, encoding="utf-8").read()
+    with open(eng_mod.__file__, encoding="utf-8") as f:
+        eng_source = f.read()
     # Engine should NOT import Service
     assert "from backend.service." not in eng_source or "from backend.service.base" not in eng_source
 
     # Repository is the lowest layer
-    repo_source = open(repo_mod.__file__, encoding="utf-8").read()
+    with open(repo_mod.__file__, encoding="utf-8") as f:
+        repo_source = f.read()
     # Repository should NOT import Service, Engine, or Entry
     assert "from backend.service." not in repo_source
     assert "from backend.engine." not in repo_source

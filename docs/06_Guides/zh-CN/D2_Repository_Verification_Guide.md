@@ -244,7 +244,7 @@ echo "---"
 git log --oneline -1
 echo "---"
 git rev-parse HEAD
-git rev-parse @{u} 2>&1
+git rev-parse '@{u}' 2>&1
 ```
 
 **Linux/macOS (bash)**:
@@ -255,7 +255,7 @@ echo "---"
 git log --oneline -1
 echo "---"
 git rev-parse HEAD
-git rev-parse @{u} 2>&1
+git rev-parse '@{u}' 2>&1
 ```
 
 **预期输出**:

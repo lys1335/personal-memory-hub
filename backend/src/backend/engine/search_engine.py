@@ -187,7 +187,7 @@ class SearchEngine(EngineBase):
                 )
             )
 
-        strategy = plan.get("strategy", "broad")
+        _strategy = plan.get("strategy", "broad")
         candidate_types = plan.get("candidate_types", [])
         validation_criteria = plan.get("validation_criteria", {})
 
@@ -404,10 +404,7 @@ class SearchEngine(EngineBase):
 
         confidence = item.get("confidence", 0.0)
         min_confidence = criteria.get("min_confidence", 0.0)
-        if confidence < min_confidence:
-            return False
-
-        return True
+        return not confidence < min_confidence
 
     def _calculate_ranking_score(
         self,
@@ -426,7 +423,7 @@ class SearchEngine(EngineBase):
         confidence = candidate.get("confidence", 0.0)
         importance = candidate.get("importance", 0.0)
         signal = candidate.get("signal_strength", 0.0)
-        evidence_count = len(candidate.get("evidence_links") or [])
+        _evidence_count = len(candidate.get("evidence_links") or [])
 
         if approach == "relevance":
             return round(0.4 * confidence + 0.3 * importance + 0.3 * signal, 3)
