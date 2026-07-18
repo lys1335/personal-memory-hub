@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
+
 import pytest
 
-from backend.ingest.base import ImportSource, MemoryItem, ImportResult
-from backend.ingest.registry import ImportRegistry
 from backend.ingest.adapters.open_webui import OpenWebUIAdapter
-
+from backend.ingest.base import ImportResult, ImportSource, MemoryItem
+from backend.ingest.registry import ImportRegistry
 
 # ---------------------------------------------------------------------------
 # Sample Data
@@ -202,14 +202,14 @@ class TestImportRegistry:
 
     def test_default_registration(self) -> None:
         from backend.ingest.registry import create_default_registry
-        
+
         registry = create_default_registry()
         sources = list(registry.list_sources())
         assert ImportSource.OPEN_WEBUI in sources
 
     def test_get_adapter(self) -> None:
         from backend.ingest.registry import create_default_registry
-        
+
         registry = create_default_registry()
         adapter = registry.get_adapter(ImportSource.OPEN_WEBUI)
         assert adapter is not None
@@ -218,11 +218,9 @@ class TestImportRegistry:
     def test_get_adapter_not_found(self) -> None:
         from backend.ingest.base import ImportSource
         from backend.ingest.registry import create_default_registry
-        
+
         registry = create_default_registry()
         # Use a source that doesn't exist (not OPEN_WEBUI)
-        all_known = [s.value for s in ImportSource]
-        # MARKDOWN doesn't exist, so we need to use a different approach
         # Just verify that get_adapter returns None for unregistered sources
         # Since only OPEN_WEBUI is registered, any other source should return None
         # We'll check by trying to get an adapter and verifying it's None for unknown
@@ -232,8 +230,7 @@ class TestImportRegistry:
         # The important thing is that the method exists and returns None when not found
 
     def test_register_custom_adapter(self) -> None:
-        from backend.ingest.base import BaseImportAdapter, ImportSource, ImportResult
-        from backend.ingest.registry import ImportRegistry
+        from backend.ingest.base import BaseImportAdapter, ImportResult, ImportSource
 
         class CustomAdapter(BaseImportAdapter):
             @property
@@ -272,7 +269,6 @@ class TestImportPipeline:
 
     def test_execute_unknown_source(self) -> None:
         from backend.ingest.base import ImportPipeline, ImportSource
-        from backend.ingest.registry import ImportRegistry
 
         registry = ImportRegistry()  # Empty registry
         pipeline = ImportPipeline(registry)

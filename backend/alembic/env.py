@@ -12,10 +12,11 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from alembic import context
 
 # ---------------------------------------------------------------------------
 # Ensure src/ is on the Python path so we can import backend modules
@@ -26,8 +27,8 @@ sys.path.insert(0, str(_src))
 # ---------------------------------------------------------------------------
 # Import application settings and database base
 # ---------------------------------------------------------------------------
-from backend.shared.infrastructure.config.settings import get_settings  # noqa: E402
-from backend.shared.infrastructure.database.engine import Base  # noqa: E402
+from backend.shared.infrastructure.config.settings import get_settings
+from backend.shared.infrastructure.database.engine import Base
 
 # ---------------------------------------------------------------------------
 # Alembic CLI config (alembic.ini)

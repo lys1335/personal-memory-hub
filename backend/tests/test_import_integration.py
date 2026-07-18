@@ -10,15 +10,13 @@ Tests verify that the full import flow works correctly:
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from backend.ingest.base import ImportSource, MemoryItem
-from backend.ingest.registry import create_default_registry
 from backend.entry.rest_adapter import RESTAdapter
-from backend.entry.validation import ContractValidator
-
+from backend.ingest.base import ImportSource
+from backend.ingest.registry import create_default_registry
 
 # ---------------------------------------------------------------------------
 # Sample Data
@@ -63,7 +61,7 @@ class TestImportEndpoint:
     def mock_services(self) -> dict[str, MagicMock]:
         """Create mock services for testing."""
         from backend.service.dto import ImportStatus
-        
+
         memory_service = MagicMock()
         memory_service.import_memories = AsyncMock(return_value=MagicMock(
             job_id="test-job-id",

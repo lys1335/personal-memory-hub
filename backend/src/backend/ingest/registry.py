@@ -92,4 +92,8 @@ def create_default_registry() -> ImportRegistry:
     from backend.ingest.adapters.open_webui import OpenWebUIAdapter
     registry.register(OpenWebUIAdapter())
 
+    # Register ChatGPT adapter
+    from backend.ingest.adapters.chatgpt import ChatGPTImportAdapter
+    registry.register(ChatGPTImportAdapter())
+
     return registry

@@ -31,7 +31,8 @@ class ImportSource(str, Enum):
     """Known import source types."""
 
     OPEN_WEBUI = "open_webui"
-    # Future: CHATGPT, CLAUDE, GEMINI, HERMES, MARKDOWN, JSON, MEMORYHUB_BACKUP
+    CHATGPT = "chatgpt"
+    # Future: CLAUDE, GEMINI, HERMES, MARKDOWN, JSON, MEMORYHUB_BACKUP
 
 
 class ImportValidationLevel(str, Enum):
