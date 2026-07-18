@@ -397,7 +397,7 @@ class EngineBase(ABC):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def domain_ok(data: Any) -> DomainResult:
+    def domain_ok(data: Any) -> DomainResult[Any]:
         """Create a successful DomainResult.
 
         Args:
@@ -409,7 +409,7 @@ class EngineBase(ABC):
         return DomainResult.ok(data)
 
     @staticmethod
-    def domain_fail(error: DomainError) -> DomainResult:
+    def domain_fail(error: DomainError) -> DomainResult[Any]:
         """Create a failed DomainResult.
 
         Args:
@@ -431,7 +431,7 @@ class EngineBase(ABC):
         *,
         message: str | None = None,
         context: dict[str, Any] | None = None,
-    ) -> DomainResult:
+    ) -> DomainResult[Any]:
         """Verify a domain invariant and return DomainResult.
 
         If the invariant fails, returns a failed DomainResult with

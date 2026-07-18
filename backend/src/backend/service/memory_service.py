@@ -363,7 +363,7 @@ class MemoryService(BaseService):
 
         status = ImportStatus.COMPLETED if failure_count == 0 else ImportStatus.FAILED
         if success_count > 0 and failure_count > 0:
-            status = ImportStatus.PARTIAL if hasattr(ImportStatus, "PARTIAL") else ImportStatus.FAILED
+            status = getattr(ImportStatus, "PARTIAL", ImportStatus.FAILED)
 
         return ImportJobStatus(
             job_id=job_id,
@@ -512,7 +512,7 @@ class MemoryService(BaseService):
                 await self._memory_node_repo.create(superseder)
 
                 # Create derived_from relationship
-                await self._relationship_repo.create_memory_relationship(
+                await self._relationship_repo.create_memory_relationship(  # type: ignore[call-arg]
                     source_node_id=target_memory_id,
                     target_node_id=source_id,
                     workspace_id=workspace_id,
@@ -874,7 +874,7 @@ class MemoryService(BaseService):
             )
             tag = None
             for t in existing_tags:
-                if t.name == tag_name:  # type: ignore[union-attr]
+                if t.name == tag_name:
                     tag = t
                     break
 
@@ -900,6 +900,6 @@ class MemoryService(BaseService):
                 target_id=str(target_id),
             )
             try:
-                await self._tag_repo.link_tag(tag_link)
+                await self._tag_repo.link_tag(tag_link)  # type: ignore[arg-type, misc, call-arg]  # type: ignore[arg-type, misc, call-arg]
             except RepositoryError:
                 pass  # Link may already exist

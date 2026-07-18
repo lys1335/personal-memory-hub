@@ -26,6 +26,7 @@ import logging
 from typing import Any
 
 from backend.engine.base import (
+    DomainError,
     DomainInvariantViolation,
     DomainResult,
     DomainRuleViolation,
@@ -137,7 +138,7 @@ class SearchEngine(EngineBase):
 
         intent = self.interpret_intent(query=query)
         if not intent.success:
-            return DomainResult.fail(intent.error)
+            return DomainResult.fail(DomainError('Unknown error') if not intent.error else intent.error)
 
         intent_data = intent.data
         scope_level = scope.get("level")
@@ -152,8 +153,8 @@ class SearchEngine(EngineBase):
         return DomainResult.ok({
             "strategy": strategy,
             "scope_level": scope_level,
-            "candidate_types": intent_data.get("candidate_types", []),
-            "ranking_approach": intent_data.get("ranking_approach", "relevance"),
+            "candidate_types": (intent_data or {}).get("candidate_types", []),
+            "ranking_approach": (intent_data or {}).get("ranking_approach", "relevance"),
             "validation_criteria": self._get_validation_criteria(strategy),
         })
 
@@ -426,10 +427,10 @@ class SearchEngine(EngineBase):
         _evidence_count = len(candidate.get("evidence_links") or [])
 
         if approach == "relevance":
-            return round(0.4 * confidence + 0.3 * importance + 0.3 * signal, 3)
+            return round(float(0.4 * confidence + 0.3 * importance + 0.3 * signal), 3)
         elif approach == "importance":
-            return round(importance * 0.6 + signal * 0.4, 3)
+            return round(float(importance * 0.6 + signal * 0.4), 3)
         elif approach == "confidence":
-            return round(confidence * 0.7 + signal * 0.3, 3)
+            return round(float(confidence * 0.7 + signal * 0.3), 3)
         else:  # recency — use created_at if available
-            return round(confidence * 0.5 + importance * 0.3 + signal * 0.2, 3)
+            return round(float(confidence * 0.5 + importance * 0.3 + signal * 0.2), 3)

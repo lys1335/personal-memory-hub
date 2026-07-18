@@ -96,8 +96,7 @@ class BaseResponse(Generic[T]):
         *,
         details: dict[str, Any] | None = None,
         category: ErrorCategory = ErrorCategory.DOMAIN_ERROR,
-    ) -> BaseResponse[None]:
-        """Create an error response."""
+    ) -> BaseResponse[Any]:
         return cls(
             request_id=request_id,
             timestamp=datetime.now(timezone.utc).isoformat(),

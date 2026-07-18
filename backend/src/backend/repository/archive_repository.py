@@ -236,7 +236,7 @@ class ArchiveRepository(BaseRepository):  # type: ignore[type-arg]
         try:
             self.session.add(tag_link)
             await self.session.flush()
-            return tag_link.id  # type: ignore[no-any-return]
+            return tag_link.id
         except IntegrityError as exc:
             await self.session.rollback()
             self._raise_integrity_error(exc)

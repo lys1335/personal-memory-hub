@@ -71,6 +71,11 @@ class TaskService(BaseService):
         super().__init__("TaskService")
         self._task_repo = task_repo
 
+    def _generate_id(self) -> UUID:
+        """Generate a unique ID."""
+        from uuid import uuid4
+        return uuid4()
+
     # ------------------------------------------------------------------
     # Task Submission
     # ------------------------------------------------------------------
@@ -182,7 +187,7 @@ class TaskService(BaseService):
             )
 
         return TaskStatusResult(
-            task_id=task.id,  # type: ignore[attr-defined]
+            task_id=task.id,
             task_type=getattr(task, "task_type", ""),
             status=TaskStatus(getattr(task, "status", "pending")),
             retry_count=getattr(task, "retry_count", 0),
@@ -218,7 +223,7 @@ class TaskService(BaseService):
 
         tasks = await self._task_repo.find_by_workspace(
             workspace_id=workspace_id,
-            task_type=task_type,
+            task_types=[task_type] if task_type else None,
             status=status,
             limit=limit,
             offset=offset,
@@ -226,7 +231,7 @@ class TaskService(BaseService):
 
         return [
             TaskStatusResult(
-                task_id=t.id,  # type: ignore[attr-defined]
+                task_id=t.id,
                 task_type=getattr(t, "task_type", ""),
                 status=TaskStatus(getattr(t, "status", "pending")),
                 retry_count=getattr(t, "retry_count", 0),
@@ -284,8 +289,8 @@ class TaskService(BaseService):
 
         # Reset task for retry
 
-        task.retry_count = getattr(task, "retry_count", 0) + 1  # type: ignore[assignment]
-        task.status = "pending"  # type: ignore[assignment]
+        task.retry_count = getattr(task, "retry_count", 0) + 1
+        task.status = "pending"
 
         try:
             await self._task_repo.update(task)
@@ -339,7 +344,7 @@ class TaskService(BaseService):
 
         # Mark as cancelled
 
-        task.status = "cancelled"  # type: ignore[assignment]
+        task.status = "cancelled"
 
         try:
             await self._task_repo.update(task)

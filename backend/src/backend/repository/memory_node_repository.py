@@ -203,7 +203,7 @@ class MemoryNodeRepository(BaseRepository):  # type: ignore[type-arg]
         try:
             self.session.add(evidence_record)
             await self.session.flush()
-            return evidence_record.id  # type: ignore[no-any-return]
+            return evidence_record.id
         except IntegrityError as exc:
             await self.session.rollback()
             self._raise_integrity_error(exc)

@@ -189,11 +189,11 @@ class EntityService(BaseService):
 
         # Build EntityProfile from ORM model
         return EntityProfile(
-            entity_id=entity.id,  # type: ignore[attr-defined]
-            workspace_id=entity.workspace_id,  # type: ignore[attr-defined]
-            entity_type=entity.entity_type,  # type: ignore[attr-defined]
-            canonical_name=entity.canonical_name,  # type: ignore[attr-defined]
-            aliases=list(entity.aliases) if hasattr(entity, "aliases") else [],  # type: ignore[attr-defined]
+            entity_id=entity.id,
+            workspace_id=entity.workspace_id,
+            entity_type=entity.entity_type,
+            canonical_name=entity.canonical_name,
+            aliases=list(entity.aliases) if hasattr(entity, "aliases") else [],
             description=getattr(entity, "description", None),
             metadata=getattr(entity, "metadata", {}) or {},
             observation_count=getattr(entity, "observation_count", 0),

@@ -99,7 +99,7 @@ class Evidence(Base):
     source: Mapped[str] = mapped_column(
         String(50), nullable=False, default="conversation"
     )
-    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
     updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
@@ -195,7 +195,7 @@ class MemoryNode(Base):
 
     evidence_links: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     contradict_evidence: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
-    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
     updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
@@ -443,7 +443,7 @@ class Entity(Base):
     canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
     aliases: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     description: Mapped[str | None] = mapped_column(Text)
-    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     observation_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     belief_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -562,7 +562,7 @@ class UserProfile(Base):
     display_name: Mapped[str | None] = mapped_column(String(255))
     email: Mapped[str | None] = mapped_column(String(255))
     avatar_url: Mapped[str | None] = mapped_column(Text)
-    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
     updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
@@ -614,7 +614,7 @@ class EntityRelationship(Base):
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
     strength: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
-    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
     updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
@@ -668,7 +668,7 @@ class MemoryRelationship(Base):
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
     contribution_weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
-    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # type: ignore[misc, assignment]
+    _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
 

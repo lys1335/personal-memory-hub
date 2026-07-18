@@ -274,8 +274,8 @@ class RESTAdapter:
     def _contract_validation_response(
         self,
         request_id: str,
-        errors: list,
-    ) -> BaseResponse[None]:
+        errors: list[Any],
+    ) -> BaseResponse[dict[str, Any]]:
         """Create a contract validation error response."""
         error_details = [e.to_dict() for e in errors]
         return BaseResponse.error_response(
@@ -290,7 +290,7 @@ class RESTAdapter:
         self,
         request_id: str,
         exc: Exception,
-    ) -> BaseResponse[None]:
+    ) -> BaseResponse[dict[str, Any]]:
         """Create a domain error response.
 
         Translates Service/Engine errors to protocol-specific format.
@@ -331,7 +331,7 @@ class RESTAdapter:
         self,
         request_id: str,
         exc: Exception,
-    ) -> BaseResponse[None]:
+    ) -> BaseResponse[dict[str, Any]]:
         """Create an infrastructure error response."""
         return BaseResponse.error_response(
             request_id=request_id,

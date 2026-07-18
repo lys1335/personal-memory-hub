@@ -405,7 +405,7 @@ class ProjectionEngine(EngineBase):
             True if aggregate-safe.
         """
         if isinstance(obj, dict):
-            seen_ids = set()
+            seen_ids: set[int] = set()
             return ProjectionEngine._check_no_circular(obj, seen_ids)
         return True
 
