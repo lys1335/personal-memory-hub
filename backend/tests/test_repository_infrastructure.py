@@ -53,7 +53,7 @@ class _TestBase(DeclarativeBase):
     pass
 
 
-class TestEntity(_TestBase):
+class _SampleEntity(_TestBase):
     """Minimal test entity with workspace_id."""
 
     __tablename__ = "test_entities"
@@ -64,7 +64,7 @@ class TestEntity(_TestBase):
     value: Mapped[int | None] = mapped_column(default=None)
 
 
-class TestQueryEntity(_TestBase):
+class _SampleQueryEntity(_TestBase):
     """Minimal test entity for QueryRepository testing."""
 
     __tablename__ = "test_query_entities"
@@ -79,10 +79,10 @@ class TestQueryEntity(_TestBase):
 # ---------------------------------------------------------------------------
 
 
-class _TestRepository(BaseRepository[TestEntity]):
+class _TestRepository(BaseRepository[_SampleEntity]):
     """Concrete test implementation of BaseRepository."""
 
-    _model_class = TestEntity
+    _model_class = _SampleEntity
     _table_name = "test_entities"
 
     async def soft_delete_impl(self, id: PrimaryKey) -> None:
@@ -90,17 +90,17 @@ class _TestRepository(BaseRepository[TestEntity]):
         from sqlalchemy import update as sa_update
 
         stmt = (
-            sa_update(TestEntity)
-            .where(TestEntity.id == id)  # type: ignore[arg-type]
+            sa_update(_SampleEntity)
+            .where(_SampleEntity.id == id)  # type: ignore[arg-type]
             .values(name="DELETED")
         )
         await self.session.execute(stmt)  # type: ignore[union-attr]
 
 
-class _TestQueryRepo(QueryRepository[TestQueryEntity]):
+class _TestQueryRepo(QueryRepository[_SampleQueryEntity]):
     """Concrete test implementation of QueryRepository."""
 
-    _model_class = TestQueryEntity
+    _model_class = _SampleQueryEntity
     _table_name = "test_query_entities"
 
     async def complex_query(self, *args, **kwargs):
@@ -165,7 +165,7 @@ def test_workspace_id() -> str:
 @pytest.mark.asyncio
 async def test_create_and_find_by_id(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify create() inserts and find_by_id() retrieves the entity."""
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="test-entity",
@@ -193,7 +193,7 @@ async def test_find_by_id_not_found(repo: _TestRepository) -> None:
 async def test_find_all_basic(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify find_all() returns all entities in the workspace."""
     for i in range(5):
-        entity = TestEntity(
+        entity = _SampleEntity(
             id=uuid4(),
             workspace_id=test_workspace_id,
             name=f"entity-{i}",
@@ -211,7 +211,7 @@ async def test_find_all_basic(repo: _TestRepository, test_workspace_id: str) -> 
 async def test_find_all_with_filters(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify find_all() respects filter conditions."""
     for i in range(5):
-        entity = TestEntity(
+        entity = _SampleEntity(
             id=uuid4(),
             workspace_id=test_workspace_id,
             name=f"entity-{i}",
@@ -233,7 +233,7 @@ async def test_find_all_with_filters(repo: _TestRepository, test_workspace_id: s
 async def test_find_all_with_ordering(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify find_all() respects ordering."""
     for i in [3, 1, 4, 1, 5]:
-        entity = TestEntity(
+        entity = _SampleEntity(
             id=uuid4(),
             workspace_id=test_workspace_id,
             name=f"entity-{i}",
@@ -255,7 +255,7 @@ async def test_find_all_with_ordering(repo: _TestRepository, test_workspace_id: 
 @pytest.mark.asyncio
 async def test_update(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify update() modifies an existing entity."""
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="original",
@@ -278,7 +278,7 @@ async def test_update(repo: _TestRepository, test_workspace_id: str) -> None:
 @pytest.mark.asyncio
 async def test_soft_delete(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify soft_delete() marks entity as deleted."""
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="to-delete",
@@ -299,7 +299,7 @@ async def test_soft_delete(repo: _TestRepository, test_workspace_id: str) -> Non
 @pytest.mark.asyncio
 async def test_exists_true(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify exists() returns True for existing entity."""
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="exists-test",
@@ -327,7 +327,7 @@ async def test_exists_false(repo: _TestRepository) -> None:
 async def test_find_page_basic(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify find_page() returns paginated results."""
     for i in range(10):
-        entity = TestEntity(
+        entity = _SampleEntity(
             id=uuid4(),
             workspace_id=test_workspace_id,
             name=f"entity-{i}",
@@ -354,7 +354,7 @@ async def test_find_page_basic(repo: _TestRepository, test_workspace_id: str) ->
 async def test_find_page_last_page(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify find_page() correctly identifies the last page."""
     for i in range(5):
-        entity = TestEntity(
+        entity = _SampleEntity(
             id=uuid4(),
             workspace_id=test_workspace_id,
             name=f"entity-{i}",
@@ -453,7 +453,7 @@ async def test_query_repo_read_only_enforcement(query_repo: _TestQueryRepo, test
 @pytest.mark.asyncio
 async def test_query_repo_find_by_id(query_repo: _TestQueryRepo, test_workspace_id: str) -> None:
     """Verify QueryRepository find_by_id() works (read operation)."""
-    entity = TestQueryEntity(
+    entity = _SampleQueryEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="query-test",
@@ -490,7 +490,7 @@ async def test_workspace_isolation_enforced(repo: _TestRepository, test_workspac
 
     # find_all should only return entities in the set workspace
     other_ws = str(uuid4())
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=other_ws,
         name="other-workspace",
@@ -519,7 +519,7 @@ def test_workspace_isolation_error_on_unset() -> None:
 @pytest.mark.unit
 def test_get_table_columns() -> None:
     """Verify get_table_columns extracts columns from a model class."""
-    columns = get_table_columns(TestEntity)
+    columns = get_table_columns(_SampleEntity)
     assert "id" in columns
     assert "workspace_id" in columns
     assert "name" in columns
@@ -529,7 +529,7 @@ def test_get_table_columns() -> None:
 @pytest.mark.unit
 def test_get_primary_key_column() -> None:
     """Verify get_primary_key_column returns the PK column."""
-    pk = get_primary_key_column(TestEntity)
+    pk = get_primary_key_column(_SampleEntity)
     assert pk is not None
     assert pk.name == "id"
 
@@ -551,7 +551,7 @@ def test_build_workspace_filter() -> None:
 @pytest.mark.asyncio
 async def test_commit(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify commit() persists changes."""
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="commit-test",
@@ -569,7 +569,7 @@ async def test_commit(repo: _TestRepository, test_workspace_id: str) -> None:
 @pytest.mark.asyncio
 async def test_rollback(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify rollback() undoes uncommitted changes."""
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="rollback-test",
@@ -586,7 +586,7 @@ async def test_rollback(repo: _TestRepository, test_workspace_id: str) -> None:
 @pytest.mark.asyncio
 async def test_refresh(repo: _TestRepository, test_workspace_id: str) -> None:
     """Verify refresh() reloads entity from database."""
-    entity = TestEntity(
+    entity = _SampleEntity(
         id=uuid4(),
         workspace_id=test_workspace_id,
         name="refresh-test",

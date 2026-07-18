@@ -546,11 +546,8 @@ class _TEntityQueryRepo(QueryRepository):
 # ===========================================================================
 
 
-@pytest.fixture(scope="module")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+# event_loop fixture removed — pytest-asyncio handles module-scoped loops via
+# @pytest.mark.asyncio(loop_scope="module") on each test instead.
 
 
 @pytest.fixture(scope="module")
