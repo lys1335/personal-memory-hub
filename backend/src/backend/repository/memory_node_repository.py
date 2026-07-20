@@ -53,6 +53,9 @@ class MemoryNodeRepository(BaseRepository):  # type: ignore[type-arg]
             session: The SQLAlchemy async session for database operations.
         """
         super().__init__(session)
+        import logging
+
+        self._log = logging.getLogger(__name__)
         from backend.shared.domain.memory_models import MemoryNode
 
         self._model_class = MemoryNode
@@ -542,6 +545,80 @@ class MemoryNodeRepository(BaseRepository):  # type: ignore[type-arg]
         stmt = stmt.offset(offset).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+
+    async def archive(self, *, memory_id: UUID, workspace_id: UUID) -> UUID:
+        """Archive a memory node by creating a superseded copy.
+
+        Since MemoryNode is immutable, we cannot update its status directly.
+        Instead, create a new node with status='superseded' and
+        parent_node_id pointing to the original memory node.
+
+        Args:
+            memory_id: The memory node to archive.
+            workspace_id: Workspace scope.
+
+        Returns:
+            The ID of the newly created superseded node.
+
+        Raises:
+            NotFoundError: If the original memory node does not exist.
+            RepositoryError: If creation fails.
+        """
+        from backend.shared.domain.memory_models import MemoryNode, MemoryRelationship
+        from backend.shared.infrastructure.uuid import generate_uuid
+
+        original = await self.find_by_id(memory_id)
+        if original is None:
+            raise NotFoundError(
+                entity_type="memory_node",
+                entity_id=str(memory_id),
+            )
+
+        superseded = MemoryNode(
+            id=generate_uuid(),
+            workspace_id=workspace_id,
+            entity_id=original.entity_id,
+            level=original.level,
+            node_type=original.node_type,
+            content=original.content,
+            summary=original.summary,
+            observation_type=original.observation_type,
+            confidence=original.confidence,
+            importance=original.importance,
+            signal_strength=original.signal_strength,
+            status="superseded",
+            source=original.source,
+            generated_by="archive_derived",
+            evidence_links=original.evidence_links,
+            contradict_evidence=original.contradict_evidence,
+            metadata=original.metadata,
+            parent_node_id=memory_id,
+        )
+
+        try:
+            superseded_id = await self.create(superseded)
+        except IntegrityError as exc:
+            raise self._map_integrity_error(exc) from exc
+
+        # Create SUPERSEDES relationship linking superseded -> original
+        try:
+            rel = MemoryRelationship(
+                id=generate_uuid(),
+                workspace_id=workspace_id,
+                source_node_id=superseded_id,
+                target_node_id=memory_id,
+                relationship_type="supports",
+                contribution_weight=1.0,
+            )
+            self.session.add(rel)
+            await self.session.flush()
+        except Exception as exc:
+            self._log.warning(
+                "Failed to create supersede relationship for archived node: %s", exc
+            )
+
+        return superseded_id
 
     # ------------------------------------------------------------------
     # Internal Helpers

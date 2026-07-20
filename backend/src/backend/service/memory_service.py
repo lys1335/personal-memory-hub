@@ -682,6 +682,17 @@ class MemoryService(BaseService):
 
         from backend.shared.domain.memory_models import Archive
 
+        # Mark source memory as archived via superseded copy
+        try:
+            await self._memory_node_repo.archive(
+                memory_id=memory_id,
+                workspace_id=workspace_id,
+            )
+        except Exception as exc:
+            self._log.warning(
+                "Failed to mark source memory as archived: %s", exc
+            )
+
         archive = Archive(
             id=self._generate_id(),
             workspace_id=workspace_id,

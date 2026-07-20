@@ -147,13 +147,13 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
             List of matching Entity objects.
         """
         stmt = select(self._model_class).where(
-            self._model_class.workspace_id == str(workspace_id)
+            self._model_class.workspace_id == workspace_id
         )
 
         if entity_types:
             stmt = stmt.where(self._model_class.entity_type.in_(entity_types))
         if area_id:
-            stmt = stmt.where(self._model_class.area_id == str(area_id))
+            stmt = stmt.where(self._model_class.area_id == area_id)
 
         if order_by and hasattr(self._model_class, order_by):
             order_col = getattr(self._model_class, order_by)
@@ -183,7 +183,7 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
             The Entity if found, None otherwise.
         """
         stmt = select(self._model_class).where(
-            self._model_class.workspace_id == str(workspace_id),
+            self._model_class.workspace_id == workspace_id,
             self._model_class.canonical_name == canonical_name,
         )
         if entity_type:
@@ -208,7 +208,7 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
         """
         # ARRAY contains operator: alias = ANY(aliases)
         stmt = select(self._model_class).where(
-            self._model_class.workspace_id == str(workspace_id),
+            self._model_class.workspace_id == workspace_id,
             self._model_class.aliases.contains([alias]),
         )
         result = await self.session.execute(stmt)
@@ -230,8 +230,8 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
             List of matching Entity objects.
         """
         stmt = select(self._model_class).where(
-            self._model_class.workspace_id == str(workspace_id),
-            self._model_class.area_id == str(area_id),
+            self._model_class.workspace_id == workspace_id,
+            self._model_class.area_id == area_id,
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -252,8 +252,8 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
             List of child Entity objects.
         """
         stmt = select(self._model_class).where(
-            self._model_class.workspace_id == str(workspace_id),
-            self._model_class.parent_entity_id == str(parent_entity_id),
+            self._model_class.workspace_id == workspace_id,
+            self._model_class.parent_entity_id == parent_entity_id,
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -393,7 +393,7 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
         from backend.shared.domain.memory_models import Area
 
         stmt = select(Area).where(
-            Area.workspace_id == str(workspace_id),
+            Area.workspace_id == workspace_id,
             Area.name == name,
         )
         result = await self.session.execute(stmt)
@@ -417,8 +417,8 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
         from backend.shared.domain.memory_models import Area
 
         stmt = select(Area).where(
-            Area.workspace_id == str(workspace_id),
-            Area.parent_area_id == str(parent_area_id),
+            Area.workspace_id == workspace_id,
+            Area.parent_area_id == parent_area_id,
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -501,7 +501,7 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
         from backend.shared.domain.memory_models import UserProfile
 
         stmt = select(UserProfile).where(
-            UserProfile.workspace_id == str(workspace_id),
+            UserProfile.workspace_id == workspace_id,
             UserProfile.external_user_id == external_user_id,
         )
         result = await self.session.execute(stmt)
@@ -525,8 +525,8 @@ class EntityRepository(BaseRepository):  # type: ignore[type-arg]
         from backend.shared.domain.memory_models import UserProfile
 
         stmt = select(UserProfile).where(
-            UserProfile.workspace_id == str(workspace_id),
-            UserProfile.id == str(user_id),
+            UserProfile.workspace_id == workspace_id,
+            UserProfile.id == user_id,
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
