@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  memory-hub-db:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${PMH_DB_PASSWORD:-postgres}
+      POSTGRES_DB: memory_hub
+    ports:
+      - "15432:5432"
+    volumes:
+      - memory-hub-db-data:/var/lib/postgresql/data
+    networks:
+      - personal-memory-hub_default
+
+  memory-hub-app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      - memory-hub-db
+    environment:
+      PMH_DATABASE_URL: postgresql+asyncpg://postgres:${PMH_DB_PASSWORD:-postgres}@memory-hub-db:5432/memory_hub
+      PMH_SECRET_KEY: ${PMH_SECRET_KEY:-changeme}
+      PMH_REDIS_URL: ${PMH_REDIS_URL:-redis://localhost:6379/0}
+      PMH_EMBEDDING_MODEL: ${PMH_EMBEDDING_MODEL:-nomic-embed-text}
+      PMH_OLLAMA_BASE_URL: ${PMH_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    ports:
+      - "8000:8000"
+    networks:
+      - personal-memory-hub_default
+
+  memoryhub-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.memoryhub-proxy
+    depends_on:
+      - memory-hub-app
+    environment:
+      MEMORYHUB_URL: http://memory-hub-app:8000
+      OLLAMA_URL: http://host.docker.internal:11434
+    ports:
+      - "8765:8765"
+    networks:
+      - personal-memory-hub_default
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    depends_on:
+      - memoryhub-proxy
+    environment:
+      USE_OLLAMA_DOCKER: "false"
+      OLLAMA_BASE_URL: http://memoryhub-proxy:8765
+      OPENAI_API_KEY: bypass
+      WEBUI_AUTH: "false"
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui-data:/app/data
+    networks:
+      - personal-memory-hub_default
+
+volumes:
+  memory-hub-db-data:
+  open-webui-data:
+
+networks:
+  personal-memory-hub_default:
+    external: true
