@@ -10,7 +10,6 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -19,14 +18,14 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.shared.infrastructure.config.settings import get_settings
-from backend.shared.infrastructure.database.engine import get_engine, get_session_factory
 from backend.entry.rest_adapter import RESTAdapter
+from backend.service.entity_service import EntityService
 from backend.service.memory_service import MemoryService
 from backend.service.query_service import QueryService
-from backend.service.entity_service import EntityService
 from backend.service.reflection_service import ReflectionService
 from backend.service.task_service import TaskService
+from backend.shared.infrastructure.config.settings import get_settings
+from backend.shared.infrastructure.database.engine import get_engine, get_session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -40,18 +39,18 @@ async def get_session() -> AsyncSession:
 
 def get_repositories(session: AsyncSession = Depends(get_session)):
     """Factory to create all repository instances for a request."""
-    from backend.repository.memory_node_repository import MemoryNodeRepository
-    from backend.repository.evidence_repository import EvidenceRepository
-    from backend.repository.relationship_repository import RelationshipRepository
     from backend.repository.archive_repository import ArchiveRepository
+    from backend.repository.candidate_repository import CandidateRepository
+    from backend.repository.entity_query_repository import EntityQueryRepository
+    from backend.repository.entity_repository import EntityRepository
+    from backend.repository.evidence_repository import EvidenceRepository
+    from backend.repository.memory_node_repository import MemoryNodeRepository
+    from backend.repository.memory_query_repository import MemoryQueryRepository
+    from backend.repository.relationship_repository import RelationshipRepository
     from backend.repository.tag_repository import TagRepository
     from backend.repository.task_repository import TaskRepository
-    from backend.repository.memory_query_repository import MemoryQueryRepository
-    from backend.repository.entity_repository import EntityRepository
-    from backend.repository.entity_query_repository import EntityQueryRepository
-    from backend.repository.vector_query_repository import VectorQueryRepository
     from backend.repository.vector_doc_repository import VectorDocRepository
-    from backend.repository.candidate_repository import CandidateRepository
+    from backend.repository.vector_query_repository import VectorQueryRepository
 
     return {
         "memory_node": MemoryNodeRepository(session),

@@ -27,10 +27,10 @@ logger = logging.getLogger(__name__)
 def main():
     """Main entry point for the CLI."""
     logger.info("Starting Personal Memory Hub")
-    
+
     # Create repository instances
     session_factory = get_session_factory()
-    
+
     memory_node_repo = MemoryNodeRepository(session_factory)
     evidence_repo = EvidenceRepository(session_factory)
     relationship_repo = RelationshipRepository(session_factory)
@@ -38,9 +38,9 @@ def main():
     tag_repo = TagRepository(session_factory)
     task_repo = TaskRepository(session_factory)
     memory_query_repo = MemoryQueryRepository(session_factory)
-    
+
     # Create memory service instance with all dependencies
-    memory_service = MemoryService(
+    MemoryService(
         memory_node_repo=memory_node_repo,
         evidence_repo=evidence_repo,
         relationship_repo=relationship_repo,
@@ -49,7 +49,7 @@ def main():
         task_repo=task_repo,
         memory_query_repo=memory_query_repo,
     )
-    
+
     logger.info("MemoryService initialized successfully")
     print("Personal Memory Hub ready!")
     print("Use 'memory-hub --help' for available commands")

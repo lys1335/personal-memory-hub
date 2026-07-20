@@ -1,11 +1,15 @@
 """Recreate all database tables."""
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, '/app/src')
 os.chdir('/app/src')
 
-from backend.shared.infrastructure.database.engine import get_engine
-from backend.shared.domain.memory_models import Base
 import asyncio
+
+from backend.shared.domain.memory_models import Base
+from backend.shared.infrastructure.database.engine import get_engine
+
 
 async def main():
     engine = get_engine()
