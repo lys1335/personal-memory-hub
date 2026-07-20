@@ -112,12 +112,19 @@ ignore_missing_imports = true
 
 # Exclude integration helper scripts from strict type checking
 [[tool.mypy.overrides]]
-module = [
-    "backend.app",
-    "backend.cli",
-    "backend.service.embedding_service",
-    "scripts.recreate_tables",
-]
+module = "backend.app"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "backend.cli"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "backend.service.embedding_service"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "scripts.recreate_tables"
 ignore_errors = true
 
 # Pytest
