@@ -72,6 +72,10 @@ def get_services(
     session: AsyncSession = Depends(get_session),
     repos: dict = Depends(get_repositories),
 ):
+    # Initialize embedding service (uses Ollama nomic-embed-text)
+    from backend.service.embedding_service import EmbeddingService
+    embedding_service = EmbeddingService()
+
     memory_service = MemoryService(
         memory_node_repo=repos["memory_node"],
         evidence_repo=repos["evidence"],
@@ -80,6 +84,8 @@ def get_services(
         tag_repo=repos["tag"],
         task_repo=repos["task"],
         memory_query_repo=repos["memory_query"],
+        vector_doc_repo=repos["vector_doc"],
+        embedding_service=embedding_service,
     )
     query_service = QueryService(
         memory_node_repo=repos["memory_node"],

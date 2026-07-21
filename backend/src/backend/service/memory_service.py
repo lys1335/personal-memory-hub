@@ -79,6 +79,8 @@ class MemoryService(BaseService):
         tag_repo: TagRepository,
         task_repo: TaskRepository,
         memory_query_repo: MemoryQueryRepository,
+        vector_doc_repo: "VectorDocRepository | None" = None,
+        embedding_service: "EmbeddingService | None" = None,
     ) -> None:
         """Initialize MemoryService with required repositories.
 
@@ -90,6 +92,8 @@ class MemoryService(BaseService):
             tag_repo: Repository for Tag management.
             task_repo: Repository for Task management.
             memory_query_repo: Repository for memory read queries.
+            vector_doc_repo: Optional repository for VectorDoc persistence.
+            embedding_service: Optional service for generating embeddings.
         """
         super().__init__("MemoryService")
         self._memory_node_repo = memory_node_repo
@@ -99,6 +103,8 @@ class MemoryService(BaseService):
         self._tag_repo = tag_repo
         self._task_repo = task_repo
         self._memory_query_repo = memory_query_repo
+        self._vector_doc_repo = vector_doc_repo
+        self._embedding_service = embedding_service
 
     # ------------------------------------------------------------------
     # Capture Capability
@@ -206,6 +212,31 @@ class MemoryService(BaseService):
 
         # Commit per G-106 (Transaction Ownership)
         await self._commit(self._memory_node_repo.session)
+
+        # Generate vector embedding for RAG retrieval
+        if self._embedding_service and self._vector_doc_repo and content.strip():
+            try:
+                from backend.shared.domain.memory_models import VectorDoc
+                from backend.shared.infrastructure.uuid import generate_uuid
+                import json as _json
+
+                embedding = await self._embedding_service.generate(content.strip())
+                if embedding is not None:
+                    vector_doc = VectorDoc(
+                        id=generate_uuid(),
+                        workspace_id=workspace_id,
+                        source_type="memory_node",
+                        source_id=memory_id,
+                        memory_level=level,
+                        content=content.strip(),
+                        importance_score=importance,
+                        embedding=_json.dumps(embedding),
+                    )
+                    await self._vector_doc_repo.create(vector_doc)
+                    await self._commit(self._vector_doc_repo.session)
+                    self._log.info("Generated vector embedding for memory %s", memory_id)
+            except Exception as exc:
+                self._log.warning("Failed to generate vector embedding for memory %s: %s", memory_id, exc)
 
         self._log_operation(
             "capture_memory",
