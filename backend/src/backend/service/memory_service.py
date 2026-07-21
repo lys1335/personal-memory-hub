@@ -204,6 +204,9 @@ class MemoryService(BaseService):
         except RepositoryError as exc:
             raise self.translate_repository_error(exc) from exc
 
+        # Commit per G-106 (Transaction Ownership)
+        await self._commit(self._memory_node_repo.session)
+
         self._log_operation(
             "capture_memory",
             workspace_id=workspace_id,
