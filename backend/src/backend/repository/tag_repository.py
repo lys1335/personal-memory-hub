@@ -343,6 +343,21 @@ class TagRepository(BaseRepository):  # type: ignore[type-arg]
             has_prev=page_number > 1,
         )
 
+
+    async def soft_delete_impl(self, id):
+        """Tagss are immutable: soft_delete_impl is prohibited.
+
+        Args:
+            id: The entity ID to soft-delete.
+
+        Raises:
+            DomainIntegrityError: Always, because entities cannot be deleted.
+        """
+        raise DomainIntegrityError(
+            entity_type="tags",
+            constraint="Tags are immutable - no DELETE allowed",
+        )
+
     # ------------------------------------------------------------------
     # Internal Helpers
     # ------------------------------------------------------------------

@@ -405,6 +405,21 @@ class ArchiveRepository(BaseRepository):  # type: ignore[type-arg]
             constraint="Archives are immutable - no DELETE allowed",
         )
 
+
+    async def soft_delete_impl(self, id):
+        """Archivess are immutable: soft_delete_impl is prohibited.
+
+        Args:
+            id: The entity ID to soft-delete.
+
+        Raises:
+            DomainIntegrityError: Always, because entities cannot be deleted.
+        """
+        raise DomainIntegrityError(
+            entity_type="archives",
+            constraint="Archives are immutable - no DELETE allowed",
+        )
+
     # ------------------------------------------------------------------
     # Internal Helpers
     # ------------------------------------------------------------------

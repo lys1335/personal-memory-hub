@@ -429,6 +429,21 @@ class TaskRepository(BaseRepository):  # type: ignore[type-arg]
             has_prev=page_number > 1,
         )
 
+
+    async def soft_delete_impl(self, id):
+        """Taskss are immutable: soft_delete_impl is prohibited.
+
+        Args:
+            id: The entity ID to soft-delete.
+
+        Raises:
+            DomainIntegrityError: Always, because entities cannot be deleted.
+        """
+        raise DomainIntegrityError(
+            entity_type="tasks",
+            constraint="Tasks are immutable - no DELETE allowed",
+        )
+
     # ------------------------------------------------------------------
     # Internal Helpers
     # ------------------------------------------------------------------
