@@ -155,7 +155,7 @@ class MemoryNode(Base):
             name="chk_memory_source",
         ),
         CheckConstraint(
-            "generated_by IN ('user', 'manual', 'ai_reflect', 'archive')",
+            "generated_by IN ('user', 'manual', 'ai_reflect', 'archive', 'import')",
             name="chk_memory_generated_by",
         ),
         CheckConstraint("level IN (1, 2, 3)", name="chk_level_valid"),
