@@ -168,8 +168,8 @@ class MemoryNode(Base):
     workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
-    entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
+    entity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("entities.id", ondelete="SET NULL"), nullable=True
     )
     parent_node_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("memory_nodes.id", ondelete="SET NULL"), nullable=True
