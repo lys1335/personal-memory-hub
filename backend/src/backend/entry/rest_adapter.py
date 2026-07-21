@@ -71,7 +71,7 @@ class RESTAdapter:
     # Memory Endpoints
     # ------------------------------------------------------------------
 
-    def handle_capture_memory(
+    async def handle_capture_memory(
         self,
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
@@ -89,7 +89,7 @@ class RESTAdapter:
 
         # Step 4: Service Execution
         try:
-            result = self._services["memory"].capture_memory(**cmd)
+            result = await self._services["memory"].capture_memory(**cmd)
         except ValidationError as exc:
             return self._domain_error_response(request_id, exc)
         except Exception as exc:
