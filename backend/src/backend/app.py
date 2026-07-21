@@ -185,7 +185,7 @@ async def capture_memory(body: dict[str, Any], services: dict = Depends(get_serv
     """POST /memories - capture a new memory."""
     adapter = RESTAdapter(services)
     try:
-        response = adapter.handle_capture_memory(body)
+        response = await adapter.handle_capture_memory(body)
     except Exception as exc:
         logger.error("capture_memory error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
