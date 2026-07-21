@@ -72,9 +72,14 @@ def get_services(
     session: AsyncSession = Depends(get_session),
     repos: dict = Depends(get_repositories),
 ):
-    # Initialize embedding service (uses Ollama nomic-embed-text)
+    # Initialize embedding service using configured Ollama URL
     from backend.service.embedding_service import EmbeddingService
-    embedding_service = EmbeddingService()
+    from backend.shared.infrastructure.config.settings import get_settings
+    _settings = get_settings()
+    embedding_service = EmbeddingService(
+        ollama_base_url=_settings.OLLAMA_BASE_URL,
+        model=_settings.EMBEDDING_MODEL,
+    )
 
     memory_service = MemoryService(
         memory_node_repo=repos["memory_node"],
