@@ -118,7 +118,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown events."""
     # Startup
     settings = get_settings()
-    logger.info(f"Starting {settings.APP_NAME} v0.1.0")
+    logger.info(f"Starting {settings.NAME} v0.1.0")
     logger.info(f"Database URL: {settings.DATABASE_URL[:50]}...")
 
     engine = get_engine()

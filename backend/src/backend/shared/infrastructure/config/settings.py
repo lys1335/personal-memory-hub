@@ -28,7 +28,7 @@ class AppSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_prefix="APP_",
+        env_prefix="PMH_",
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
@@ -37,8 +37,8 @@ class AppSettings(BaseSettings):
     # ------------------------------------------------------------------
     # General
     # ------------------------------------------------------------------
-    APP_NAME: str = "personal-memory-hub"
-    APP_VERSION: str = "0.1.0"
+    NAME: str = "personal-memory-hub"
+    VERSION: str = "0.1.0"
     LOG_LEVEL: LogLevel = LogLevel.INFO
 
     # ------------------------------------------------------------------
@@ -59,9 +59,20 @@ class AppSettings(BaseSettings):
     VECTOR_DIMENSION: int = 1536  # OpenAI ada-002 default
 
     # ------------------------------------------------------------------
+    # Authentication
+    # ------------------------------------------------------------------
+    SECRET_KEY: str = "changeme"
+
+    # ------------------------------------------------------------------
     # Redis (V2+ placeholder)
     # ------------------------------------------------------------------
     REDIS_URL: str = ""
+
+    # ------------------------------------------------------------------
+    # Vector / Embeddings
+    # ------------------------------------------------------------------
+    EMBEDDING_MODEL: str = "nomic-embed-text"
+    OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
 
     # ------------------------------------------------------------------
     # LLM / OpenRouter (deferred to D3+)

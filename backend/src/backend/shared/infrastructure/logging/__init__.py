@@ -1,7 +1,7 @@
 """Logging configuration.
 
 Uses structlog for structured JSON logging.
-Log level is read from settings (APP_LOG_LEVEL).
+Log level is read from settings (PMH_LOG_LEVEL).
 """
 
 from __future__ import annotations
