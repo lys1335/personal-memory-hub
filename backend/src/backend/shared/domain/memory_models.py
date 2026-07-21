@@ -77,16 +77,16 @@ class Evidence(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
     )
     area_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+        ForeignKey("areas.id", ondelete="SET NULL")
     )
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.user_profiles.id", ondelete="SET NULL")
+        ForeignKey("user_profiles.id", ondelete="SET NULL")
     )
 
     evidence_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -166,16 +166,16 @@ class MemoryNode(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
     )
     parent_node_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.memory_nodes.id", ondelete="SET NULL")
+        ForeignKey("memory_nodes.id", ondelete="SET NULL")
     )
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.user_profiles.id", ondelete="SET NULL")
+        ForeignKey("user_profiles.id", ondelete="SET NULL")
     )
 
     level: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -242,13 +242,13 @@ class MemoryEvidence(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     memory_node_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("memory_nodes.id", ondelete="CASCADE"), nullable=False
     )
     evidence_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.evidences.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("evidences.id", ondelete="CASCADE"), nullable=False
     )
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False, default="supports")
@@ -289,10 +289,10 @@ class Archive(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     source_archive_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.archives.id", ondelete="SET NULL")
+        ForeignKey("archives.id", ondelete="SET NULL")
     )
 
     period_start: Mapped[date] = mapped_column(Date, nullable=False)
@@ -336,7 +336,7 @@ class Tag(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -377,10 +377,10 @@ class TagLink(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     tag_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.tags.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("tags.id", ondelete="CASCADE"), nullable=False
     )
 
     target_type: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -428,16 +428,16 @@ class Entity(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     area_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+        ForeignKey("areas.id", ondelete="SET NULL")
     )
     parent_entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
+        ForeignKey("entities.id", ondelete="SET NULL")
     )
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.user_profiles.id", ondelete="SET NULL")
+        ForeignKey("user_profiles.id", ondelete="SET NULL")
     )
 
     entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -485,10 +485,10 @@ class Area(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     parent_area_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+        ForeignKey("areas.id", ondelete="SET NULL")
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -557,7 +557,7 @@ class UserProfile(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     external_user_id: Mapped[str | None] = mapped_column(String(255))
     display_name: Mapped[str | None] = mapped_column(String(255))
@@ -604,13 +604,13 @@ class EntityRelationship(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     source_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
     )
     target_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
     )
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -658,13 +658,13 @@ class MemoryRelationship(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     source_node_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("memory_nodes.id", ondelete="CASCADE"), nullable=False
     )
     target_node_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.memory_nodes.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("memory_nodes.id", ondelete="CASCADE"), nullable=False
     )
 
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -720,13 +720,13 @@ class Candidate(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
     )
     area_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+        ForeignKey("areas.id", ondelete="SET NULL")
     )
 
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -800,13 +800,13 @@ class Task(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
+        ForeignKey("entities.id", ondelete="SET NULL")
     )
     area_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+        ForeignKey("areas.id", ondelete="SET NULL")
     )
 
     task_type: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -871,15 +871,15 @@ class VectorDoc(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.workspace.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     source_id: Mapped[UUID] = mapped_column(nullable=False)
     area_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.areas.id", ondelete="SET NULL")
+        ForeignKey("areas.id", ondelete="SET NULL")
     )
     entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("memory_hub.entities.id", ondelete="SET NULL")
+        ForeignKey("entities.id", ondelete="SET NULL")
     )
 
     memory_level: Mapped[int | None] = mapped_column(Integer)
