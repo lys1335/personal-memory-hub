@@ -33,9 +33,8 @@ NOT imported by: Service Layer, Engine Layer (boundary rule G-013).
 """
 
 from __future__ import annotations
-from datetime import datetime
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -55,6 +54,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.shared.infrastructure.database.engine import Base
 
+# Type alias for __table_args__ to satisfy mypy strict mode
+TableArgs = tuple[Any, ...]
+
+
 # ---------------------------------------------------------------------------
 # Evidence — 09.4.6
 # ---------------------------------------------------------------------------
@@ -68,10 +71,10 @@ class Evidence(Base):
     """
 
     __tablename__ = "evidences"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint("char_length(content) > 0", name="chk_evidence_not_empty"),
         {
-            
+
         },
     )
 
@@ -128,7 +131,7 @@ class MemoryNode(Base):
     """
 
     __tablename__ = "memory_nodes"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "(level = 1 AND observation_type IN ("
             "'activity', 'decision', 'preference', 'fact', "
@@ -160,7 +163,7 @@ class MemoryNode(Base):
         ),
         CheckConstraint("level IN (1, 2, 3)", name="chk_level_valid"),
         {
-            
+
         },
     )
 
@@ -228,7 +231,7 @@ class MemoryEvidence(Base):
     """
 
     __tablename__ = "memory_evidences"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         UniqueConstraint("memory_node_id", "evidence_id", name="uk_memory_evidences"),
         CheckConstraint(
             "relationship_type IN ('supports', 'derived_from', 'contradicts', 'attenuates')",
@@ -236,7 +239,7 @@ class MemoryEvidence(Base):
         ),
         CheckConstraint("contribution_weight >= 0.0 AND contribution_weight <= 1.0", name="chk_weight_range"),
         {
-            
+
         },
     )
 
@@ -276,14 +279,14 @@ class Archive(Base):
     """
 
     __tablename__ = "archives"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "archive_type IN ('monthly', 'yearly')", name="chk_archive_type"
         ),
         CheckConstraint("period_start <= period_end", name="chk_archive_period"),
         CheckConstraint("source_count >= 0", name="chk_source_count_non_negative"),
         {
-            
+
         },
     )
 
@@ -326,11 +329,11 @@ class Tag(Base):
     """
 
     __tablename__ = "tags"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         UniqueConstraint("workspace_id", "name", name="uk_tags_workspace_name"),
         CheckConstraint("tag_type IN ('system', 'ai', 'user')", name="chk_tag_type"),
         {
-            
+
         },
     )
 
@@ -365,13 +368,13 @@ class TagLink(Base):
     """
 
     __tablename__ = "tag_links"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         UniqueConstraint("tag_id", "target_type", "target_id", name="uk_tag_links"),
         CheckConstraint(
             "target_type IN ('entity', 'memory_node', 'archive')", name="chk_target_type"
         ),
         {
-            
+
         },
     )
 
@@ -410,7 +413,7 @@ class Entity(Base):
     """
 
     __tablename__ = "entities"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "entity_type IN ("
             "'Project', 'Person', 'Organization', 'Tool', 'Technology',"
@@ -422,7 +425,7 @@ class Entity(Base):
             "workspace_id", "entity_type", "canonical_name", name="uk_entities_type_name"
         ),
         {
-            
+
         },
     )
 
@@ -455,13 +458,13 @@ class Entity(Base):
     updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships (self-referential hierarchy)
-    parent: Mapped["Entity | None"] = relationship(
+    parent: Mapped[Entity | None] = relationship(
         "Entity",
         remote_side=[id],
         back_populates="children",
         lazy="select",
     )
-    children: Mapped[list["Entity"]] = relationship(
+    children: Mapped[list[Entity]] = relationship(
         "Entity",
         back_populates="parent",
         lazy="selectin",
@@ -481,10 +484,10 @@ class Area(Base):
     """
 
     __tablename__ = "areas"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         UniqueConstraint("workspace_id", "name", name="uk_areas_workspace_name"),
         {
-            
+
         },
     )
 
@@ -505,13 +508,13 @@ class Area(Base):
     updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships (self-referential hierarchy)
-    parent: Mapped["Area | None"] = relationship(
+    parent: Mapped[Area | None] = relationship(
         "Area",
         remote_side=[id],
         back_populates="children",
         lazy="select",
     )
-    children: Mapped[list["Area"]] = relationship(
+    children: Mapped[list[Area]] = relationship(
         "Area",
         back_populates="parent",
         lazy="selectin",
@@ -531,9 +534,9 @@ class Workspace(Base):
     """
 
     __tablename__ = "workspace"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         {
-            
+
         },
     )
 
@@ -558,10 +561,10 @@ class UserProfile(Base):
     """
 
     __tablename__ = "user_profiles"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         UniqueConstraint("workspace_id", "external_user_id", name="uk_user_profiles_external"),
         {
-            
+
         },
     )
 
@@ -594,7 +597,7 @@ class EntityRelationship(Base):
     """
 
     __tablename__ = "relationships"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "relationship_type IN ("
             "'belongs_to', 'part_of', 'uses', 'depends_on', 'related_to',"
@@ -608,7 +611,7 @@ class EntityRelationship(Base):
             "source_id", "target_id", "relationship_type", name="uk_relationship_direction"
         ),
         {
-            
+
         },
     )
 
@@ -645,7 +648,7 @@ class MemoryRelationship(Base):
     """
 
     __tablename__ = "memory_relationships"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "relationship_type IN ('supports', 'derived_from', 'contradicts', 'attenuates')",
             name="chk_memory_relationship_type",
@@ -662,7 +665,7 @@ class MemoryRelationship(Base):
             name="uk_memory_relationship_direction",
         ),
         {
-            
+
         },
     )
 
@@ -706,7 +709,7 @@ class Candidate(Base):
     """
 
     __tablename__ = "candidates"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "candidate_type IN ('pattern', 'belief')",
             name="chk_candidate_type",
@@ -724,7 +727,7 @@ class Candidate(Base):
             name="chk_candidate_evidence_chain_not_empty",
         ),
         {
-            
+
         },
     )
 
@@ -789,7 +792,7 @@ class Task(Base):
     """
 
     __tablename__ = "tasks"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "task_type IN ('INGESTION', 'REFLECTION', 'ACTIVATION', 'ARCHIVE')",
             name="chk_task_type",
@@ -804,7 +807,7 @@ class Task(Base):
 
         ),
         {
-            
+
         },
     )
 
@@ -861,7 +864,7 @@ class VectorDoc(Base):
     """
 
     __tablename__ = "vector_documents"
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] = (
         CheckConstraint(
             "source_type IN ('memory_node', 'archive', 'entity_summary')",
             name="chk_vector_doc_source_type",
@@ -875,7 +878,7 @@ class VectorDoc(Base):
             name="chk_vector_doc_importance_score",
         ),
         {
-            
+
         },
     )
 
@@ -885,10 +888,10 @@ class VectorDoc(Base):
     )
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     source_id: Mapped[UUID] = mapped_column(nullable=False)
-    area_id: Mapped["UUID | None"] = mapped_column(
+    area_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("areas.id", ondelete="SET NULL"), nullable=True
     )
-    entity_id: Mapped["UUID | None"] = mapped_column(
+    entity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("entities.id", ondelete="SET NULL"), nullable=True
     )
 

@@ -430,7 +430,7 @@ class TaskRepository(BaseRepository):  # type: ignore[type-arg]
         )
 
 
-    async def soft_delete_impl(self, id):
+    async def soft_delete_impl(self, id: UUID) -> None:
         """Taskss are immutable: soft_delete_impl is prohibited.
 
         Args:

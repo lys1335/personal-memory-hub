@@ -215,7 +215,7 @@ class QueryService(BaseService):
                 field="query",
             )
 
-        results = await self._memory_query_repo.search_by_keyword(  # type: ignore[attr-defined]  # type: ignore[attr-defined]
+        results = await self._memory_query_repo.search_by_keyword(
             workspace_id=workspace_id,
             query=query.strip(),
             entity_id=entity_id,

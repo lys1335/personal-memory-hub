@@ -224,15 +224,14 @@ def inject_memories(body: dict) -> dict:
 
 
 def build_context(memories: list[str]) -> str:
-    """Build context string from retrieved memories — optimized for small models."""
+    """Build context string from retrieved memories — include full content."""
     if not memories:
         return ""
-    # Extract key facts into a compact, model-friendly format
     ctx = "\n\n[PERSONAL MEMORY DATABASE]\n"
     for i, m in enumerate(memories, 1):
-        lines = [l.strip() for l in m.split('\n') if l.strip()]
-        summary = lines[0][:200] if lines else m[:200]
-        ctx += f"[MEMORY {i}] {summary}\n"
+        # Include full memory content, truncated only at 3000 chars max per item
+        content = m.strip()[:3000]
+        ctx += f"[MEMORY {i}]\n{content}\n\n"
     ctx += "[END MEMORY DATABASE]\n"
     ctx += "CRITICAL RULE: You MUST use the above personal memory database when answering questions about the user's life, investments, NISA, funds, family, or personal preferences. Do NOT make up information. If the answer is in the memory database, quote it directly.\n"
     return ctx
@@ -284,8 +283,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self._proxy_to_ollama("GET", path, self.headers, None)
 
     def do_POST(self):
-        """POST requests: intercept /api/chat to inject MemoryHub context."""
-        if self.path == "/api/chat":
+        """POST requests: intercept /api/chat* to inject MemoryHub context."""
+        if self.path.startswith("/api/chat"):
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
@@ -294,25 +293,48 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 self._proxy_to_ollama("POST", self.path, self.headers, body)
                 return
 
-            request_body = inject_memories(request_body)
-            modified_body = json.dumps(request_body).encode("utf-8")
-            
-            # DEBUG: log what was injected
-            messages_after = request_body.get("messages", [])
-            for i, msg in enumerate(messages_after):
-                if msg.get("role") == "user" and "[Relevant Personal Memories]" in msg.get("content", ""):
-                    logger.info(f"[MemoryHub] Injected context into message {i}, length: {len(msg['content'])}")
-                    break
+            # Convert Open WebUI /api/chat/completions -> Ollama /api/chat
+            ollama_path = "/api/chat"
+            if self.path == "/api/chat/completions":
+                # Extract user query for memory search
+                query = extract_user_query(request_body)
+                if query:
+                    memories = search_memories(query)
+                    if memories:
+                        context = build_context(memories)
+                        logger.info(f"[MemoryHub] Injecting {len(memories)} memories into query: {query[:60]}...")
+                        logger.info(f"[MemoryHub] Context length: {len(context)} chars")
+                        # Inject into preamble/system first
+                        if "preamble" in request_body:
+                            request_body["preamble"] = context + "\n" + request_body["preamble"]
+                        elif "system" in request_body:
+                            request_body["system"] = context + "\n" + request_body["system"]
+                        else:
+                            messages = request_body.get("messages", [])
+                            if messages:
+                                messages[0]["content"] = context + "\n" + messages[0].get("content", "")
+
+            # Build Ollama-compatible body
+            ollama_body = {
+                "model": request_body.get("model", "qwen2.5:7b"),
+                "messages": request_body.get("messages", []),
+                "stream": request_body.get("stream", True),
+            }
+            # Add system prompt if present
+            if "system" in request_body:
+                ollama_body["system"] = request_body["system"]
+
+            modified_body = json.dumps(ollama_body).encode("utf-8")
 
             # Update Content-Length
             new_headers = {}
             for key, value in self.headers.items():
-                if key.lower() == "content-length":
-                    new_headers[key] = str(len(modified_body))
-                else:
-                    new_headers[key] = value
+                if key.lower() in ("host", "content-length"):
+                    continue
+                new_headers[key] = value
+            new_headers["Content-Length"] = str(len(modified_body))
 
-            self._proxy_to_ollama("POST", self.path, new_headers, modified_body)
+            self._proxy_to_ollama("POST", ollama_path, new_headers, modified_body)
         else:
             # All other POST requests forwarded unchanged
             content_length = int(self.headers.get("Content-Length", 0))

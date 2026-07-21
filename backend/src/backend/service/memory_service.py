@@ -57,6 +57,8 @@ if TYPE_CHECKING:
     from backend.repository.relationship_repository import RelationshipRepository
     from backend.repository.tag_repository import TagRepository
     from backend.repository.task_repository import TaskRepository
+    from backend.repository.vector_doc_repository import VectorDocRepository
+    from backend.service.embedding_service import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +81,8 @@ class MemoryService(BaseService):
         tag_repo: TagRepository,
         task_repo: TaskRepository,
         memory_query_repo: MemoryQueryRepository,
-        vector_doc_repo: "VectorDocRepository | None" = None,
-        embedding_service: "EmbeddingService | None" = None,
+        vector_doc_repo: VectorDocRepository | None = None,
+        embedding_service: EmbeddingService | None = None,
     ) -> None:
         """Initialize MemoryService with required repositories.
 
@@ -216,9 +218,10 @@ class MemoryService(BaseService):
         # Generate vector embedding for RAG retrieval
         if self._embedding_service and self._vector_doc_repo and content.strip():
             try:
+                import json as _json
+
                 from backend.shared.domain.memory_models import VectorDoc
                 from backend.shared.infrastructure.uuid import generate_uuid
-                import json as _json
 
                 embedding = await self._embedding_service.generate(content.strip())
                 if embedding is not None:

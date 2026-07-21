@@ -490,7 +490,7 @@ class EntityQueryRepository(QueryRepository):  # type: ignore[type-arg]
         result = await self.session.execute(stmt)
         return result.scalar_one()
 
-    async def complex_query(self, *args, **kwargs):
+    async def complex_query(self, *args: Any, **kwargs: Any) -> Any:
         """Complex query for Entity repository.
 
         This is the abstract method from QueryRepository.
@@ -522,7 +522,7 @@ class EntityQueryRepository(QueryRepository):  # type: ignore[type-arg]
             )
 
         # Return all entities for workspace
-        from sqlalchemy import select, func
+        from sqlalchemy import select
         stmt = select(self._model_class).where(
             self._model_class.workspace_id == workspace_id,
         )

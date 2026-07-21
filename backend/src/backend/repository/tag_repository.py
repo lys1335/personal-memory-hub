@@ -344,7 +344,7 @@ class TagRepository(BaseRepository):  # type: ignore[type-arg]
         )
 
 
-    async def soft_delete_impl(self, id):
+    async def soft_delete_impl(self, id: UUID) -> None:
         """Tagss are immutable: soft_delete_impl is prohibited.
 
         Args:

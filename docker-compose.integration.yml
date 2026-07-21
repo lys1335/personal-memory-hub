@@ -52,6 +52,7 @@ services:
     environment:
       USE_OLLAMA_DOCKER: "false"
       OLLAMA_BASE_URL: http://memoryhub-proxy:8765
+      OLLAMA_BASE_URLS: http://memoryhub-proxy:8765
       OPENAI_API_KEY: bypass
       WEBUI_AUTH: "false"
     ports:

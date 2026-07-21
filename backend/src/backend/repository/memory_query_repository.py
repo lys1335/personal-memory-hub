@@ -200,7 +200,7 @@ class MemoryQueryRepository(QueryRepository):  # type: ignore[type-arg]
         Returns:
             List of MemoryNode entities matching the query.
         """
-        from sqlalchemy import or_, func
+        from sqlalchemy import func
 
         stmt = select(self._model_class).where(
             self._model_class.workspace_id == workspace_id,
