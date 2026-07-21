@@ -111,7 +111,7 @@ class RESTAdapter:
             },
         )
 
-    def handle_search_memory(
+    async def handle_search_memory(
         self,
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
@@ -126,7 +126,7 @@ class RESTAdapter:
         cmd = request.to_internal_dict()
 
         try:
-            result = self._services["query"].search_by_keyword(**cmd)
+            result = await self._services["query"].search_by_keyword(**cmd)
         except Exception as exc:
             return self._domain_error_response(request_id, exc)
 
