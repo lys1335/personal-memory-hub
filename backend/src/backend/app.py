@@ -74,7 +74,6 @@ def get_services(
 ):
     """Factory to create all service instances for a request."""
     memory_service = MemoryService(
-        session=session,
         memory_node_repo=repos["memory_node"],
         evidence_repo=repos["evidence"],
         relationship_repo=repos["relationship"],
@@ -82,8 +81,6 @@ def get_services(
         tag_repo=repos["tag"],
         task_repo=repos["task"],
         memory_query_repo=repos["memory_query"],
-        entity_repo=repos["entity"],
-        vector_doc_repo=repos["vector_doc"],
     )
     query_service = QueryService(
         memory_node_repo=repos["memory_node"],
