@@ -151,7 +151,7 @@ class MemoryNode(Base):
             name="chk_memory_status",
         ),
         CheckConstraint(
-            "source IN ('user', 'manual', 'explicit_command', 'archive_derived', 'ai_reflect')",
+            "source IN ('user', 'manual', 'explicit_command', 'archive_derived', 'ai_reflect', 'import')",
             name="chk_memory_source",
         ),
         CheckConstraint(
