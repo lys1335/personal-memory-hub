@@ -291,7 +291,7 @@ if __name__ == "__main__":
     import uvicorn
 
     settings = get_settings()
-    log_level = settings.APP_LOG_LEVEL.lower()
+    log_level = settings.LOG_LEVEL.lower()
 
     uvicorn.run(
         "backend.app:app",
