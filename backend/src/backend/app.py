@@ -72,7 +72,6 @@ def get_services(
     session: AsyncSession = Depends(get_session),
     repos: dict = Depends(get_repositories),
 ):
-    """Factory to create all service instances for a request."""
     memory_service = MemoryService(
         memory_node_repo=repos["memory_node"],
         evidence_repo=repos["evidence"],
