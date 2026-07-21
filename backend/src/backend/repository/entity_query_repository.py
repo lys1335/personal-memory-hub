@@ -489,3 +489,44 @@ class EntityQueryRepository(QueryRepository):  # type: ignore[type-arg]
         )
         result = await self.session.execute(stmt)
         return result.scalar_one()
+
+    async def complex_query(self, *args, **kwargs):
+        """Complex query for Entity repository.
+
+        This is the abstract method from QueryRepository.
+        For entities, complex queries involve graph traversal and relationship analysis.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Named arguments including:
+                - workspace_id: Workspace scope.
+                - entity_id: Specific entity ID.
+                - depth: Graph traversal depth.
+                - type_filter: Optional entity type filter.
+
+        Returns:
+            Dictionary containing entity graph data.
+        """
+        workspace_id = kwargs.get("workspace_id")
+        entity_id = kwargs.get("entity_id")
+        depth = kwargs.get("depth", 1)
+
+        if not workspace_id:
+            return {"error": "workspace_id is required"}
+
+        if entity_id:
+            return await self.get_entity_graph(
+                entity_id=entity_id,
+                workspace_id=workspace_id,
+                depth=depth,
+            )
+
+        # Return all entities for workspace
+        from sqlalchemy import select, func
+        stmt = select(self._model_class).where(
+            self._model_class.workspace_id == workspace_id,
+        )
+        result = await self.session.execute(stmt)
+        entities = result.scalars().all()
+        return [dict(e.__dict__) for e in entities]
+
