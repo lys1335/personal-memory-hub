@@ -182,7 +182,7 @@ class MemoryService(BaseService):
         memory_node = MemoryNode(
             id=self._generate_id(),
             workspace_id=workspace_id,
-            entity_id=entity_id or UUID(int=0),
+            entity_id=entity_id if entity_id else None,
             level=level,
             node_type=node_type,
             content=content.strip(),
