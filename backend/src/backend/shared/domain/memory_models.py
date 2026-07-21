@@ -885,11 +885,11 @@ class VectorDoc(Base):
     )
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
     source_id: Mapped[UUID] = mapped_column(nullable=False)
-    area_id: Mapped[UUID] = mapped_column(
-        ForeignKey("areas.id", ondelete="SET NULL")
+    area_id: Mapped["UUID | None"] = mapped_column(
+        ForeignKey("areas.id", ondelete="SET NULL"), nullable=True
     )
-    entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("entities.id", ondelete="SET NULL")
+    entity_id: Mapped["UUID | None"] = mapped_column(
+        ForeignKey("entities.id", ondelete="SET NULL"), nullable=True
     )
 
     memory_level: Mapped[int | None] = mapped_column(Integer)
