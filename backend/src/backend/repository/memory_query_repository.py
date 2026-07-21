@@ -175,6 +175,52 @@ class MemoryQueryRepository(QueryRepository):  # type: ignore[type-arg]
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def search_by_keyword(
+        self,
+        *,
+        workspace_id: UUID,
+        query: str,
+        entity_id: UUID | None = None,
+        level: int | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[Any]:
+        """Search memory nodes by keyword in content field.
+
+        Uses ILIKE for case-insensitive partial matching on memory_nodes.content.
+
+        Args:
+            workspace_id: Workspace scope.
+            query: Search keyword.
+            entity_id: Optional entity filter.
+            level: Optional level filter.
+            limit: Maximum number of results.
+            offset: Pagination offset.
+
+        Returns:
+            List of MemoryNode entities matching the query.
+        """
+        from sqlalchemy import or_, func
+
+        stmt = select(self._model_class).where(
+            self._model_class.workspace_id == workspace_id,
+            self._model_class.status == "active",
+            func.lower(self._model_class.content).contains(query.lower()),
+        )
+
+        if entity_id:
+            stmt = stmt.where(self._model_class.entity_id == entity_id)
+
+        if level is not None:
+            stmt = stmt.where(self._model_class.level == level)
+
+        stmt = stmt.order_by(
+            func.length(self._model_class.content).asc()
+        )
+        stmt = stmt.offset(offset).limit(limit)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def search_with_vector(
         self,
         *,
