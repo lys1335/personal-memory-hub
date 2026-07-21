@@ -174,8 +174,8 @@ class MemoryNode(Base):
     parent_node_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("memory_nodes.id", ondelete="SET NULL"), nullable=True
     )
-    user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("user_profiles.id", ondelete="SET NULL")
+    user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_profiles.id", ondelete="SET NULL"), nullable=True
     )
 
     level: Mapped[int] = mapped_column(Integer, nullable=False)
