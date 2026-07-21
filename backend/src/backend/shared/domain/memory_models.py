@@ -454,12 +454,17 @@ class Entity(Base):
     created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
     updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
-    # Relationships
-    parent: Mapped[UUID] = relationship(
-        "Entity", remote_side=[id], lazy="select"
+    # Relationships (self-referential hierarchy)
+    parent: Mapped["Entity | None"] = relationship(
+        "Entity",
+        remote_side=[id],
+        back_populates="children",
+        lazy="select",
     )
-    children: Mapped[list[Entity]] = relationship(
-        "Entity", backref="parent_entity", lazy="selectin"
+    children: Mapped[list["Entity"]] = relationship(
+        "Entity",
+        back_populates="parent",
+        lazy="selectin",
     )
 
     __mapper_args__ = {"eager_defaults": True}
