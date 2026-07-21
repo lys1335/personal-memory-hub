@@ -504,12 +504,17 @@ class Area(Base):
     created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
     updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
-    # Relationships
-    parent_area: Mapped[UUID] = relationship(
-        "Area", remote_side=[id], lazy="select"
+    # Relationships (self-referential hierarchy)
+    parent: Mapped["Area | None"] = relationship(
+        "Area",
+        remote_side=[id],
+        back_populates="children",
+        lazy="select",
     )
-    child_areas: Mapped[list[Area]] = relationship(
-        "Area", backref="parent_area_ref", lazy="selectin"
+    children: Mapped[list["Area"]] = relationship(
+        "Area",
+        back_populates="parent",
+        lazy="selectin",
     )
 
     __mapper_args__ = {"eager_defaults": True}
