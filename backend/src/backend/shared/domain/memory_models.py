@@ -33,6 +33,7 @@ NOT imported by: Service Layer, Engine Layer (boundary rule G-013).
 """
 
 from __future__ import annotations
+from datetime import datetime
 
 from datetime import date
 from typing import Any
@@ -70,7 +71,7 @@ class Evidence(Base):
     __table_args__ = (
         CheckConstraint("char_length(content) > 0", name="chk_evidence_not_empty"),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -101,8 +102,8 @@ class Evidence(Base):
     )
     _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     memory_evidences: Mapped[list[MemoryEvidence]] = relationship(
@@ -159,7 +160,7 @@ class MemoryNode(Base):
         ),
         CheckConstraint("level IN (1, 2, 3)", name="chk_level_valid"),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -197,8 +198,8 @@ class MemoryNode(Base):
     contradict_evidence: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     memory_evidences: Mapped[list[MemoryEvidence]] = relationship(
@@ -235,7 +236,7 @@ class MemoryEvidence(Base):
         ),
         CheckConstraint("contribution_weight >= 0.0 AND contribution_weight <= 1.0", name="chk_weight_range"),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -253,7 +254,7 @@ class MemoryEvidence(Base):
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False, default="supports")
     contribution_weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     memory_node: Mapped[MemoryNode] = relationship("MemoryNode", back_populates="memory_evidences")
@@ -282,7 +283,7 @@ class Archive(Base):
         CheckConstraint("period_start <= period_end", name="chk_archive_period"),
         CheckConstraint("source_count >= 0", name="chk_source_count_non_negative"),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -300,7 +301,7 @@ class Archive(Base):
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     source_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     parent_archive: Mapped[UUID] = relationship(
@@ -329,7 +330,7 @@ class Tag(Base):
         UniqueConstraint("workspace_id", "name", name="uk_tags_workspace_name"),
         CheckConstraint("tag_type IN ('system', 'ai', 'user')", name="chk_tag_type"),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -342,7 +343,7 @@ class Tag(Base):
     tag_type: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     color: Mapped[str | None] = mapped_column(String(7))
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     tag_links: Mapped[list[TagLink]] = relationship(
@@ -370,7 +371,7 @@ class TagLink(Base):
             "target_type IN ('entity', 'memory_node', 'archive')", name="chk_target_type"
         ),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -385,7 +386,7 @@ class TagLink(Base):
     target_type: Mapped[str] = mapped_column(String(20), nullable=False)
     target_id: Mapped[UUID] = mapped_column(nullable=False)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     tag: Mapped[Tag] = relationship("Tag", back_populates="tag_links")
@@ -421,7 +422,7 @@ class Entity(Base):
             "workspace_id", "entity_type", "canonical_name", name="uk_entities_type_name"
         ),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -450,8 +451,8 @@ class Entity(Base):
     pattern_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     relationship_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     parent: Mapped[UUID] = relationship(
@@ -478,7 +479,7 @@ class Area(Base):
     __table_args__ = (
         UniqueConstraint("workspace_id", "name", name="uk_areas_workspace_name"),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -495,8 +496,8 @@ class Area(Base):
     color: Mapped[str | None] = mapped_column(String(7))
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships
     parent_area: Mapped[UUID] = relationship(
@@ -522,7 +523,7 @@ class Workspace(Base):
     __tablename__ = "workspace"
     __table_args__ = (
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -530,8 +531,8 @@ class Workspace(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -550,7 +551,7 @@ class UserProfile(Base):
     __table_args__ = (
         UniqueConstraint("workspace_id", "external_user_id", name="uk_user_profiles_external"),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -564,8 +565,8 @@ class UserProfile(Base):
     avatar_url: Mapped[str | None] = mapped_column(Text)
     _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -597,7 +598,7 @@ class EntityRelationship(Base):
             "source_id", "target_id", "relationship_type", name="uk_relationship_direction"
         ),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -616,8 +617,8 @@ class EntityRelationship(Base):
     strength: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -651,7 +652,7 @@ class MemoryRelationship(Base):
             name="uk_memory_relationship_direction",
         ),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -670,7 +671,7 @@ class MemoryRelationship(Base):
     contribution_weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     _meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -713,7 +714,7 @@ class Candidate(Base):
             name="chk_candidate_evidence_chain_not_empty",
         ),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -740,7 +741,7 @@ class Candidate(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="candidate")
 
     ingested_by: Mapped[str] = mapped_column(String(50), nullable=False, default="ingestion_pipeline")
-    ingestion_timestamp: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    ingestion_timestamp: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     verified_at: Mapped[UUID] = mapped_column()
     verified_by: Mapped[str | None] = mapped_column(String(50))
@@ -748,8 +749,8 @@ class Candidate(Base):
     modified_by: Mapped[str | None] = mapped_column(String(50))
     modification_reason: Mapped[str | None] = mapped_column(Text)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -793,7 +794,7 @@ class Task(Base):
 
         ),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -819,8 +820,8 @@ class Task(Base):
 
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
     completed_at: Mapped[UUID] = mapped_column()
 
     __mapper_args__ = {"eager_defaults": True}
@@ -864,7 +865,7 @@ class VectorDoc(Base):
             name="chk_vector_doc_importance_score",
         ),
         {
-            "schema": "memory_hub",
+            
         },
     )
 
@@ -888,8 +889,8 @@ class VectorDoc(Base):
     # The pgvector extension is enabled at DB level via engine.py.
     embedding: Mapped[str | None] = mapped_column(String)
 
-    created_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
-    updated_at: Mapped[UUID] = mapped_column(nullable=False, server_default=text("NOW()"))
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     __mapper_args__ = {"eager_defaults": True}
 
