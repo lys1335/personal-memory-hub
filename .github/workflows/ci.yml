@@ -39,7 +39,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "0.7.x"
+          version: "0.11.x"
 
       - name: Install dependencies
         working-directory: backend
@@ -74,7 +74,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "0.7.x"
+          version: "0.11.x"
 
       - name: Install dependencies
         working-directory: backend
@@ -107,7 +107,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "0.7.x"
+          version: "0.11.x"
 
       - name: Build package
         working-directory: backend
