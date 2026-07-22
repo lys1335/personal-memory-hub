@@ -111,7 +111,7 @@ async def test_session(test_session_factory: async_sessionmaker) -> AsyncGenerat
 def test_fixture_settings(settings: AppSettings) -> None:
     """Verify settings fixture returns a valid AppSettings instance."""
     assert isinstance(settings, AppSettings)
-    assert settings.APP_NAME == "personal-memory-hub"
+    assert settings.NAME == "personal-memory-hub"
 
 
 @pytest.mark.unit

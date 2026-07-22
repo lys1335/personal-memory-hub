@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 import pytest
@@ -320,8 +320,9 @@ def test_contract_validation_error_to_dict():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.asyncio
 @pytest.mark.unit
-def test_rest_capture_memory_success(rest_adapter, mock_services):
+async def test_rest_capture_memory_success(rest_adapter, mock_services):
     """Verify REST adapter captures memory successfully."""
     mock_result = CaptureResult.from_memory_id(
         memory_id=uuid4(),
@@ -334,7 +335,7 @@ def test_rest_capture_memory_success(rest_adapter, mock_services):
         signal_strength=0.7,
         evidence_count=2,
     )
-    mock_services["memory"].capture_memory = MagicMock(return_value=mock_result)
+    mock_services["memory"].capture_memory = AsyncMock(return_value=mock_result)
 
     body = {
         "workspace_id": str(uuid4()),
@@ -345,27 +346,29 @@ def test_rest_capture_memory_success(rest_adapter, mock_services):
         "signal_strength": 0.7,
     }
 
-    result = rest_adapter.handle_capture_memory(body)
+    result = await rest_adapter.handle_capture_memory(body)
 
     assert result.status == ResponseStatus.SUCCESS
     assert result.data is not None
     assert "memory_id" in result.data
 
 
+@pytest.mark.asyncio
 @pytest.mark.unit
-def test_rest_capture_memory_contract_validation(rest_adapter, mock_services):
+async def test_rest_capture_memory_contract_validation(rest_adapter, mock_services):
     """Verify REST adapter returns contract validation error."""
     body = {}  # Missing all required fields
 
-    result = rest_adapter.handle_capture_memory(body)
+    result = await rest_adapter.handle_capture_memory(body)
 
     assert result.status == ResponseStatus.ERROR
     assert result.error["code"] == "CONTRACT_VALIDATION_ERROR"
     assert result.error["category"] == "CONTRACT_VALIDATION"
 
 
+@pytest.mark.asyncio
 @pytest.mark.unit
-def test_rest_search_success(rest_adapter, mock_services):
+async def test_rest_search_success(rest_adapter, mock_services):
     """Verify REST adapter searches memories successfully."""
     mock_result = QueryResult(
         items=[{"id": "test", "content": "test"}],
@@ -373,7 +376,7 @@ def test_rest_search_success(rest_adapter, mock_services):
         page_number=1,
         has_next=False,
     )
-    mock_services["query"].search_by_keyword = MagicMock(return_value=mock_result)
+    mock_services["query"].search_by_keyword = AsyncMock(return_value=mock_result)
 
     body = {
         "workspace_id": str(uuid4()),
@@ -381,7 +384,7 @@ def test_rest_search_success(rest_adapter, mock_services):
         "limit": 50,
     }
 
-    result = rest_adapter.handle_search_memory(body)
+    result = await rest_adapter.handle_search_memory(body)
 
     assert result.status == ResponseStatus.SUCCESS
     assert result.data is not None

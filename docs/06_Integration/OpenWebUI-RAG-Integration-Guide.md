@@ -124,7 +124,8 @@ docker run -d \
   --network personal-memory-hub_default \
   -p 3000:3000 \
   -v "F:/LI_YONGSHUN/AI/open-webui-data:/app/backend/data" \
-  -e OLLAMA_BASE_URLS='["http://memoryhub-proxy:8765"]' \
+  -e OLLAMA_BASE_URLS=http://memoryhub-proxy:8765 \
+  -e OLLAMA_BASE_URL=http://memoryhub-proxy:8765 \
   -e ENABLE_SIGNUP=false \
   open-webui/open-webui:0.9.6
 ```

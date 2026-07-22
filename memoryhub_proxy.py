@@ -283,8 +283,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self._proxy_to_ollama("GET", path, self.headers, None)
 
     def do_POST(self):
-        """POST requests: intercept /api/chat* to inject MemoryHub context."""
-        if self.path.startswith("/api/chat"):
+        """POST requests: intercept /api/chat* and /v1/chat/completions to inject MemoryHub context."""
+        if self.path.startswith("/api/chat") or self.path == "/v1/chat/completions":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:
@@ -312,7 +312,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
                         else:
                             messages = request_body.get("messages", [])
                             if messages:
-                                messages[0]["content"] = context + "\n" + messages[0].get("content", "")
+                                messages[-1]["content"] = context + "\n" + messages[-1].get("content", "")
 
             # Build Ollama-compatible body
             ollama_body = {
