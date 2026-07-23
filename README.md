@@ -166,12 +166,6 @@ See `docs/04_Retrieval_Ranking/11_Implementation_Roadmap.md` §7 for details.
 
 ---
 
-## Deployment Guide (Windows + Docker)
-
-For a complete step-by-step guide to deploying this system on Windows with Docker Desktop, see:
-- **`F:/LI_YONGSHUN/AI/setup-backup/GUIDE.md`** — 从零搭建完整指南（含所有 docker run 命令、端口映射、故障排查）
-
-> ⚠️ `setup-backup/` 目录仅保留在本地，不上传至版本控制。包含代理代码、导入脚本、数据库初始化 SQL 等关键文件。
 
 ## License
 
