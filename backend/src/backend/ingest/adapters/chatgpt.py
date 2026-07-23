@@ -2,37 +2,23 @@
 
 Parses ChatGPT conversation export format and converts to MemoryItems.
 
-ChatGPT export format (JSON array):
-[
-    {
-        "title": "Conversation Title",
-        "create_time": "2024-01-01T00:00:00.000Z",
-        "mapping": {
-            "message_id": {
-                "id": "message_id",
-                "author": {"role": "user"},
-                "create_time": "2024-01-01T00:00:00.000Z",
-                "content": {
-                    "content_type": "text",
-                    "parts": ["Message content"]
-                }
-            }
-        },
-        "command": "next",
-        "parent": null,
-        "children": ["message_id"]
-    }
-]
+Supported formats:
+1. conversations-*.json (JSON array of conversations)
+   Each conversation has mapping[msg_id] = {message: {author, content, ...}, parent}
+2. chat.html (HTML with embedded JSON in <script> tag)
+   Same structure as conversations-*.json but extracted from HTML
 
 Each user message becomes a MemoryItem with:
 - content: The user's message text
 - metadata: Source info (conversation title, timestamp, model)
-- tags: ["imported", "chatgpt"]
+- tags: ["imported", "chatgpt", "conversation"]
 """
 
 from __future__ import annotations
 
+import json
 import logging
+import re
 from datetime import datetime
 from typing import Any
 
@@ -60,8 +46,13 @@ class ChatGPTImportAdapter(BaseImportAdapter):
     def parse(self, data: bytes | str, **kwargs: Any) -> ImportResult:
         """Parse ChatGPT conversation export into MemoryItems.
 
+        Supports multiple input formats:
+        - Raw JSON array (conversations-*.json)
+        - Single conversation JSON object
+        - HTML file containing embedded JSON (chat.html)
+
         Args:
-            data: Raw JSON string or bytes from ChatGPT export.
+            data: Raw JSON string, bytes, or HTML file content.
             **kwargs: Additional options.
 
         Returns:
@@ -76,6 +67,14 @@ class ChatGPTImportAdapter(BaseImportAdapter):
                 data = data.decode("utf-8")
             except UnicodeDecodeError as err:
                 raise ValueError("Data is not valid UTF-8") from err
+
+        # Auto-detect format: HTML vs JSON
+        if "<html" in data.lower() or "<script" in data.lower():
+            logger.info("Detected HTML format, extracting JSON from script tags")
+            extracted = self._extract_json_from_html(data)
+            if extracted is None:
+                raise ValueError("No JSON data found in HTML file")
+            data = extracted
 
         # Parse JSON
         parsed = try_parse_json(data)
@@ -101,9 +100,18 @@ class ChatGPTImportAdapter(BaseImportAdapter):
             conv_title = conv.get("title", f"Conversation {conv_idx + 1}")
             mapping = conv.get("mapping", {})
 
-            for msg_id, msg in mapping.items():
+            for msg_id, entry in mapping.items():
+                # Handle two possible structures:
+                # 1. Direct: {author: {...}, content: {...}}
+                # 2. Wrapped: {message: {author: {...}, content: {...}}, parent: ...}
+                msg = self._resolve_message_entry(entry)
+                if msg is None:
+                    continue
+
                 author = msg.get("author", {})
-                role = author.get("role", "").lower()
+                role = ""
+                if isinstance(author, dict):
+                    role = author.get("role", "").lower()
 
                 # Only import user messages (skip assistant/system)
                 if role != "user":
@@ -189,10 +197,114 @@ class ChatGPTImportAdapter(BaseImportAdapter):
 
         return errors
 
+    # ------------------------------------------------------------------
+    # Format Detection & Extraction
+    # ------------------------------------------------------------------
+
+    def _extract_json_from_html(self, html: str) -> str | None:
+        """Extract the largest JSON block from an HTML file.
+
+        ChatGPT exports embed conversation data in a <script> tag as JSON.
+
+        Args:
+            html: HTML file content.
+
+        Returns:
+            JSON string, or None if not found.
+        """
+        # Find all script tag contents
+        script_matches = re.findall(r'<script[^>]*>(.*?)</script>', html, re.DOTALL)
+
+        best_json: str | None = None
+        best_len = 0
+
+        for script_content in script_matches:
+            if len(script_content) < 500:
+                continue  # Skip small scripts
+
+            # Try to find a large JSON object
+            start = script_content.find('{')
+            if start < 0:
+                continue
+
+            depth = 0
+            end = start
+            for i in range(start, len(script_content)):
+                if script_content[i] == '{':
+                    depth += 1
+                elif script_content[i] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        end = i + 1
+                        break
+
+            block = script_content[start:end]
+            if len(block) > best_len:
+                try:
+                    json.loads(block)
+                    best_json = block
+                    best_len = len(block)
+                except json.JSONDecodeError:
+                    pass
+
+        if best_json:
+            return best_json
+
+        # Fallback: try parsing entire script content as JSON
+        for script_content in script_matches:
+            stripped: str = script_content.strip()
+            if stripped.startswith('{') or stripped.startswith('['):
+                try:
+                    json.loads(stripped)
+                    return stripped
+                except json.JSONDecodeError:
+                    pass
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Message Resolution
+    # ------------------------------------------------------------------
+
+    def _resolve_message_entry(self, entry: Any) -> dict[str, Any] | None:
+        """Resolve a mapping entry to its message dict.
+
+        ChatGPT export uses two possible structures:
+        1. Old/direct: {author: {...}, content: {...}}
+        2. New/wrapped: {message: {author: {...}, content: {...}}, parent: ...}
+
+        Args:
+            entry: A value from conversation['mapping'].
+
+        Returns:
+            Resolved message dict, or None.
+        """
+        if not isinstance(entry, dict):
+            return None
+
+        # Check if wrapped in 'message' key
+        if "message" in entry:
+            msg = entry["message"]
+            if isinstance(msg, dict):
+                return msg
+
+        # Direct format (fallback)
+        if "author" in entry or "content" in entry:
+            return entry
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Conversation Extraction
+    # ------------------------------------------------------------------
+
     def _extract_conversations(self, data: Any) -> list[dict[str, Any]]:
         """Extract conversations list from parsed JSON.
 
-        Handles different possible JSON structures.
+        Handles different possible JSON structures:
+        - JSON array of conversations (conversations-*.json)
+        - Single conversation object
+        - Object with 'conversations' key
 
         Args:
             data: Parsed JSON data.
@@ -210,7 +322,15 @@ class ChatGPTImportAdapter(BaseImportAdapter):
             if isinstance(value, list):
                 return value
 
+        # Single conversation object
+        if isinstance(data, dict) and "mapping" in data:
+            return [data]
+
         return []
+
+    # ------------------------------------------------------------------
+    # Content Extraction
+    # ------------------------------------------------------------------
 
     def _extract_message_content(self, msg: dict[str, Any]) -> str:
         """Extract message content from ChatGPT message object.
@@ -231,8 +351,16 @@ class ChatGPTImportAdapter(BaseImportAdapter):
             if parts:
                 return "\n".join(str(part) for part in parts)
 
+        # Handle image attachments (note content)
+        if content_type == "image":
+            return "[Image attachment]"
+
         # Fallback to generic extraction
         return extract_text_segments(msg, ["content", "text", "message"])
+
+    # ------------------------------------------------------------------
+    # Timestamp Extraction
+    # ------------------------------------------------------------------
 
     def _extract_timestamp(self, msg: dict[str, Any]) -> str | None:
         """Extract ISO timestamp from message.
@@ -243,14 +371,18 @@ class ChatGPTImportAdapter(BaseImportAdapter):
         Returns:
             ISO formatted timestamp string or None.
         """
-        # Try create_time (ISO 8601 format in ChatGPT export)
+        # Try create_time (Unix epoch in ChatGPT export)
         create_time = msg.get("create_time")
         if create_time:
             try:
-                # ChatGPT uses ISO 8601 format
-                dt = datetime.fromisoformat(create_time.replace("Z", "+00:00"))
+                # ChatGPT uses Unix timestamp (float seconds since epoch)
+                if isinstance(create_time, (int, float)):
+                    dt = datetime.fromtimestamp(create_time)
+                    return dt.isoformat()
+                # Also try ISO format
+                dt = datetime.fromisoformat(str(create_time).replace("Z", "+00:00"))
                 return dt.isoformat()
-            except (ValueError, AttributeError):
+            except (ValueError, AttributeError, OSError):
                 pass
 
         # Try other common field names
