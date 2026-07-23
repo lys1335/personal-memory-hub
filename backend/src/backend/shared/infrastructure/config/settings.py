@@ -44,7 +44,7 @@ class AppSettings(BaseSettings):
     # ------------------------------------------------------------------
     # Database (PostgreSQL / Supabase)
     # ------------------------------------------------------------------
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/memory_hub"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@memory-hub-db:5432/memory_hub"
     DATABASE_ECHO: bool = False
 
     # ------------------------------------------------------------------

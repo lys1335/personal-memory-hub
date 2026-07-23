@@ -226,6 +226,7 @@ class QueryService(BaseService):
 
         return QueryResult(
             items=results,
+            total=len(results),
             page_number=(offset // limit) + 1 if limit > 0 else 1,
             page_size=limit,
         )

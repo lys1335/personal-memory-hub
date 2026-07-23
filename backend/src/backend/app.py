@@ -9,16 +9,17 @@ import sys
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.entry.rest_adapter import RESTAdapter
+from backend.entry.dto import ResponseStatus
 from backend.service.entity_service import EntityService
 from backend.service.memory_service import MemoryService
 from backend.service.query_service import QueryService
@@ -181,21 +182,27 @@ async def health_check() -> dict[str, Any]:
 # ------------------------------------------------------------------
 
 @app.post("/memories", tags=["memories"])
-async def capture_memory(body: dict[str, Any], services: dict = Depends(get_services)):
+async def capture_memory(body: dict = Body(...), services: dict = Depends(get_services)):
     """POST /memories - capture a new memory."""
-    adapter = RESTAdapter(services)
+    logger.info("=== capture_memory ENTER ===")
+    logger.info("body type: %s, keys: %s", type(body), list(body.keys()) if isinstance(body, dict) else 'N/A')
+    logger.info("services type: %s", type(services))
     try:
+        adapter = RESTAdapter(services)
+        logger.info("adapter created")
         response = await adapter.handle_capture_memory(body)
+        logger.info("response status: %s, data: %s", response.status, str(response.data)[:200])
+        logger.info("response error: %s", str(response.error)[:200] if response.error else None)
     except Exception as exc:
-        logger.error("capture_memory error: %s", exc, exc_info=True)
+        logger.error("=== capture_memory EXCEPTION === %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-    if response.success:
+    if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
 
 
 @app.post("/memories/search", tags=["memories"])
-async def search_memory(body: dict[str, Any], services: dict = Depends(get_services)):
+async def search_memory(body: dict = Body(...), services: dict = Depends(get_services)):
     """POST /memories/search - search memories."""
     adapter = RESTAdapter(services)
     try:
@@ -203,7 +210,7 @@ async def search_memory(body: dict[str, Any], services: dict = Depends(get_servi
     except Exception as exc:
         logger.error("search_memory error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-    if response.success:
+    if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
 
@@ -217,7 +224,7 @@ async def retrieve_memory(memory_id: str, services: dict = Depends(get_services)
     except Exception as exc:
         logger.error("retrieve_memory error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-    if response.success:
+    if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
 
@@ -227,7 +234,7 @@ async def retrieve_memory(memory_id: str, services: dict = Depends(get_services)
 # ------------------------------------------------------------------
 
 @app.post("/entities", tags=["entities"])
-async def create_entity(body: dict[str, Any], services: dict = Depends(get_services)):
+async def create_entity(body: dict = Body(...), services: dict = Depends(get_services)):
     """POST /entities - create a new entity."""
     adapter = RESTAdapter(services)
     try:
@@ -235,7 +242,7 @@ async def create_entity(body: dict[str, Any], services: dict = Depends(get_servi
     except Exception as exc:
         logger.error("create_entity error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-    if response.success:
+    if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
 
@@ -245,7 +252,7 @@ async def create_entity(body: dict[str, Any], services: dict = Depends(get_servi
 # ------------------------------------------------------------------
 
 @app.post("/reflection", tags=["reflection"])
-async def trigger_reflection(body: dict[str, Any], services: dict = Depends(get_services)):
+async def trigger_reflection(body: dict = Body(...), services: dict = Depends(get_services)):
     """POST /reflection - trigger reflection."""
     adapter = RESTAdapter(services)
     try:
@@ -253,7 +260,7 @@ async def trigger_reflection(body: dict[str, Any], services: dict = Depends(get_
     except Exception as exc:
         logger.error("trigger_reflection error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-    if response.success:
+    if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
 
@@ -263,7 +270,7 @@ async def trigger_reflection(body: dict[str, Any], services: dict = Depends(get_
 # ------------------------------------------------------------------
 
 @app.post("/tasks", tags=["tasks"])
-async def submit_task(body: dict[str, Any], services: dict = Depends(get_services)):
+async def submit_task(body: dict = Body(...), services: dict = Depends(get_services)):
     """POST /tasks - submit a new task."""
     adapter = RESTAdapter(services)
     try:
@@ -271,7 +278,7 @@ async def submit_task(body: dict[str, Any], services: dict = Depends(get_service
     except Exception as exc:
         logger.error("submit_task error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-    if response.success:
+    if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
 
@@ -281,7 +288,7 @@ async def submit_task(body: dict[str, Any], services: dict = Depends(get_service
 # ------------------------------------------------------------------
 
 @app.post("/memories/import", tags=["import"])
-async def import_memories(body: dict[str, Any], services: dict = Depends(get_services)):
+async def import_memories(body: dict = Body(...), services: dict = Depends(get_services)):
     """POST /memories/import - import memories from external source."""
     adapter = RESTAdapter(services)
     try:
@@ -289,21 +296,9 @@ async def import_memories(body: dict[str, Any], services: dict = Depends(get_ser
     except Exception as exc:
         logger.error("import_memories error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-    if response.success:
+    if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
 
 
-if __name__ == "__main__":
-    import uvicorn
 
-    settings = get_settings()
-    log_level = settings.LOG_LEVEL.lower()
-
-    uvicorn.run(
-        "backend.app:app",
-        host="0.0.0.0",
-        port=8000,
-        log_level=log_level,
-        reload=True,
-    )

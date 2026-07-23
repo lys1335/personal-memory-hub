@@ -1,7 +1,7 @@
 # Open WebUI + MemoryHub RAG 集成搭建指南
 
-> **版本**: 1.0  
-> **日期**: 2026-07-20  
+> **版本**: 2.0  
+> **日期**: 2026-07-23  
 > **目标**: 从零搭建 Open WebUI → MemoryHub Proxy → Ollama 的 RAG 集成环境  
 > **架构原则**: MemoryHub 是唯一记忆中枢，Open WebUI 不存储任何数据
 
@@ -24,7 +24,7 @@
                          ▼
                   ┌──────────────────┐
                   │ PostgreSQL DB    │
-                  │  (:15432)        │
+                  │  (:5432)         │
                   └──────────────────┘
 ```
 
@@ -44,10 +44,10 @@
 
 | 组件 | 端口 | 容器名 | 作用 |
 |------|------|--------|------|
-| Open WebUI | 3000 | open-webui | 前端界面 |
+| Open WebUI | 3000 | personal-memory-hub-open-webui-1 | 前端界面 |
 | MemoryHub Proxy | 8765 | memoryhub-proxy | RAG 注入代理 |
 | MemoryHub App | 8000 | memory-hub-app | 记忆服务 API |
-| PostgreSQL | 15432 | memory-hub-db | 记忆数据库 |
+| PostgreSQL | 5432 | memory-hub-db | 记忆数据库 |
 | Ollama | 11434 | host (本机) | 本地模型推理 |
 
 ### 网络要求
@@ -91,6 +91,14 @@ ollama pull qwen2.5:7b
 ollama pull nomic-embed-text:latest
 ```
 
+可用模型列表：
+- `gpt-oss:20b` (20.9B) — 对话用
+- `qwen2.5:7b` (7.6B) — 对话用
+- `nomic-embed-text:latest` (137M) — 嵌入用
+- `local-memory-router:latest` (7.6B)
+- `jp-translator:latest` (7.6B)
+- `qwen3-vl:8b` (8.8B)
+
 ### Step 3: 构建代理容器
 
 ```bash
@@ -110,6 +118,12 @@ docker run -d \
   memoryhub-proxy
 ```
 
+> **注意**：代理默认配置（代码内硬编码）：
+> - `MEMORYHUB_URL=http://memory-hub-app:8000`
+> - `WORKSPACE_ID=5266d746-d1bd-4834-9c3a-3be0f92fe0b0`
+> - `OLLAMA_URL=http://host.docker.internal:11434`
+> - `PORT=8765`
+
 ### Step 4: 配置 Open WebUI
 
 ```bash
@@ -120,25 +134,38 @@ mkdir -p F:/LI_YONGSHUN/AI/open-webui-data
 
 # 运行 Open WebUI
 docker run -d \
-  --name open-webui \
+  --name personal-memory-hub-open-webui-1 \
   --network personal-memory-hub_default \
-  -p 3000:3000 \
+  -p 3000:8080 \
   -v "F:/LI_YONGSHUN/AI/open-webui-data:/app/backend/data" \
-  -e OLLAMA_BASE_URLS=http://memoryhub-proxy:8765 \
+  -e OPENAI_API_BASE_URLS=http://memoryhub-proxy:8765/v1 \
+  -e WEBUI_AUTH=false \
   -e OLLAMA_BASE_URL=http://memoryhub-proxy:8765 \
-  -e ENABLE_SIGNUP=false \
-  open-webui/open-webui:0.9.6
+  -e OLLAMA_BASE_URLS=http://memoryhub-proxy:8765 \
+  -e USE_OLLAMA_DOCKER=false \
+  -e ENV=prod \
+  -e PORT=8080 \
+  -e USE_CUDA_DOCKER=false \
+  -e USE_SLIM_DOCKER=false \
+  -e SCARF_NO_ANALYTICS=true \
+  -e DO_NOT_TRACK=true \
+  -e ANONYMIZED_TELEMETRY=false \
+  ghcr.io/open-webui/open-webui:latest
 ```
 
 **关键配置**:
 - `OLLAMA_BASE_URLS` 必须指向代理，不是直接连 Ollama
 - 数据挂载路径必须是 `/app/backend/data`
-- 禁用注册（`ENABLE_SIGNUP=false`），避免创建多余用户
+- 禁用注册（`WEBUI_AUTH=false`），避免创建多余用户
 
 ### Step 5: 验证连通性
 
 ```bash
 # 测试代理可达性
+curl http://localhost:8765/
+# 应返回 "Ollama is running"
+
+# 测试代理模型列表
 curl http://localhost:8765/api/tags
 
 # 测试 MemoryHub API
@@ -218,6 +245,8 @@ if metadata and metadata.get("assistant_reply"):
    - 获取全部记忆后匹配关键词
    - 支持中日英混合查询
 
+> **已知限制**: 当前环境中向量搜索始终返回 0 结果，依赖关键词回退。需要重新训练 embedding 模型或调整嵌入生成逻辑。
+
 ### 5.2 注入位置
 
 ```python
@@ -241,6 +270,10 @@ def inject_memories(body: dict) -> dict:
 [END MEMORY DATABASE]
 CRITICAL RULE: You MUST use the above personal memory database...
 ```
+
+### 5.4 注入长度限制
+
+当前注入上下文约 6000+ 字符。小模型（7B）对长上下文的注意力分配不稳定——有时能正确引用记忆，有时会忽略或错误解析。大模型（20B）更可靠。
 
 ---
 
@@ -290,15 +323,15 @@ with urllib.request.urlopen(req) as resp:
 ```bash
 # 查看记忆数量
 docker exec memory-hub-db psql -U postgres -d memory_hub -c \
-  "SELECT COUNT(*) FROM memory_hub.memory_nodes;"
+  "SELECT COUNT(*) FROM memory_nodes;"
 
 # 查看向量文档数量
 docker exec memory-hub-db psql -U postgres -d memory_hub -c \
-  "SELECT COUNT(*) FROM memory_hub.vector_documents;"
+  "SELECT COUNT(*) FROM vector_documents;"
 
 # 查看最新记忆
 docker exec memory-hub-db psql -U postgres -d memory_hub -c \
-  "SELECT id, LEFT(content, 200) FROM memory_hub.memory_nodes ORDER BY created_at DESC LIMIT 5;"
+  "SELECT id, LEFT(content, 200) FROM memory_nodes ORDER BY created_at DESC LIMIT 5;"
 ```
 
 ---
@@ -319,8 +352,6 @@ for key, value in headers.items():
         clean_headers[key] = value
 ```
 
----
-
 ### ⚠️ 陷阱 2: /api/models vs /api/tags
 
 **现象**: Open WebUI 模型列表为空
@@ -335,8 +366,6 @@ def do_GET(self):
         path = "/api/tags"
     self._proxy_to_ollama("GET", path, self.headers, None)
 ```
-
----
 
 ### ⚠️ 陷阱 3: 流式响应问题
 
@@ -353,8 +382,6 @@ while True:
     self.wfile.write(chunk)
     self.wfile.flush()
 ```
-
----
 
 ### ⚠️ 陷阱 4: 中文查询向量搜索失败
 
@@ -374,8 +401,6 @@ def search_memories(query: str, limit: int = 5) -> list[str]:
     return keyword_results
 ```
 
----
-
 ### ⚠️ 陷阱 5: assistant_reply 不可搜索
 
 **现象**: 导入后搜索不到基金配置信息
@@ -389,36 +414,18 @@ if metadata and metadata.get("assistant_reply"):
     searchable_content += "\n\n[Assistant Reply]\n" + metadata["assistant_reply"]
 ```
 
----
+### ⚠️ 陷阱 6: QueryResult.total 字段缺失
 
-### ⚠️ 陷阱 6: Open WebUI 数据库时间戳格式
+**现象**: 搜索 API 返回 `total=null`，前端认为没有结果
 
-**现象**: Open WebUI 容器启动后崩溃
+**原因**: `QueryResult` 构造函数未传入 `total` 参数
 
-**原因**: function/user 表时间是 BIGINT（毫秒），config 表是 DATETIME（字符串）
-
-**解决**: 严格区分时间格式
+**解决**: 
 ```python
-# function/user 表
-"updated_at": int(time.time() * 1000),  # BIGINT 毫秒
-
-# config 表
-"updated_at": datetime.now().isoformat(),  # DATETIME 字符串
+QueryResult(items=results, total=len(results))
 ```
 
----
-
-### ⚠️ 陷阱 7: Pipe Function 兼容性
-
-**现象**: Open WebUI v0.9.6 看不到 Pipe Function
-
-**原因**: v0.9.6 对 Pipe 加载/显示有问题
-
-**解决**: 放弃 Pipe 方案，改用代理层注入
-
----
-
-### ⚠️ 陷阱 8: Docker 网络问题
+### ⚠️ 陷阱 7: Docker 网络问题
 
 **现象**: 容器内访问其他服务失败
 
@@ -429,13 +436,29 @@ if metadata and metadata.get("assistant_reply"):
 docker network connect personal-memory-hub_default open-webui
 ```
 
+### ⚠️ 陷阱 8: OWUI 自动任务干扰
+
+**现象**: 代理接收到的最后一条 user 消息是系统生成的建议任务内容，而非用户问题
+
+**原因**: OWUI 在用户提问后自动发送"生成相关建议"和"生成标签"任务
+
+**解决**: 代理优先取第一条 user 消息（真实用户输入），而非最后一条
+
+### ⚠️ 陷阱 9: app.py 路由重复注册
+
+**现象**: FastAPI 启动报错 "route already registered"
+
+**原因**: 代码修改时旧的路由定义未被删除，导致同一个路径注册两次
+
+**解决**: 确保每个 `@app.xxx("/path")` 只出现一次
+
 ---
 
 ## 8. 验证清单
 
 ### 基础设施验证
 
-- [ ] PostgreSQL 运行中 (`:15432`)
+- [ ] PostgreSQL 运行中 (`:5432`)
 - [ ] MemoryHub App 健康 (`:8000`)
 - [ ] Ollama 模型可用 (`:11434`)
 - [ ] 代理容器运行 (`:8765`)
@@ -457,7 +480,7 @@ docker network connect personal-memory-hub_default open-webui
 
 **测试问题 1**:
 ```
-我现在的 NISA 配置中，有哪三只基金？具体比例是多少？每月定投金额和年度投入分别是多少？
+私のNISAの3つの基金は何ですか？それぞれの割合は？
 ```
 
 **预期回答**:
@@ -466,16 +489,6 @@ docker network connect personal-memory-hub_default open-webui
 - ⚖️ バランス型：每月 2 万日元
 - 每月总计：10 万日元
 - 年度总计：120 万日元
-
-**测试问题 2**:
-```
-假设美股下跌 -30% 且美元对日元贬值 -20%，我的账户从 600 万日元会跌到多少？
-```
-
-**预期回答**:
-- 股票部分跌幅约 -44%
-- 总账户跌幅约 -35%
-- 600 万 → 390~420 万
 
 ---
 
@@ -521,15 +534,24 @@ docker logs memoryhub-proxy | grep "Server disconnected"
 
 ```
 F:/LI_YONGSHUN/AI/
-├── memoryhub_proxy.py          # 代理服务器代码
-├── Dockerfile.memoryhub-proxy  # 代理 Docker 构建文件
-├── nisa_import_v2.json         # NISA 导入数据
+├── setup-backup/                    # 本地备份（不上传）
+│   ├── GUIDE.md                     # 从零搭建完整指南
+│   ├── memoryhub_proxy.py           # 代理服务器完整代码
+│   ├── import_nisa_pdf.py           # NISA PDF 导入脚本
+│   ├── init_db_tables.sql           # 数据库表结构初始化
+│   ├── init_default_data.sql        # 默认数据初始化
+│   └── Dockerfile.memoryhub-proxy   # 代理 Dockerfile
+├── memoryhub_proxy.py               # 代理源文件（build context root）
+├── Dockerfile.memoryhub-proxy       # 代理 Dockerfile
+├── NISA.pdf                         # NISA 投资指南 PDF
 └── personal-memory-hub/
+    ├── docker-compose.yml           # Docker Compose 配置
     ├── backend/src/backend/
     │   ├── service/memory_service.py      # 记忆服务（含 assistant_reply 合并）
     │   ├── repository/entity_repository.py # 实体仓库（含自动创建）
     │   ├── repository/memory_query_repository.py # 查询仓库（含关键词搜索）
-    │   └── ingest/adapters/open_webui.py  # Open WebUI 适配器
+    │   ├── shared/infrastructure/config/settings.py # 配置（DATABASE_URL 指向 memory-hub-db）
+    │   └── app.py                       # FastAPI 入口（RESTAdapter 路由）
     └── docs/06_Integration/
         └── OpenWebUI-RAG-Integration-Guide.md  # 本文档
 ```
@@ -549,11 +571,14 @@ F:/LI_YONGSHUN/AI/
 - 小模型（7B）对 RAG 上下文遵循不稳定，大模型（20B）更可靠
 - 中文/日文查询需要关键词回退
 - assistant_reply 必须合并进 content
+- QueryResult 必须设置 total 字段
 - 代理注入格式要简洁明确
 - Docker 网络必须统一
+- OWUI 自动任务可能干扰记忆注入
+- app.py 路由不能重复注册
 
 ---
 
-**文档版本**: 1.0  
-**最后更新**: 2026-07-20  
+**文档版本**: 2.0  
+**最后更新**: 2026-07-23  
 **维护者**: Personal Memory Hub Team
