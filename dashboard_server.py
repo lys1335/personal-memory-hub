@@ -51,7 +51,10 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             return self._proxy(OLLAMA, '/api/ollama', self.path, body)
         elif self.path.startswith('/api/cron'):
             return self._proxy(MEM_HUB, '/api', self.path, body)
-        
+
+        if self.path.startswith('/api/review'):
+            return self._proxy(MEM_HUB, '/api', self.path, body)
+
         self.send_error(404, "Not found")
 
     def _serve_file(self):

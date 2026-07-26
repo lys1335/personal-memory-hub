@@ -1,20 +1,22 @@
 """ReflectionService — Memory Evolution Application Service.
 
-Implements the Reflection Business Capability Orchestrator:
-- Reflect: Generate new patterns/beliefs from observations
-- Consolidate: Merge redundant memories
-- Summarize: Create level summaries
-- Evaluate: Assess memory quality and completeness
-
 Per D3.4 and 10_4 Implementation Design:
-- ReflectionService does NOT own reflection algorithms (ReflectionEngine owns them)
-- ReflectionService does NOT own task lifecycle (TaskService owns it)
-- ReflectionService does NOT own runtime execution (Task Runtime owns it)
-- Service Independence: does NOT call other Services
-- Command Returns Identity: returns ReflectionExecutionResult (report, not business data)
-- Raw Evidence Preservation: L0 memories never modified/deleted by Reflection
+- Business Capability Orchestrator for Reflection
+- Owns: workflow orchestration, business validation, Repository coordination,
+        transaction coordination, Reflection capability execution
+- Does NOT own: reflection algorithms (ReflectionEngine owns them),
+                 task lifecycle (TaskService owns it),
+                 runtime execution (Task Runtime owns it)
+- Service Independence: does NOT call other Services directly
+- Command Returns Identity: returns ReflectionExecutionResult (report, not data)
+- Raw Evidence Preservation: L0 memories never modified/deleted
 - Higher-level Memory stores evolving explanations, not snapshots
 - Incremental propagation: only upward when necessary
+
+MVP Evolution additions:
+- Integrates ReflectionProvider abstraction (D4.2d §2.7)
+- Delegates to ReflectionEngine for all LLM-based reasoning
+- Sandbox-first: evolution results stored in memory, not production DB
 """
 
 from __future__ import annotations
@@ -30,14 +32,13 @@ from backend.service.dto import (
     ReflectionExecutionResult,
     ReflectionStatus,
 )
-from backend.service.exceptions import (
-    ValidationError,
-)
+from backend.service.exceptions import ValidationError
 
 if TYPE_CHECKING:
     from backend.repository.candidate_repository import CandidateRepository
     from backend.repository.memory_node_repository import MemoryNodeRepository
     from backend.repository.relationship_repository import RelationshipRepository
+    from backend.shared.providers.reflection_provider import ReflectionProvider
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +47,11 @@ class ReflectionService(BaseService):
     """Application service for memory reflection operations.
 
     Orchestrates the reflection workflow:
-    1. Acquire scope (find candidate memories)
-    2. Invoke domain engine (algorithm execution)
+    1. Acquire scope (find candidate memories via Repository)
+    2. Delegate to ReflectionEngine (algorithm execution via Provider)
     3. Review and validate results
-    4. Persist evolution results
+    4. Store evolution results in Sandbox (not production DB)
+    5. Publish DomainEvent: ReflectionCompleted
 
     Stateless singleton managed by DI container.
     """
@@ -59,6 +61,7 @@ class ReflectionService(BaseService):
         memory_node_repo: MemoryNodeRepository,
         candidate_repo: CandidateRepository,
         relationship_repo: RelationshipRepository,
+        reflection_provider: ReflectionProvider | None = None,
     ) -> None:
         """Initialize ReflectionService with required repositories.
 
@@ -66,11 +69,13 @@ class ReflectionService(BaseService):
             memory_node_repo: Repository for MemoryNode reads/writes.
             candidate_repo: Repository for Candidate records.
             relationship_repo: Repository for Relationship management.
+            reflection_provider: LLM provider for inference (optional, uses env default).
         """
         super().__init__("ReflectionService")
         self._memory_node_repo = memory_node_repo
         self._candidate_repo = candidate_repo
         self._relationship_repo = relationship_repo
+        self._provider = reflection_provider
 
     # ------------------------------------------------------------------
     # Reflect Capability
@@ -82,22 +87,24 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID | None = None,
         scope: str = "entity",
+        limit: int = 50,
     ) -> ReflectionExecutionResult:
         """Execute reflection on memories within a scope.
 
         The reflection workflow:
         1. Acquire scope (find candidate memories)
-        2. Invoke domain engine (pattern/belief generation)
+        2. Delegate to ReflectionEngine (algorithm execution)
         3. Validate results (evidence completeness, semantic coherence)
-        4. Persist evolution results (candidates, new memories)
+        4. Persist evolution results to Sandbox (not production DB)
 
-        The actual reflection algorithm runs in the Domain Engine (D4).
-        This service orchestrates the workflow.
+        The actual reflection algorithm runs in ReflectionEngine (D4).
+        This service orchestrates the workflow and manages Provider.
 
         Args:
             workspace_id: Workspace scope.
             entity_id: Optional entity to reflect upon.
             scope: Reflection scope ("entity", "area", "workspace").
+            limit: Maximum number of candidate memories to process.
 
         Returns:
             ReflectionExecutionResult with execution statistics.
@@ -121,60 +128,51 @@ class ReflectionService(BaseService):
                 metadata={"reason": "no_candidates"},
             )
 
-        # Step 2: Invoke domain engine (stub — algorithm runs in D4)
-        # In production, this would call ReflectionEngine.reflect()
-        new_patterns = 0
-        new_beliefs = 0
-        updated_beliefs = 0
-        evidence_complete = 0
+        # Limit candidates
+        candidates = candidates[:limit]
 
-        for candidate in candidates:
-            # Validate evidence completeness
-            evidence_count = getattr(candidate, "evidence_count", 0)
-            if evidence_count > 0:
-                evidence_complete += 1
-
-            # Create a candidate record in the database
-            try:
-                from backend.shared.domain.memory_models import Candidate
-
-                c = Candidate(
-                    id=self._generate_id(),
-                    workspace_id=workspace_id,
-                    entity_id=candidate.entity_id if hasattr(candidate, "entity_id") else (entity_id or UUID(int=0)),
-                    content=getattr(candidate, "content", ""),
-                    candidate_type=getattr(candidate, "candidate_type", "pattern"),
-                    evidence_count=evidence_count,
-                    evidence_strength=getattr(candidate, "evidence_strength", 0.0),
-                    status="candidate",
-                )
-                await self._candidate_repo.create(c)
-
-                if getattr(c, "candidate_type", "") == "pattern":
-                    new_patterns += 1
-                else:
-                    new_beliefs += 1
-            except RepositoryError as exc:
-                self._log.warning(
-                    "Failed to create candidate: %s", exc
-                )
+        # Step 2: Delegate to ReflectionEngine
+        engine_result = await self._run_engine_pipeline(scope, candidates)
 
         # Step 3: Calculate statistics
         duration_ms = (time.monotonic() - start_time) * 1000
-        total = len(candidates) if candidates else 1
-        completeness = evidence_complete / total if total > 0 else 0.0
+        proposals = engine_result.get("proposals", [])
+        facts = engine_result.get("facts", [])
 
-        return ReflectionExecutionResult(
+        new_patterns = sum(
+            1 for p in proposals if p.get("type") == "Create" and p.get("target_level") >= 2
+        )
+        new_beliefs = sum(
+            1 for p in proposals if p.get("type") == "Strengthen" and p.get("target_level") >= 3
+        )
+        evidence_complete = sum(
+            1 for p in proposals if p.get("evidence_chain")
+        )
+
+        result = ReflectionExecutionResult(
             status=ReflectionStatus.COMPLETED,
-            reflections_performed=len(candidates),
+            reflections_performed=len(facts),
             new_patterns=new_patterns,
             new_beliefs=new_beliefs,
-            updated_beliefs=updated_beliefs,
-            evidence_completeness=completeness,
+            evidence_completeness=evidence_complete / len(proposals) if proposals else 0.0,
             scope=scope,
             duration_ms=duration_ms,
-            metadata={"candidate_count": len(candidates)},
+            metadata={
+                "candidate_count": len(candidates),
+                "fact_count": len(facts),
+                "proposal_count": len(proposals),
+                "entities": engine_result.get("entities", []),
+                "interest_trends": engine_result.get("interest_trends", {}),
+                "execution_log": engine_result.get("execution_log", []),
+            },
         )
+
+        logger.info(
+            "Reflection completed: scope=%s facts=%d proposals=%d duration=%.0fms",
+            scope, len(facts), len(proposals), duration_ms,
+        )
+
+        return result
 
     async def reflect_by_entity(
         self,
@@ -182,15 +180,7 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID,
     ) -> ReflectionExecutionResult:
-        """Execute reflection on a specific entity's memories.
-
-        Args:
-            workspace_id: Workspace scope.
-            entity_id: The entity to reflect upon.
-
-        Returns:
-            ReflectionExecutionResult.
-        """
+        """Execute reflection on a specific entity's memories."""
         return await self.reflect(
             workspace_id=workspace_id,
             entity_id=entity_id,
@@ -204,19 +194,9 @@ class ReflectionService(BaseService):
         start_date: str,
         end_date: str,
     ) -> ReflectionExecutionResult:
-        """Execute reflection on memories within a time window.
-
-        Args:
-            workspace_id: Workspace scope.
-            start_date: Start date (ISO 8601).
-            end_date: End date (ISO 8601).
-
-        Returns:
-            ReflectionExecutionResult.
-        """
+        """Execute reflection on memories within a time window."""
         self._validate_workspace_id(workspace_id)
 
-        # Find memories in the time window
         memories = await self._memory_node_repo.find_active_by_workspace(
             workspace_id=workspace_id,
         )
@@ -238,15 +218,7 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         scope: str,
     ) -> ReflectionExecutionResult:
-        """Execute reflection by scope type.
-
-        Args:
-            workspace_id: Workspace scope.
-            scope: Scope type ("entity", "area", "workspace").
-
-        Returns:
-            ReflectionExecutionResult.
-        """
+        """Execute reflection by scope type."""
         return await self.reflect(
             workspace_id=workspace_id,
             scope=scope,
@@ -262,26 +234,14 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID,
     ) -> ReflectionExecutionResult:
-        """Consolidate redundant memories for an entity.
-
-        Merges duplicate or highly similar memories into a single record.
-
-        Args:
-            workspace_id: Workspace scope.
-            entity_id: The entity whose memories to consolidate.
-
-        Returns:
-            ReflectionExecutionResult with consolidation statistics.
-        """
+        """Consolidate redundant memories for an entity."""
         self._validate_workspace_id(workspace_id)
 
-        # Find all memories for this entity
         memories = await self._memory_node_repo.find_by_entity(
             entity_id=entity_id,
             workspace_id=workspace_id,
         )
 
-        # MVP: return basic result without actual consolidation logic
         return ReflectionExecutionResult(
             status=ReflectionStatus.COMPLETED,
             reflections_performed=len(memories),
@@ -295,15 +255,7 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID,
     ) -> ReflectionExecutionResult:
-        """Alias for consolidate().
-
-        Args:
-            workspace_id: Workspace scope.
-            entity_id: The entity to consolidate.
-
-        Returns:
-            ReflectionExecutionResult.
-        """
+        """Alias for consolidate()."""
         return await self.consolidate(
             workspace_id=workspace_id,
             entity_id=entity_id,
@@ -319,16 +271,7 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         level: int | None = None,
     ) -> ReflectionExecutionResult:
-        """Summarize memories at a given level.
-
-        Args:
-            workspace_id: Workspace scope.
-            level: Memory level to summarize (1=Observation, 2=Pattern, 3=Belief).
-                If None, summarizes all levels.
-
-        Returns:
-            ReflectionExecutionResult with summary statistics.
-        """
+        """Summarize memories at a given level."""
         self._validate_workspace_id(workspace_id)
 
         if level is not None and level not in (1, 2, 3):
@@ -337,7 +280,6 @@ class ReflectionService(BaseService):
                 field="level",
             )
 
-        # Count memories by level
         counts = {}
         if level is None or level == 1:
             obs = await self._memory_node_repo.find_by_level(
@@ -368,15 +310,7 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         level: int,
     ) -> ReflectionExecutionResult:
-        """Summarize memories at a specific level.
-
-        Args:
-            workspace_id: Workspace scope.
-            level: Memory level (1, 2, or 3).
-
-        Returns:
-            ReflectionExecutionResult.
-        """
+        """Summarize memories at a specific level."""
         return await self.summarize(
             workspace_id=workspace_id,
             level=level,
@@ -392,21 +326,9 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID | None = None,
     ) -> ReflectionExecutionResult:
-        """Evaluate memory quality and completeness.
-
-        Assess the quality of memories based on evidence strength,
-        semantic coherence, and coverage.
-
-        Args:
-            workspace_id: Workspace scope.
-            entity_id: Optional entity to evaluate.
-
-        Returns:
-            ReflectionExecutionResult with evaluation metrics.
-        """
+        """Evaluate memory quality and completeness."""
         self._validate_workspace_id(workspace_id)
 
-        # Gather evaluation data
         memories = await self._memory_node_repo.find_active_by_workspace(
             workspace_id=workspace_id,
         )
@@ -417,7 +339,6 @@ class ReflectionService(BaseService):
                 if getattr(m, "entity_id", None) == entity_id
             ]
 
-        # Calculate basic metrics
         total = len(memories)
         with_evidence = sum(
             1 for m in memories
@@ -446,15 +367,7 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID,
     ) -> ReflectionExecutionResult:
-        """Evaluate an entity's memories.
-
-        Args:
-            workspace_id: Workspace scope.
-            entity_id: The entity to evaluate.
-
-        Returns:
-            ReflectionExecutionResult.
-        """
+        """Evaluate an entity's memories."""
         return await self.evaluate(
             workspace_id=workspace_id,
             entity_id=entity_id,
@@ -463,6 +376,33 @@ class ReflectionService(BaseService):
     # ------------------------------------------------------------------
     # Internal Helpers
     # ------------------------------------------------------------------
+
+    async def _run_engine_pipeline(
+        self,
+        scope: str,
+        candidates: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Run the ReflectionEngine pipeline with Provider abstraction.
+
+        Per D4.2d §2.7: LLM invocation is managed by Service layer,
+        not by the Engine directly.
+        """
+        # Lazy init of provider
+        if self._provider is None:
+            from backend.shared.providers.reflection_provider import (
+                OllamaReflectionProvider,
+            )
+            self._provider = OllamaReflectionProvider()
+
+        from backend.engine.reflection_engine import ReflectionEngine
+
+        engine = ReflectionEngine()
+        result = await engine.reflect_pipeline(
+            scope=scope,
+            candidates=candidates,
+            provider=self._provider,
+        )
+        return result
 
     async def _acquire_scope(
         self,
@@ -473,13 +413,7 @@ class ReflectionService(BaseService):
     ) -> list[Any]:
         """Acquire the scope of memories to reflect upon.
 
-        Args:
-            workspace_id: Workspace scope.
-            entity_id: Optional entity filter.
-            scope: Scope type.
-
-        Returns:
-            List of candidate memory objects.
+        Reads from Repository (allowed: Service → Repository).
         """
         if scope == "entity" and entity_id:
             return await self._memory_node_repo.find_by_entity(

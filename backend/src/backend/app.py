@@ -571,8 +571,88 @@ async def run_cron_task_now(task_id: str):
     if task_type == 'evolution':
         source_filter = payload.get('source_filter', None)
         limit = payload.get('limit', 50)
-        logger.info(f"[CRON] Running evolution task '{task['name']}' (type={task_type}, limit={limit})")
+        
+        # Store evolution metadata for dashboard display
         result["message"] = f"Evolution triggered for {limit} memories"
+        result["scope"] = "daily"
+        result["limit"] = limit
+        
+        # Try to run actual evolution pipeline
+        try:
+            # Use current event loop instead of asyncio.run() since we're already in an async context
+            import asyncio as _asyncio
+            loop = None
+            try:
+                loop = _asyncio.get_running_loop()
+            except RuntimeError:
+                pass
+            
+            async def _run_evolution():
+                from backend.service.reflection_service import ReflectionService
+                from backend.engine.reflection_engine import ReflectionEngine
+                from backend.shared.providers.reflection_provider import OllamaReflectionProvider
+                
+                # Create engine instances
+                engine = ReflectionEngine()
+                provider = OllamaReflectionProvider()
+                
+                # Get candidates from memory_node_repo (simplified)
+                from backend.repository.memory_node_repository import MemoryNodeRepository
+                from backend.shared.infrastructure.database.engine import get_engine
+                from sqlalchemy import text
+                
+                engine_obj = get_engine()
+                async with engine_obj.begin() as conn:
+                    rows = await conn.execute(
+                        text("SELECT id, workspace_id, content, node_type, level, status, source, created_at FROM memory_nodes WHERE source != 'test' ORDER BY created_at DESC LIMIT :limit"),
+                        {"limit": limit},
+                    )
+                    candidate_dicts = []
+                    for row in rows:
+                        mapping = dict(row._mapping)
+                        candidate_dicts.append(mapping)
+                
+                if not candidate_dicts:
+                    return {"status": "completed", "message": "No candidates found", "facts": 0, "proposals": 0}
+                
+                # Run reflection pipeline
+                pipeline_result = await engine.reflect_pipeline(
+                    scope="daily",
+                    candidates=candidate_dicts,
+                    provider=provider,
+                )
+                
+                facts = pipeline_result.get("facts", [])
+                proposals = pipeline_result.get("proposals", [])
+                execution_log = pipeline_result.get("execution_log", [])
+                
+                # Store proposals in sandbox
+                import uuid as _uuid_mod
+                with _sandbox_lock:
+                    for prop in proposals:
+                        prop_id = str(_uuid_mod.uuid4())[:8]
+                        prop["id"] = prop_id
+                        prop["status"] = "pending"
+                        prop["task_id"] = task_id
+                        prop["executed_at"] = result['executed_at']
+                        _sandbox_proposals.append(prop)
+                
+                result["facts"] = len(facts)
+                result["proposals"] = len(proposals)
+                result["execution_log"] = execution_log
+                result["sandbox_proposal_ids"] = [p.get("id") for p in proposals]
+                
+                logger.info(f"[EVOLUTION] Pipeline complete: {len(facts)} facts, {len(proposals)} proposals stored in sandbox")
+                return result
+            
+            if loop:
+                await _run_evolution()
+            else:
+                _asyncio.run(_run_evolution())
+        except Exception as e:
+            logger.error(f"[EVOLUTION] Evolution pipeline error: {e}", exc_info=True)
+            result["error"] = str(e)
+            result["status"] = "failed"
     elif task_type == 'batch_import':
         logger.info(f"[CRON] Running batch import task '{task['name']}'")
         result["message"] = "Batch import triggered"
@@ -588,6 +668,57 @@ async def run_cron_task_now(task_id: str):
     
     return result
 
+
+# ================================================================
+# Sandbox Storage for Evolution Proposals
+# ================================================================
+
+_sandbox_proposals: list[dict[str, Any]] = []
+_sandbox_lock = __import__('threading').Lock()
+
+
+@app.get("/api/review/proposals")
+async def list_review_proposals():
+    """List all pending evolution proposals from sandbox."""
+    with _sandbox_lock:
+        pending = [p for p in _sandbox_proposals if p.get("status") == "pending"]
+        return {"proposals": pending, "total": len(pending)}
+
+
+@app.post("/api/review/proposals/{proposal_id}/approve")
+async def approve_proposal(proposal_id: str):
+    """Approve a proposal — marks it as reviewed and ready for DB write."""
+    with _sandbox_lock:
+        for p in _sandbox_proposals:
+            if p.get("id") == proposal_id:
+                p["status"] = "approved"
+                p["approved_at"] = __import__('datetime').datetime.utcnow().isoformat()
+                logger.info(f"[EVOLUTION] Proposal {proposal_id} approved")
+                return {"proposal_id": proposal_id, "status": "approved"}
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+
+
+@app.post("/api/review/proposals/{proposal_id}/reject")
+async def reject_proposal(proposal_id: str):
+    """Reject a proposal — marks it as dismissed."""
+    with _sandbox_lock:
+        for p in _sandbox_proposals:
+            if p.get("id") == proposal_id:
+                p["status"] = "rejected"
+                p["rejected_at"] = __import__('datetime').datetime.utcnow().isoformat()
+                logger.info(f"[EVOLUTION] Proposal {proposal_id} rejected")
+                return {"proposal_id": proposal_id, "status": "rejected"}
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+
+
+@app.post("/api/review/proposals/clear")
+async def clear_review_proposals():
+    """Clear all reviewed (approved/rejected) proposals from sandbox."""
+    with _sandbox_lock:
+        before = len(_sandbox_proposals)
+        _sandbox_proposals.clear()
+        logger.info(f"[EVOLUTION] Cleared {before} sandbox proposals")
+        return {"cleared": before}
 
 
 if __name__ == "__main__":

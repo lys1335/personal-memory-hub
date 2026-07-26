@@ -1,21 +1,17 @@
-"""ReflectionEngine — Reflection Domain semantic consistency owner.
+"""ReflectionEngine — Memory Evolution Domain Engine.
 
-Per D4.2d_ReflectionEngine_Architecture:
+Per D4.2d_ReflectionEngine_Architecture and MVP_Evolution_Plan:
+- Single Engine with internal Components (NOT multiple independent Engines)
 - Stateless domain engine for Reflection semantic validation
-- Owns: reflection semantic validation, candidate evaluation,
-  knowledge evolution validation, reflection consistency,
-  knowledge consolidation rules, reflection domain invariants
-- Domain rules: Evidence Requirement, Semantic Coherence,
-  Evolution Monotonicity, Traceability Preservation, Idempotency
-- Domain invariants: Evidence Requirement, Semantic Coherence,
-  Evolution Monotonicity, Traceability Preservation, Idempotency
+- LLM calls go through ReflectionProvider interface (D4.2d §2.7)
+- No cross-Engine calls, no direct database access
+- Service layer owns orchestration
 
-Public contract:
-- validate_reflection(reflection) → DomainResult
-- evaluate_candidate(candidate) → DomainResult
-- validate_evolution(evolution_action) → DomainResult
-- verify_invariants(reflection) → DomainResult
-- assess_consolidation_feasibility(memory) → DomainResult
+Components:
+1. FactExtractorComponent   — LLM-assisted fact extraction (via Provider)
+2. InterestAnalyzerComponent — Rule-driven interest trend analysis
+3. ProjectionUpdaterComponent — Rule-driven Memory Pyramid update proposals
+4. ReflectionValidator       — Domain invariant enforcement
 """
 
 from __future__ import annotations
@@ -29,328 +25,347 @@ from backend.engine.base import (
     DomainRuleViolation,
     EngineBase,
 )
+from backend.shared.providers.reflection_provider import ReflectionProvider
 
 logger = logging.getLogger(__name__)
 
 
 class ReflectionEngine(EngineBase):
-    """Domain engine for Reflection semantic consistency.
+    """Domain engine for memory evolution via Reflection.
 
-    ReflectionEngine owns Reflection domain rules, candidate evaluation,
-    and knowledge evolution validation. It does NOT persist data, manage
-    transactions, or call other Engines.
+    This is a SINGLE Engine that owns ALL reflection-related capabilities.
+    Internal components are private; Service layer calls only the public contract.
 
-    Stateless singleton — all state comes from Repository reads.
+    Public contract:
+    - reflect_pipeline(scope, candidates, provider) → ReflectionExecutionResult
+    - validate_proposals(proposals) → DomainResult[list[validated_proposal]]
     """
 
     def __init__(self) -> None:
-        """Initialize ReflectionEngine."""
         super().__init__("ReflectionEngine")
 
     # ------------------------------------------------------------------
-    # Capability 1: Validate Reflection
+    # Main Pipeline Entry Point
     # ------------------------------------------------------------------
 
-    def validate_reflection(
+    async def reflect_pipeline(
         self,
         *,
-        reflection: dict[str, Any],
-    ) -> DomainResult[bool]:
-        """Validate that a reflection satisfies domain invariants.
+        scope: str,
+        candidates: list[dict[str, Any]],
+        provider: ReflectionProvider,
+    ) -> dict[str, Any]:
+        """Execute the full Reflection pipeline.
 
-        Per D4.2d §2.1: Validates reflection candidate is semantically
-        coherent, evidence chain is complete, and evolution follows
-        domain rules.
-
-        Args:
-            reflection: Reflection domain model dict with keys:
-                scope, candidate_type, content, evidence_chain,
-                evidence_count, evidence_strength, status.
-
-        Returns:
-            DomainResult[bool] — True if reflection is valid.
-        """
-        if not reflection:
-            return DomainResult.fail(
-                DomainRuleViolation(
-                    "Reflection cannot be None or empty",
-                    rule="reflection_not_empty",
-                )
-            )
-
-        # Evidence requirement: evidence_chain must not be empty
-        evidence_chain = reflection.get("evidence_chain") or []
-        if not evidence_chain:
-            return DomainResult.fail(
-                DomainInvariantViolation(
-                    "Reflection has no evidence chain — violates evidence requirement",
-                    invariant="evidence_requirement",
-                    details={"reflection_scope": reflection.get("scope")},
-                )
-            )
-
-        # Evidence count must be >= 1
-        evidence_count = reflection.get("evidence_count", 0)
-        if evidence_count < 1:
-            return DomainResult.fail(
-                DomainInvariantViolation(
-                    "Evidence count is 0 — violates evidence requirement",
-                    invariant="evidence_requirement",
-                )
-            )
-
-        # Evidence strength must be in [0, 1]
-        evidence_strength = reflection.get("evidence_strength", 0.0)
-        if not (0.0 <= evidence_strength <= 1.0):
-            return DomainResult.fail(
-                DomainRuleViolation(
-                    f"Evidence strength must be 0.0-1.0, got {evidence_strength}",
-                    rule="evidence_strength_range",
-                )
-            )
-
-        self._log_invariant_check("evidence_requirement", True)
-        return DomainResult.ok(True)
-
-    # ------------------------------------------------------------------
-    # Capability 2: Evaluate Candidate
-    # ------------------------------------------------------------------
-
-    def evaluate_candidate(
-        self,
-        *,
-        candidate: dict[str, Any],
-    ) -> DomainResult[dict[str, Any]]:
-        """Evaluate a reflection candidate for domain purposes.
-
-        Per D4.2d §2.2: Assesses candidate semantic quality, evidence
-        strength, and knowledge evolution appropriateness.
+        Per 10_4 §7.1 Pipeline:
+        Select Scope → Collect Candidates → Analyze Evidence →
+        Generate Reflection → Validate → Persist → Link Evidence →
+        Propagate Upward → Emit Log
 
         Args:
-            candidate: Candidate domain model dict with keys:
-                candidate_type, content, evidence_count,
-                evidence_strength, evidence_chain, status.
+            scope: Reflection scope identifier.
+            candidates: List of candidate memory dicts to reflect upon.
+            provider: LLM provider for inference.
 
         Returns:
-            DomainResult with evaluation dict:
-                - quality_score: float (0.0-1.0)
-                - promotion_eligible: bool
-                - consolidation_feasible: bool
-                - evaluation_notes: list[str]
+            Dict with keys: facts, entities, interest_trends, proposals,
+            validation_passed, execution_log.
         """
-        if not candidate:
-            return DomainResult.ok({
-                "quality_score": 0.0,
-                "promotion_eligible": False,
-                "consolidation_feasible": False,
-                "evaluation_notes": ["No candidate to evaluate"],
-            })
+        if not candidates:
+            logger.info("reflect_pipeline: no candidates for scope=%s", scope)
+            return {
+                "facts": [],
+                "entities": [],
+                "interest_trends": {},
+                "proposals": [],
+                "validation_passed": True,
+                "execution_log": ["No candidates to process"],
+            }
 
-        candidate_type = candidate.get("candidate_type", "pattern")
-        evidence_count = candidate.get("evidence_count", 0)
-        evidence_strength = candidate.get("evidence_strength", 0.0)
-        _evidence_chain = candidate.get("evidence_chain") or []
-        _status = candidate.get("status", "candidate")
+        execution_log: list[str] = []
 
-        # Quality score: weighted combination
-        quality_score = round(
-            min(1.0, evidence_strength * 0.6 + min(1.0, evidence_count * 0.1) * 0.4),
-            3,
+        # Step 1: Extract facts via LLM (FactExtractorComponent)
+        facts, step_log = await self._extract_facts(candidates, provider)
+        execution_log.extend(step_log)
+        self._log_domain_rule("fact_extraction", context={"count": len(facts)})
+
+        if not facts:
+            execution_log.append("No facts extracted — skipping further steps")
+            return {
+                "facts": [],
+                "entities": [],
+                "interest_trends": {},
+                "proposals": [],
+                "validation_passed": True,
+                "execution_log": execution_log,
+            }
+
+        # Step 2: Analyze interest trends (InterestAnalyzerComponent)
+        interest_trends = self._analyze_interest(facts)
+        self._log_domain_rule("interest_analysis", context={"trends": interest_trends})
+
+        # Step 3: Generate projection proposals (ProjectionUpdaterComponent)
+        proposals = self._generate_proposals(facts, interest_trends)
+        self._log_domain_rule("projection_update", context={"proposal_count": len(proposals)})
+
+        # Step 4: Validate all proposals (ReflectionValidator)
+        validation_result = self._validate_proposals(proposals)
+        if not validation_result.success:
+            execution_log.append(
+                f"Validation FAILED: {validation_result.error.message}"
+            )
+            # Don't block — log warning but still return results for review
+            logger.warning(
+                "Reflection validation failed, returning for human review: %s",
+                validation_result.error.message,
+            )
+
+        execution_log.append(
+            f"Pipeline complete: {len(facts)} facts, "
+            f"{len(proposals)} proposals"
         )
 
-        # Promotion eligibility: Pattern needs ≥2 evidences, Belief needs ≥1
-        promotion_eligible = False
-        if (candidate_type == "pattern" and evidence_count >= 2) or (candidate_type == "belief" and evidence_count >= 1):
-            promotion_eligible = True
-
-        # Consolidation feasibility: multiple candidates of same type
-        consolidation_feasible = evidence_count >= 3
-
-        evaluation_notes = []
-        if not promotion_eligible:
-            evaluation_notes.append(
-                f"Not promotion-eligible: {candidate_type} with {evidence_count} evidence(s)"
-            )
-        if quality_score < 0.5:
-            evaluation_notes.append("Low quality score — may need more evidence")
-
-        return DomainResult.ok({
-            "quality_score": quality_score,
-            "promotion_eligible": promotion_eligible,
-            "consolidation_feasible": consolidation_feasible,
-            "evaluation_notes": evaluation_notes,
-        })
+        return {
+            "facts": facts,
+            "entities": self._extract_entity_names(facts),
+            "interest_trends": interest_trends,
+            "proposals": proposals,
+            "validation_passed": validation_result.success,
+            "execution_log": execution_log,
+        }
 
     # ------------------------------------------------------------------
-    # Capability 3: Validate Evolution
+    # Component 1: FactExtractor
     # ------------------------------------------------------------------
 
-    def validate_evolution(
+    async def _extract_facts(
         self,
-        *,
-        evolution_action: dict[str, Any],
-    ) -> DomainResult[bool]:
-        """Validate that a knowledge evolution action follows domain rules.
+        candidates: list[dict[str, Any]],
+        provider: ReflectionProvider,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        """Extract structured facts from candidate memories.
 
-        Per D4.2d §2.3: Validates evolution follows the Knowledge
-        Evolution Model, evidence requirements are satisfied, and
-        semantic integrity is preserved.
-
-        Args:
-            evolution_action: Dict with keys:
-                action (str), source_level (int), target_level (int),
-                evidence_chain (list), justification (str).
-
-        Returns:
-            DomainResult[bool] — True if evolution is valid.
+        Uses LLM via Provider interface (NOT direct Ollama call).
         """
-        if not evolution_action:
-            return DomainResult.fail(
-                DomainRuleViolation(
-                    "Evolution action cannot be None or empty",
-                    rule="evolution_not_empty",
-                )
-            )
+        log: list[str] = []
 
-        _action = evolution_action.get("action")
-        source_level = evolution_action.get("source_level")
-        target_level = evolution_action.get("target_level")
-        evidence_chain = evolution_action.get("evidence_chain") or []
-        justification = evolution_action.get("justification", "")
+        # Build prompt from candidate content
+        contents = []
+        for i, c in enumerate(candidates):
+            content = c.get("content", "")
+            source = c.get("source", "unknown")
+            created = c.get("created_at", "")
+            contents.append(f"[{i+1}] source={source} time={created} content={content}")
 
-        # Evolution must be upward (monotonic): level increases
-        if source_level is not None and target_level is not None and target_level <= source_level:
-            return DomainResult.fail(
-                DomainInvariantViolation(
-                    f"Evolution is not monotonic: {source_level} → {target_level}. "
-                    f"Target level must exceed source level.",
-                    invariant="evolution_monotonicity",
-                )
-            )
+        prompt_text = "\n".join(contents)
 
-        # Evidence chain must not be empty
-        if not evidence_chain:
-            return DomainResult.fail(
-                DomainInvariantViolation(
-                    "Evolution has no evidence chain — violates evidence requirement",
-                    invariant="evidence_requirement",
-                )
-            )
+        system_prompt = (
+            "You are a Memory Evolution Fact Extractor for Personal Memory Hub.\n"
+            "Analyze the following memories and extract structured facts.\n"
+            "Output ONLY valid JSON with this structure:\n"
+            "{\n"
+            '  "facts": [{"entity": str, "relation": str, "timestamp": str, "confidence": float, "source_ids": [str]}, ...],\n'
+            '  "entities": [str, ...]\n'
+            "}\n"
+            "Each fact should capture a new piece of knowledge about the user.\n"
+            "confidence should be between 0.0 and 1.0."
+        )
 
-        # Justification must be non-empty
-        if not justification or not str(justification).strip():
-            return DomainResult.fail(
-                DomainRuleViolation(
-                    "Evolution justification cannot be empty",
-                    rule="evolution_justification_required",
-                )
-            )
-
-        self._log_invariant_check("evolution_monotonicity", True)
-        return DomainResult.ok(True)
+        try:
+            result = await provider.generate(system_prompt, {"candidates": candidates})
+            facts = result.get("facts", [])
+            log.append(f"LLM extracted {len(facts)} facts")
+            return facts, log
+        except Exception as e:
+            log.append(f"Fact extraction failed: {e}")
+            logger.error("Fact extraction error: %s", e, exc_info=True)
+            return [], log
 
     # ------------------------------------------------------------------
-    # Capability 4: Verify Invariants
+    # Component 2: InterestAnalyzer
     # ------------------------------------------------------------------
 
-    def verify_invariants(
+    def _analyze_interest(
+        self, facts: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Analyze interest trends based on extracted facts.
+
+        Pure rule-based algorithm. No LLM dependency.
+        """
+        if not facts:
+            return {"trends": [], "keywords": {}, "summary": "No facts to analyze"}
+
+        # Count entity mentions across facts
+        entity_counts: dict[str, int] = {}
+        for fact in facts:
+            entity = fact.get("entity", "")
+            if entity:
+                entity_counts[entity] = entity_counts.get(entity, 0) + 1
+
+        # Sort by frequency
+        sorted_entities = sorted(
+            entity_counts.items(), key=lambda x: x[1], reverse=True
+        )
+
+        # Determine trends
+        trends = []
+        for entity, count in sorted_entities[:5]:
+            if count >= 3:
+                trend = "rising"
+            elif count >= 2:
+                trend = "stable"
+            else:
+                trend = "new"
+            trends.append({"entity": entity, "mention_count": count, "trend": trend})
+
+        summary = (
+            f"Top interests: {', '.join(e for e, _ in sorted_entities[:3])}"
+            if sorted_entities
+            else "No clear interest patterns"
+        )
+
+        return {
+            "trends": trends,
+            "keywords": dict(sorted_entities[:10]),
+            "summary": summary,
+        }
+
+    # ------------------------------------------------------------------
+    # Component 3: ProjectionUpdater
+    # ------------------------------------------------------------------
+
+    def _generate_proposals(
         self,
-        *,
-        reflection: dict[str, Any],
-    ) -> DomainResult[list[str]]:
-        """Verify all Reflection domain invariants hold.
+        facts: list[dict[str, Any]],
+        interest_trends: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Generate Memory Pyramid update proposals.
 
-        Per D4.2d §2.6:
-        - Evidence Requirement
-        - Semantic Coherence
-        - Evolution Monotonicity
-        - Traceability Preservation
-        - Idempotency
-
-        Args:
-            reflection: Reflection domain model dict.
-
-        Returns:
-            DomainResult with list of passed invariant names.
+        Pure rule-based algorithm. Proposal types per 10_4 §7.2:
+        Create / Strengthen / Refine / Split / Ignore
         """
-        if not reflection:
-            return DomainResult.ok([])
+        proposals: list[dict[str, Any]] = []
 
-        passed: list[str] = []
+        if not facts:
+            return [
+                {
+                    "type": "Ignore",
+                    "target_level": 0,
+                    "evidence_chain": [],
+                    "confidence": 0.0,
+                    "summary": "No facts to generate proposals from",
+                }
+            ]
 
-        # Evidence Requirement
-        if reflection.get("evidence_count", 0) >= 1:
-            passed.append("evidence_requirement")
+        # Analyze evidence density per entity
+        entity_evidence: dict[str, list[dict]] = {}
+        for fact in facts:
+            entity = fact.get("entity", "unknown")
+            if entity not in entity_evidence:
+                entity_evidence[entity] = []
+            entity_evidence[entity].append(fact)
 
-        # Semantic Coherence — content must be non-empty
-        content = reflection.get("content", "")
-        if content and str(content).strip():
-            passed.append("semantic_coherence")
+        for entity, entity_facts in entity_evidence.items():
+            avg_confidence = sum(
+                f.get("confidence", 0.5) for f in entity_facts
+            ) / len(entity_facts)
 
-        # Evolution Monotonicity — if source/target present, target > source
-        source = reflection.get("source_level")
-        target = reflection.get("target_level")
-        if source is not None and target is not None:
-            if target > source:
-                passed.append("evolution_monotonicity")
-        else:
-            passed.append("evolution_monotonicity")  # N/A
+            # Decision logic per 10_4 §7.2 Semantic Evolution
+            if avg_confidence >= 0.8 and len(entity_facts) >= 3:
+                proposal_type = "Strengthen"
+                target_level = 2  # Pattern (L2)
+            elif avg_confidence >= 0.6 and len(entity_facts) >= 2:
+                proposal_type = "Create"
+                target_level = 1  # Observation/Topic (L1)
+            elif avg_confidence >= 0.9:
+                proposal_type = "Refine"
+                target_level = 2
+            else:
+                proposal_type = "Split"
+                target_level = 1
 
-        # Traceability — evidence_chain must not be empty
-        if reflection.get("evidence_chain"):
-            passed.append("traceability_preserved")
+            # Build evidence chain from source_ids
+            evidence_chain = []
+            for f in entity_facts:
+                for sid in f.get("source_ids", []):
+                    if sid not in evidence_chain:
+                        evidence_chain.append(sid)
 
-        # Idempotency — reflection has a stable scope identifier
-        if reflection.get("scope"):
-            passed.append("idempotency")
-
-        return DomainResult.ok(passed)
-
-    # ------------------------------------------------------------------
-    # Capability 5: Assess Consolidation Feasibility
-    # ------------------------------------------------------------------
-
-    def assess_consolidation_feasibility(
-        self,
-        *,
-        memories: list[dict[str, Any]],
-    ) -> DomainResult[dict[str, Any]]:
-        """Assess whether a group of memories can be consolidated.
-
-        Per D4.2d §2.5: Consolidation criteria must be met, evidence
-        chain preserved, and semantic content not lost.
-
-        Args:
-            memories: List of memory dicts to evaluate for consolidation.
-
-        Returns:
-            DomainResult with consolidation assessment dict.
-        """
-        if len(memories) < 2:
-            return DomainResult.ok({
-                "feasible": False,
-                "reason": "Need at least 2 memories for consolidation",
-                "overlap_score": 0.0,
+            proposals.append({
+                "type": proposal_type,
+                "target_level": target_level,
+                "entity": entity,
+                "evidence_chain": evidence_chain,
+                "confidence": round(avg_confidence, 3),
+                "summary": f"{proposal_type} memory for '{entity}' "
+                           f"({len(entity_facts)} facts, confidence={avg_confidence:.2f})",
             })
 
-        # Calculate overlap score based on evidence sharing
-        all_evidence_ids: set[str] = set()
-        for mem in memories:
-            for link in mem.get("evidence_links") or []:
-                all_evidence_ids.add(str(link))
+        return proposals
 
-        total_evidence = sum(
-            len(mem.get("evidence_links") or []) for mem in memories
-        )
-        unique_evidence = len(all_evidence_ids)
-        overlap_score = round(unique_evidence / total_evidence, 3) if total_evidence > 0 else 0.0
+    @staticmethod
+    def _extract_entity_names(facts: list[dict[str, Any]]) -> list[str]:
+        """Extract unique entity names from facts."""
+        entities = set()
+        for fact in facts:
+            entity = fact.get("entity", "")
+            if entity:
+                entities.add(entity)
+        return sorted(entities)
 
-        feasible = overlap_score >= 0.5 and len(memories) >= 2
+    # ------------------------------------------------------------------
+    # Component 4: ReflectionValidator
+    # ------------------------------------------------------------------
 
-        return DomainResult.ok({
-            "feasible": feasible,
-            "reason": "Memories share significant evidence" if feasible else "Insufficient evidence overlap",
-            "overlap_score": overlap_score,
-            "memory_count": len(memories),
-            "unique_evidence_count": unique_evidence,
-        })
+    def _validate_proposals(
+        self, proposals: list[dict[str, Any]]
+    ) -> DomainResult[list[dict[str, Any]]]:
+        """Validate proposals against domain invariants.
+
+        Per D4.2d §2.6 invariants:
+        - Evidence Requirement: each proposal needs evidence chain
+        - Semantic Coherence: content must be non-empty
+        - L0 Protection: no proposals targeting level 0
+        """
+        validated: list[dict[str, Any]] = []
+        violations: list[str] = []
+
+        for i, prop in enumerate(proposals):
+            errors: list[str] = []
+
+            # Evidence Requirement (10_4 §7.4)
+            evidence = prop.get("evidence_chain", [])
+            if not evidence:
+                errors.append(
+                    f"Proposal {i}: missing evidence chain — violates evidence requirement"
+                )
+
+            # L0 Protection
+            target_level = prop.get("target_level", 0)
+            if target_level < 1:
+                errors.append(
+                    f"Proposal {i}: targets level {target_level} — L0 protection violated"
+                )
+
+            # Semantic Coherence
+            summary = prop.get("summary", "")
+            if not summary or not str(summary).strip():
+                errors.append(
+                    f"Proposal {i}: empty summary — violates semantic coherence"
+                )
+
+            if errors:
+                violations.extend(errors)
+            else:
+                validated.append(prop)
+
+        if violations:
+            return DomainResult.fail(
+                DomainInvariantViolation(
+                    "; ".join(violations[:3]),  # truncate for readability
+                    invariant="reflection_validation",
+                    details={"total_violations": len(violations)},
+                )
+            )
+
+        return DomainResult.ok(validated)
