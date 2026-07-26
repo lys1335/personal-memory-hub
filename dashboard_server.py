@@ -36,6 +36,10 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             return self._proxy(MEM_HUB, '/api', self.path)
         elif self.path.startswith('/api/ollama'):
             return self._proxy(OLLAMA, '/api/ollama', self.path)
+        
+        if self.path.startswith('/api/review'):
+            return self._proxy(MEM_HUB, '/api', self.path)
+        
         # Serve static files
         return self._serve_file()
 
@@ -59,11 +63,11 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def _serve_file(self):
         """Serve static files from dashboard directory."""
-        if self.path == '/' or self.path == '':
-            self.path = '/dashboard-main.html'
-        
-        # Strip query string to get clean file path
+        # Strip query string first
         clean_path = self.path.split('?')[0]
+        if clean_path == '/' or clean_path == '':
+            clean_path = '/dashboard-main.html'
+        
         filepath = os.path.join(DASHBOARD_DIR, clean_path.lstrip('/'))
         
         if os.path.exists(filepath) and os.path.isfile(filepath):

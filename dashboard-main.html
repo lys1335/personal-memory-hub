@@ -4,7 +4,114 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>记忆中枢 Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js">
+    
+        </div>
+    </div>
+
+
+        // === Evolution Review Tab Functions ===
+        
+        async function loadEvolutionProposals() {
+            const logArea = document.getElementById('evolutionLogArea');
+            try {
+                const r1 = await fetch('/api/review/proposals');
+                const data1 = await r1.json();
+                const proposals = data1.proposals || [];
+                
+                let html = '';
+                if (proposals.length === 0) {
+                    html = '<div style="color:#666;">暂无待审建议。运行一次演化任务后这里会显示结果。</div>';
+                } else {
+                    for (const p of proposals) {
+                        const typeColors = {Create:'#4caf50',Strengthen:'#ff9800',Refine:'#2196f3',Split:'#9c27b0',Ignore:'#999'};
+                        const color = typeColors[p.type] || '#888';
+                        html += `<div style="padding:8px; margin-bottom:6px; background:rgba(255,255,255,0.03); border-radius:6px; border-left:3px solid ${color};">`;
+                        html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">`;
+                        html += `<span style="font-size:11px; color:${color}; font-weight:bold;">${p.type}</span>`;
+                        html += `<span style="font-size:10px; color:#666;">L${p.target_level || '?'} | confidence: ${p.confidence || '?'}</span></div>`;
+                        html += `<div style="font-size:12px; color:#ccc; margin-bottom:4px;">${escapeHtml(p.summary || '')}</div>`;
+                        html += `<div style="font-size:10px; color:#666;">entities: ${(p.entities||[]).join(', ') || 'N/A'}</div>`;
+                        html += `<div style="font-size:10px; color:#666;">evidence: ${(p.evidence_chain||[]).length} sources</div>`;
+                        html += `<div style="margin-top:6px; display:flex; gap:4px;">`;
+                        html += `<button onclick="approveProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(76,175,80,0.2); color:#4caf50;">✅ 批准</button>`;
+                        html += `<button onclick="rejectProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(244,67,54,0.2); color:#f44336;">❌ 驳回</button>`;
+                        html += `</div></div>`;
+                    }
+                }
+                
+                // Load evolution task list
+                try {
+                    const r2 = await fetch('/api/cron/tasks');
+                    const data2 = await r2.json();
+                    const tasks = data2.tasks || [];
+                    const evolutionTasks = tasks.filter(t => t.type === 'evolution');
+                    
+                    if (evolutionTasks.length > 0) {
+                        html += '<hr style="border-color:rgba(255,255,255,0.1); margin:12px 0;">';
+                        html += '<div style="font-size:12px; color:#888; margin-bottom:8px;">📋 最近演化执行记录</div>';
+                        for (const t of evolutionTasks) {
+                            const lastRun = t.last_run ? new Date(t.last_run).toLocaleString() : '从未';
+                            html += `<div style="font-size:11px; color:#aaa; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">`;
+                            html += `${escapeHtml(t.name)} — 上次: ${lastRun} — 间隔: ${t.interval_seconds}s`;
+                            html += ` <button onclick="runEvolutionTask('${t.id}')" style="padding:1px 6px; border:none; border-radius:3px; font-size:10px; cursor:pointer; background:rgba(79,195,247,0.2); color:#4fc3f7;">▶ 立即执行</button></div>`;
+                        }
+                    }
+                } catch(e) {}
+                
+                logArea.innerHTML = html;
+            } catch(e) {
+                logArea.innerHTML = `<div style="color:#f44336;">加载失败: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+        
+        async function approveProposal(id) {
+            try {
+                const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'POST'});
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                alert('已批准');
+                loadEvolutionProposals();
+            } catch(e) {
+                alert('批准失败: ' + e.message);
+            }
+        }
+        
+        async function rejectProposal(id) {
+            try {
+                const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'POST'});
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                alert('已驳回');
+                loadEvolutionProposals();
+            } catch(e) {
+                alert('驳回失败: ' + e.message);
+            }
+        }
+        
+        async function clearEvolutionProposals() {
+            try {
+                const r = await fetch('/api/review/proposals/clear', {method: 'POST'});
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                alert('已清空 ' + data.cleared + ' 条建议');
+                loadEvolutionProposals();
+            } catch(e) {
+                alert('清空失败: ' + e.message);
+            }
+        }
+        
+        async function runEvolutionTask(taskId) {
+            try {
+                const r = await fetch('/api/cron/tasks/' + taskId + '/run-now', {method: 'POST'});
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                alert('执行结果: ' + (data.message || '已完成') + ' (' + (data.facts||0) + ' facts, ' + (data.proposals||0) + ' proposals)');
+                loadEvolutionProposals();
+            } catch(e) {
+                alert('执行失败: ' + e.message);
+            }
+        }
+
+</script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -228,6 +335,9 @@
                 </div>
                 <div class="nav-item" data-tab="cron" onclick="switchTab('cron')">
                     <span class="nav-icon">⏱</span> 定时任务
+                </div>
+                <div class="nav-item" data-tab="evolution" onclick="switchTab('evolution')">
+                    <span class="nav-icon">🧠</span> 演化评审
                 </div>
             </div>
             <div class="sidebar-footer">
@@ -1218,7 +1328,7 @@
                 alert('执行失败: ' + e.message);
             }
         }
-    </script>
+    
 
     <!-- EVOLUTION REVIEW TAB -->
     <div class="tab-content" id="tab-evolution">
