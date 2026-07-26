@@ -13,4 +13,10 @@ from pathlib import Path
 
 # Ensure src/ is on the Python path for imports in all test files
 _src = Path(__file__).resolve().parent / "src"
-sys.path.insert(0, str(_src))
+if str(_src) not in sys.path:
+    sys.path.insert(0, str(_src))
+
+# Also add backend to path for direct imports
+_backend = _src / "backend"
+if _backend.exists() and str(_backend) not in sys.path:
+    sys.path.insert(0, str(_backend))

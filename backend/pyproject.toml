@@ -141,7 +141,9 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "-v",
+    "--import-mode=importlib",
 ]
+pythonpath = "src"
 markers = [
     "unit: Unit tests (fast, deterministic)",
     "integration: Integration tests (cross-layer, no external deps)",

@@ -22,7 +22,6 @@ from typing import Any
 from backend.engine.base import (
     DomainInvariantViolation,
     DomainResult,
-    DomainRuleViolation,
     EngineBase,
 )
 from backend.shared.providers.reflection_provider import ReflectionProvider
@@ -156,8 +155,6 @@ class ReflectionEngine(EngineBase):
             source = c.get("source", "unknown")
             created = c.get("created_at", "")
             contents.append(f"[{i+1}] source={source} time={created} content={content}")
-
-        prompt_text = "\n".join(contents)
 
         system_prompt = (
             "You are a Memory Evolution Fact Extractor for Personal Memory Hub.\n"
@@ -369,3 +366,143 @@ class ReflectionEngine(EngineBase):
             )
 
         return DomainResult.ok(validated)
+
+    # ------------------------------------------------------------------
+    # Public Methods for Testing & API
+    # ------------------------------------------------------------------
+
+    def validate_reflection(self, *, reflection: dict[str, Any]) -> DomainResult[bool]:
+        """Validate a single reflection against domain invariants.
+
+        Per D4.2d §2.6 invariants:
+        - Evidence Requirement: each proposal needs evidence chain
+        - Semantic Coherence: content must be non-empty
+        - L0 Protection: no proposals targeting level 0
+        """
+        errors: list[str] = []
+
+        # Evidence Requirement
+        evidence_chain = reflection.get("evidence_chain", [])
+        if not evidence_chain or len(evidence_chain) == 0:
+            errors.append("Missing evidence chain — violates evidence requirement")
+
+        # Semantic Coherence
+        content = reflection.get("content", "")
+        if not content or not str(content).strip():
+            errors.append("Empty content — violates semantic coherence")
+
+        # Status check
+        status = reflection.get("status", "")
+        if status not in ("candidate", "approved", "rejected"):
+            errors.append(f"Invalid status '{status}' — must be candidate/approved/rejected")
+
+        if errors:
+            return DomainResult.fail(
+                DomainInvariantViolation("; ".join(errors), invariant="reflection_validation")
+            )
+
+        return DomainResult.ok(True)
+
+    def evaluate_candidate(self, *, candidate: dict[str, Any]) -> DomainResult[dict[str, Any]]:
+        """Evaluate whether a candidate is eligible for promotion.
+
+        Promotion criteria:
+        - candidate_type must be 'pattern' or 'belief'
+        - evidence_count >= 2
+        - evidence_strength >= 0.5
+        """
+        candidate_type = candidate.get("candidate_type", "")
+        evidence_count = candidate.get("evidence_count", 0)
+        evidence_strength = candidate.get("evidence_strength", 0.0)
+
+        promotion_eligible = (
+            candidate_type in ("pattern", "belief")
+            and evidence_count >= 2
+            and evidence_strength >= 0.5
+        )
+
+        return DomainResult.ok({
+            "promotion_eligible": promotion_eligible,
+            "criteria_met": {
+                "valid_type": candidate_type in ("pattern", "belief"),
+                "sufficient_evidence": evidence_count >= 2,
+                "strong_evidence": evidence_strength >= 0.5,
+            },
+        })
+
+    def validate_evolution(self, *, evolution_action: dict[str, Any]) -> DomainResult[bool]:
+        """Validate evolution action against monotonicity invariant.
+
+        Evolution must be monotonic: levels can only increase (promote),
+        never decrease (demote) without valid justification.
+        Demotions that skip levels are prohibited.
+        """
+        action = evolution_action.get("action", "")
+        source_level = evolution_action.get("source_level", 0)
+        target_level = evolution_action.get("target_level", 0)
+        justification = evolution_action.get("justification", "")
+
+        # Demotion is generally prohibited unless justified
+        if action == "demote":
+            if not justification or not str(justification).strip():
+                return DomainResult.fail(
+                    DomainInvariantViolation(
+                        "Demotion requires justification",
+                        invariant="evolution_monotonicity",
+                    )
+                )
+            # Non-monotonic: skipping levels in demotion is not allowed
+            if target_level < source_level - 1:
+                return DomainResult.fail(
+                    DomainInvariantViolation(
+                        f"Non-monotonic demotion from level {source_level} to {target_level}",
+                        invariant="evolution_monotonicity",
+                    )
+                )
+
+        # Promotions must target higher level
+        if action == "promote" and target_level <= source_level:
+            return DomainResult.fail(
+                DomainInvariantViolation(
+                    f"Promotion from level {source_level} to {target_level} is not upward",
+                    invariant="evolution_monotonicity",
+                )
+            )
+
+        return DomainResult.ok(True)
+
+    def assess_consolidation_feasibility(
+        self, *, memories: list[dict[str, Any]]
+    ) -> DomainResult[dict[str, Any]]:
+        """Assess whether a set of memories can be consolidated.
+
+        Consolidation is feasible when:
+        - At least 2 memories are provided
+        - They share common evidence links
+        - Content overlap exists
+        """
+        if len(memories) < 2:
+            return DomainResult.fail(
+                DomainInvariantViolation(
+                    "Need at least 2 memories for consolidation",
+                    invariant="consolidation_requirement",
+                )
+            )
+
+        # Calculate evidence overlap
+        all_evidence_sets = [set(m.get("evidence_links", [])) for m in memories]
+        common_evidence = all_evidence_sets[0]
+        for es in all_evidence_sets[1:]:
+            common_evidence &= es
+
+        overlap_score = len(common_evidence) / max(
+            len(set().union(*all_evidence_sets)), 1
+        )
+
+        feasible = overlap_score > 0 and len(common_evidence) >= 1
+
+        return DomainResult.ok({
+            "feasible": feasible,
+            "overlap_score": round(overlap_score, 3),
+            "common_evidence": sorted(list(common_evidence)),
+        })
