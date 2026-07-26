@@ -188,10 +188,11 @@ class MemoryQueryRepository(QueryRepository):  # type: ignore[type-arg]
         """Search memory nodes by keyword in content field.
 
         Uses ILIKE for case-insensitive partial matching on memory_nodes.content.
+        Splits multi-word queries into individual keywords and matches any of them (OR logic).
 
         Args:
             workspace_id: Workspace scope.
-            query: Search keyword.
+            query: Search keyword(s).
             entity_id: Optional entity filter.
             level: Optional level filter.
             limit: Maximum number of results.
@@ -200,12 +201,43 @@ class MemoryQueryRepository(QueryRepository):  # type: ignore[type-arg]
         Returns:
             List of MemoryNode entities matching the query.
         """
-        from sqlalchemy import func
+        from sqlalchemy import func, or_
+
+        # Split query into meaningful tokens
+        import re
+
+        # Strategy: extract English words AND Chinese character sequences separately
+        # This handles mixed content like "帮我回忆一下docker的事情"
+        
+        # Extract English/alphanumeric words (including mixed with numbers)
+        en_words = re.findall(r'[a-zA-Z][a-zA-Z0-9.-]{0,30}', query.lower())
+        
+        # Extract Chinese character sequences (2+ chars)
+        cn_sequences = re.findall(r'[\u4e00-\u9fff]{2,}', query)
+        
+        # Combine and deduplicate, preserving order
+        all_tokens = []
+        seen = set()
+        for t in en_words + cn_sequences:
+            if t not in seen and 2 <= len(t) <= 30:
+                seen.add(t)
+                all_tokens.append(t)
+        
+        tokens = all_tokens
+
+        if not tokens:
+            return []
+
+        # Build OR condition: match ANY token against content
+        conditions = [
+            func.lower(self._model_class.content).contains(token)
+            for token in tokens
+        ]
 
         stmt = select(self._model_class).where(
             self._model_class.workspace_id == workspace_id,
             self._model_class.status == "active",
-            func.lower(self._model_class.content).contains(query.lower()),
+            or_(*conditions),
         )
 
         if entity_id:

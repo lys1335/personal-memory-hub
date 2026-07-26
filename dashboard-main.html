@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记忆中枢 Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0; min-height: 100vh;
+        }
+
+        /* ── Layout: sidebar + main ── */
+        .layout { display: flex; height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 200px; min-width: 200px;
+            background: rgba(0,0,0,0.4);
+            border-right: 1px solid rgba(79,195,247,0.2);
+            display: flex; flex-direction: column;
+        }
+        .sidebar-brand {
+            padding: 18px 16px 14px;
+            font-size: 16px; font-weight: bold;
+            color: #4fc3f7;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            letter-spacing: 1px;
+        }
+        .sidebar-nav { flex: 1; padding: 10px 0; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 20px; cursor: pointer;
+            font-size: 14px; color: #aaa;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-item:hover { background: rgba(79,195,247,0.08); color: #ddd; }
+        .nav-item.active {
+            background: rgba(79,195,247,0.12);
+            color: #4fc3f7;
+            border-left-color: #4fc3f7;
+        }
+        .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 11px; color: #666;
+        }
+        .status-bar { display: flex; flex-direction: column; gap: 6px; }
+        .status-item { display: flex; align-items: center; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot.green { background: #4caf50; }
+        .dot.red   { background: #f44336; }
+        .dot.yellow { background: #ff9800; }
+
+        .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .tab-content { display: none; flex: 1; overflow: hidden; }
+        .tab-content.active { display: flex; flex-direction: column; }
+
+        /* ── HOME TAB ── */
+        .home-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 15px; padding: 15px;
+            flex: 1; overflow: hidden;
+        }
+
+        /* Top stats row */
+        .stats-row {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        .stat-box {
+            background: rgba(0,0,0,0.25);
+            padding: 14px 10px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .stat-num {
+            font-size: 24px; font-weight: bold;
+            background: linear-gradient(135deg, #4fc3f7, #2196f3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-label { font-size: 11px; color: #888; margin-top: 4px; }
+
+        /* Panels */
+        .panel {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.08);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .panel-title {
+            font-size: 14px; font-weight: bold; color: #4fc3f7;
+            margin-bottom: 10px; padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* Charts area (center) */
+        .charts-container {
+            grid-column: 1;
+            grid-row: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px;
+            overflow: hidden;
+        }
+        .chart-box {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 8px;
+            min-height: 0;
+        }
+        .chart-box canvas { width: 100% !important; height: 100% !important; }
+
+        /* Carousel (right side) */
+        .carousel-panel {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        .carousel-area {
+            flex: 1; overflow-y: auto; padding: 8px;
+            background: rgba(0,0,0,0.2); border-radius: 8px;
+            margin-bottom: 10px; display: flex; flex-direction: column;
+        }
+        .carousel-card {
+            background: rgba(255,255,255,0.05); padding: 12px;
+            border-radius: 8px; border-left: 3px solid #9c27b0;
+            transition: all 0.5s;
+        }
+        .carousel-card .cc-content { font-size: 13px; line-height: 1.5; }
+        .carousel-card .cc-meta { font-size: 11px; color: #888; margin-top: 4px; }
+        .carousel-controls { display: flex; gap: 8px; align-items: center; justify-content: center; }
+        .carousel-controls button {
+            padding: 6px 14px; border: none; border-radius: 15px;
+            background: rgba(156,39,176,0.3); color: #ce93d8;
+            cursor: pointer; font-size: 12px;
+        }
+        .carousel-controls button:hover { background: rgba(156,39,176,0.5); }
+        .carousel-controls .auto-toggle { background: rgba(79,195,247,0.3); color: #4fc3f7; }
+        .carousel-controls .auto-toggle.active { background: rgba(79,195,247,0.6); }
+        .carousel-count { font-size: 11px; color: #888; text-align: center; }
+
+        /* ── CHAT TAB ── */
+        .chat-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px; padding: 15px;
+            flex: 1; overflow: hidden;
+        }
+        .chat-area {
+            flex: 1; overflow-y: auto; padding: 10px;
+            background: rgba(0,0,0,0.2); border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .msg { margin-bottom: 8px; padding: 10px; border-radius: 8px; font-size: 14px; line-height: 1.5; }
+        .msg-user { background: linear-gradient(135deg, #1e88e5, #1565c0); color: white; margin-left: 15px; }
+        .msg-ai { background: linear-gradient(135deg, #43a047, #2e7d32); color: white; margin-right: 15px; }
+        .msg-sys { background: rgba(255,152,0,0.15); color: #ffb74d; text-align: center; font-size: 12px; }
+
+        .input-row { display: flex; gap: 8px; }
+        .input-row select, .input-row input {
+            padding: 9px 12px; border: none; border-radius: 20px;
+            background: rgba(255,255,255,0.1); color: #e0e0e0;
+            font-size: 13px; outline: none;
+        }
+        .input-row select { cursor: pointer; }
+        .input-row input { flex: 1; }
+        .input-row button {
+            padding: 9px 18px; border: none; border-radius: 20px;
+            background: linear-gradient(135deg, #4fc3f7, #2196f3);
+            color: white; cursor: pointer; font-weight: bold; font-size: 13px;
+        }
+        .input-row button:hover { opacity: 0.9; }
+        .input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .results-area {
+            flex: 1; overflow-y: auto; padding: 8px;
+            background: rgba(0,0,0,0.2); border-radius: 8px;
+        }
+        .mem-card {
+            background: rgba(255,255,255,0.05); padding: 10px;
+            margin-bottom: 8px; border-radius: 8px;
+            border-left: 3px solid #4fc3f7;
+        }
+        .mem-card .mc-content { font-size: 13px; line-height: 1.4; }
+        .mem-card .mc-meta { font-size: 11px; color: #888; margin-top: 4px; }
+        .score-bar { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+        .score-fill { height: 100%; background: linear-gradient(90deg, #4fc3f7, #2196f3); border-radius: 2px; transition: width 0.5s; }
+
+        .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-style: italic; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(79,195,247,0.3); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-brand">Personal Memory Hub</div>
+            <div class="sidebar-nav">
+                <div class="nav-item active" data-tab="home" onclick="switchTab('home')">
+                    <span class="nav-icon">📊</span> 概览
+                </div>
+                <div class="nav-item" data-tab="chat" onclick="switchTab('chat')">
+                    <span class="nav-icon">💬</span> AI 问答
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <div class="status-bar">
+                    <div class="status-item"><span class="dot yellow" id="mhDot"></span><span id="mhLabel">Memory Hub: 检查中...</span></div>
+                    <div class="status-item"><span class="dot yellow" id="olDot"></span><span id="olLabel">Ollama: 检查中...</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Area -->
+        <div class="main-area">
+            <!-- HOME TAB -->
+            <div class="tab-content active" id="tab-home">
+                <div class="home-grid">
+                    <!-- Top Stats -->
+                    <div class="stats-row">
+                        <div class="stat-box"><div class="stat-num" id="totalMemNum">-</div><div class="stat-label">总记忆数</div></div>
+                        <div class="stat-box"><div class="stat-num" id="sourceCount">-</div><div class="stat-label">来源数</div></div>
+                        <div class="stat-box"><div class="stat-num" id="modelCount">-</div><div class="stat-label">模型数</div></div>
+                        <div class="stat-box"><div class="stat-num" id="dayCount">-</div><div class="stat-label">活跃天数</div></div>
+                        <div class="stat-box"><div class="stat-num" id="carouselTotal">-</div><div class="stat-label">轮播总数</div></div>
+                    </div>
+
+                    <!-- Charts Area (center) -->
+                    <div class="charts-container">
+                        <div class="chart-box" id="chartSource"></div>
+                        <div class="chart-box" id="chartModel"></div>
+                        <div class="chart-box" id="chartTime"></div>
+                        <div class="chart-box" id="chartWord"></div>
+                    </div>
+
+                    <!-- Memory Carousel (right) -->
+                    <div class="panel carousel-panel">
+                        <div class="panel-title">🎠 记忆轮播</div>
+                        <div class="carousel-area" id="carouselArea">
+                            <div class="empty-state">加载中...</div>
+                        </div>
+                        <div class="carousel-controls">
+                            <button onclick="loadRandomMemory()">换一条</button>
+                            <button class="auto-toggle" id="autoBtn" onclick="toggleAuto()">自动轮播</button>
+                            <span class="carousel-count" id="carouselCount">0 / 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAT TAB -->
+            <div class="tab-content" id="tab-chat">
+                <div class="chat-layout">
+                    <!-- Chat History -->
+                    <div class="panel">
+                        <div class="panel-title">💬 对话记录</div>
+                        <div class="chat-area" id="chatArea">
+                            <div class="msg msg-sys">输入问题后，系统将自动检索记忆库，并让本地AI结合检索结果生成回复。</div>
+                        </div>
+                        <div class="input-row">
+                            <select id="modelSelect">
+                                <option value="qwen2.5:7b">Qwen2.5 7B</option>
+                                <option value="gpt-oss:20b">GPT-OSS 20B</option>
+                                <option value="qwen3-vl:8b">Qwen3 VL 8B</option>
+                            </select>
+                            <input type="text" id="questionInput" placeholder="输入问题，例如：codex为什么没有iphone版" />
+                            <button id="sendBtn" onclick="handleSend()">发送</button>
+                        </div>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div class="panel">
+                        <div class="panel-title">📚 检索到的记忆</div>
+                        <div class="stats-row" style="grid-template-columns: repeat(3,1fr); margin-bottom: 10px;">
+                            <div class="stat-box"><div class="stat-num" id="foundNum">-</div><div class="stat-label">本次找到</div></div>
+                            <div class="stat-box"><div class="stat-num" id="searchTime">-</div><div class="stat-label">搜索耗时</div></div>
+                            <div class="stat-box"><div class="stat-num" id="carouselTotal2">-</div><div class="stat-label">记忆总数</div></div>
+                        </div>
+                        <div class="results-area" id="resultsArea2">
+                            <div class="empty-state">等待查询...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MEM_HUB = '/api/memories';
+        const OLLAMA_BASE = '/api/ollama';
+        const WORKSPACE_ID = 'fd0223ed-7aa2-491e-8db5-b0de71b75219';
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelector(`.nav-item[data-tab="${tabName}"]`).classList.add('active');
+        }
+
+        async function checkServices() {
+            try {
+                const r = await fetch(MEM_HUB + '/health', { method: 'GET', signal: AbortSignal.timeout(3000) });
+                if (r.ok) {
+                    document.getElementById('mhDot').className = 'dot green';
+                    document.getElementById('mhLabel').textContent = 'Memory Hub: 已连接';
+                } else throw new Error();
+            } catch(e) {
+                try {
+                    const r2 = await fetch(MEM_HUB + '/search', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: '_test_', limit: 1 }),
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (r2.ok) {
+                        document.getElementById('mhDot').className = 'dot green';
+                        document.getElementById('mhLabel').textContent = 'Memory Hub: 已连接';
+                    } else throw new Error();
+                } catch(e2) {
+                    document.getElementById('mhDot').className = 'dot red';
+                    document.getElementById('mhLabel').textContent = 'Memory Hub: 断开';
+                }
+            }
+            try {
+                const r = await fetch(OLLAMA_BASE + '/api/tags');
+                const d = await r.json();
+                const names = (d.models||[]).map(m=>m.name).join(', ');
+                document.getElementById('olDot').className = 'dot green';
+                document.getElementById('olLabel').textContent = 'Ollama: ' + (names||'无模型');
+            } catch(e) {
+                document.getElementById('olDot').className = 'dot red';
+                document.getElementById('olLabel').textContent = 'Ollama: 断开';
+            }
+        }
+        checkServices();
+        setInterval(checkServices, 10000);
+
+        function addMsg(text, cls) {
+            const c = document.getElementById('chatArea');
+            const d = document.createElement('div');
+            d.className = 'msg ' + cls;
+            d.innerHTML = text.replace(/\n/g, '<br>');
+            c.appendChild(d);
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function showResults2(items) {
+            const area = document.getElementById('resultsArea2');
+            area.innerHTML = '';
+            if (!items || items.length === 0) {
+                area.innerHTML = '<div class="empty-state">未找到匹配的记忆</div>';
+                return;
+            }
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'mem-card';
+                const conf = item.confidence || 0;
+                const scorePct = Math.min(conf * 100, 100);
+                const createdAt = item.created_at ? new Date(item.created_at).toLocaleString('zh-CN') : '-';
+                card.innerHTML = `
+                    <div class="mc-content">${escapeHtml(item.content)}</div>
+                    <div class="mc-meta">来源: ${item.source} | 时间: ${createdAt}</div>
+                    <div class="score-bar"><div class="score-fill" style="width:${scorePct}%"></div></div>
+                `;
+                area.appendChild(card);
+            });
+        }
+
+        async function handleSend() {
+            const btn = document.getElementById('sendBtn');
+            const input = document.getElementById('questionInput');
+            const model = document.getElementById('modelSelect').value;
+            const question = input.value.trim();
+            if (!question) return;
+
+            input.value = '';
+            btn.disabled = true;
+            addMsg(question, 'msg-user');
+
+            addMsg('<em>正在检索记忆库...</em>', 'msg-sys');
+            const t0 = Date.now();
+
+            try {
+                const sr = await fetch(MEM_HUB + '/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: question, limit: 5 })
+                });
+                const sd = await sr.json();
+                const elapsed = ((Date.now()-t0)/1000).toFixed(2);
+
+                document.getElementById('foundNum').textContent = sd.data?.items?.length || 0;
+                document.getElementById('searchTime').textContent = elapsed + 's';
+
+                const msgs = document.querySelectorAll('#chatArea .msg');
+                const lastSys = msgs[msgs.length-1];
+                if (lastSys && lastSys.textContent.includes('正在检索')) lastSys.remove();
+
+                const items = sd.data?.items || [];
+                showResults2(items);
+
+                if (items.length === 0) {
+                    addMsg('未找到相关记忆。将直接回答。', 'msg-sys');
+                    await callOllama(question, model, null);
+                } else {
+                    const ctx = items.map((it,i) => `[记忆${i+1}] ${it.content}`).join('\n\n');
+                    await callOllama(question, model, ctx);
+                }
+            } catch(err) {
+                console.error(err);
+                const sysMsgs = document.querySelectorAll('#chatArea .msg');
+                const last = sysMsgs[sysMsgs.length-1];
+                if (last && last.textContent.includes('正在检索')) last.remove();
+                addMsg(`检索失败: ${err.message}`, 'msg-sys');
+            }
+            btn.disabled = false;
+        }
+
+        async function callOllama(question, model, memoryContext) {
+            addMsg('<em>AI 正在思考...</em>', 'msg-sys');
+
+            let prompt;
+            if (memoryContext) {
+                prompt = `你是一位助手。用户问了以下问题，请结合记忆库中的相关信息来回答。\n\n用户问题：${question}\n\n记忆库中的相关信息：\n${memoryContext}\n\n请根据以上信息给出自然、有帮助的回复。如果记忆内容不足以回答问题，请如实说明。`;
+            } else {
+                prompt = `请回答以下问题：${question}`;
+            }
+
+            try {
+                const r = await fetch(OLLAMA_BASE + '/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ model: model, messages: [{role:'user', content: prompt}], stream: false })
+                });
+                const data = await r.json();
+                const reply = data.message?.content || '(无回复)';
+
+                const sysMsgs = document.querySelectorAll('#chatArea .msg');
+                const last = sysMsgs[sysMsgs.length-1];
+                if (last && last.textContent.includes('正在思考')) last.remove();
+
+                addMsg(reply, 'msg-ai');
+            } catch(err) {
+                const sysMsgs = document.querySelectorAll('#chatArea .msg');
+                const last = sysMsgs[sysMsgs.length-1];
+                if (last && last.textContent.includes('正在思考')) last.remove();
+                addMsg(`AI回复失败: ${err.message}`, 'msg-sys');
+            }
+        }
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+
+        document.getElementById('questionInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+        // === Memory Carousel ===
+        let carouselMemories = [];
+        let carouselIndex = 0;
+        let autoInterval = null;
+
+        async function loadRandomMemory() {
+            const area = document.getElementById('carouselArea');
+            area.innerHTML = '<div class="empty-state">加载中...</div>';
+
+            const keywords = ['test','codex','docker','python','memory','chat','ollama','webui','api','database'];
+            const randKeyword = keywords[Math.floor(Math.random() * keywords.length)];
+
+            try {
+                const r = await fetch(MEM_HUB + '/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: randKeyword, limit: 50 })
+                });
+                const d = await r.json();
+                const items = d.data?.items || [];
+
+                const seen = new Set();
+                carouselMemories = [];
+                for (const item of items) {
+                    if (!seen.has(item.content) && item.content.length > 10) {
+                        seen.add(item.content);
+                        carouselMemories.push(item);
+                    }
+                    if (carouselMemories.length >= 50) break;
+                }
+
+                if (carouselMemories.length === 0) {
+                    area.innerHTML = '<div class="empty-state">未找到记忆</div>';
+                    document.getElementById('carouselCount').textContent = '0 / 0';
+                    return;
+                }
+
+                carouselIndex = Math.floor(Math.random() * carouselMemories.length);
+                showCarouselCard(carouselIndex);
+                document.getElementById('carouselCount').textContent = `${carouselIndex + 1} / ${carouselMemories.length}`;
+                document.getElementById('carouselTotal').textContent = carouselMemories.length;
+                document.getElementById('carouselTotal2').textContent = carouselMemories.length;
+            } catch(err) {
+                area.innerHTML = `<div class="empty-state">加载失败: ${err.message}</div>`;
+            }
+        }
+
+        function showCarouselCard(idx) {
+            const area = document.getElementById('carouselArea');
+            if (idx < 0 || idx >= carouselMemories.length) return;
+
+            const m = carouselMemories[idx];
+            const createdAt = m.created_at ? new Date(m.created_at).toLocaleString('zh-CN') : '-';
+            area.innerHTML = `
+                <div class="carousel-card">
+                    <div class="cc-content">${escapeHtml(m.content)}</div>
+                    <div class="cc-meta">来源: ${m.source} | 时间: ${createdAt}</div>
+                </div>
+            `;
+            document.getElementById('carouselCount').textContent = `${idx + 1} / ${carouselMemories.length}`;
+        }
+
+        function toggleAuto() {
+            const btn = document.getElementById('autoBtn');
+            if (autoInterval) {
+                clearInterval(autoInterval);
+                autoInterval = null;
+                btn.classList.remove('active');
+                btn.textContent = '自动轮播';
+            } else {
+                if (carouselMemories.length === 0) {
+                    loadRandomMemory().then(() => startAuto());
+                } else {
+                    startAuto();
+                }
+            }
+        }
+
+        function startAuto() {
+            autoInterval = setInterval(() => {
+                if (carouselMemories.length === 0) return;
+                carouselIndex = (carouselIndex + 1) % carouselMemories.length;
+                showCarouselCard(carouselIndex);
+            }, 3000);
+            document.getElementById('autoBtn').classList.add('active');
+            document.getElementById('autoBtn').textContent = '停止轮播';
+        }
+
+        // === Charts ===
+        let chartsInitialized = false;
+
+        async function initCharts() {
+            if (chartsInitialized) return;
+            chartsInitialized = true;
+
+            try {
+                // Fetch all memories for statistics
+                const r = await fetch(MEM_HUB + '/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: 'test', limit: 1000 })
+                });
+                const d = await r.json();
+                const items = d.data?.items || [];
+
+                // Deduplicate
+                const seen = new Set();
+                const uniqueItems = [];
+                for (const item of items) {
+                    if (!seen.has(item.content) && item.content.length > 10) {
+                        seen.add(item.content);
+                        uniqueItems.push(item);
+                    }
+                    if (uniqueItems.length >= 200) break;
+                }
+
+                // 1. Source distribution (pie chart)
+                const sourceMap = {};
+                uniqueItems.forEach(item => {
+                    sourceMap[item.source] = (sourceMap[item.source] || 0) + 1;
+                });
+
+                const chartSource = echarts.init(document.getElementById('chartSource'));
+                chartSource.setOption({
+                    title: { text: '记忆来源分布', left: 'center', textStyle: { color: '#aaa', fontSize: 12 } },
+                    tooltip: { trigger: 'item' },
+                    series: [{
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        label: { show: false },
+                        data: Object.entries(sourceMap).map(([name, value]) => ({ name, value }))
+                    }]
+                });
+
+                // 2. Model usage (bar chart)
+                const modelMap = {};
+                uniqueItems.forEach(item => {
+                    if (item.model) {
+                        modelMap[item.model] = (modelMap[item.model] || 0) + 1;
+                    }
+                });
+
+                const chartModel = echarts.init(document.getElementById('chartModel'));
+                chartModel.setOption({
+                    title: { text: '模型使用分布', left: 'center', textStyle: { color: '#aaa', fontSize: 12 } },
+                    tooltip: { trigger: 'axis' },
+                    xAxis: {
+                        type: 'category',
+                        data: Object.keys(modelMap),
+                        axisLabel: { color: '#aaa', fontSize: 10, interval: 0, rotate: 30 }
+                    },
+                    yAxis: { type: 'value', axisLabel: { color: '#aaa' } },
+                    series: [{
+                        type: 'bar',
+                        data: Object.values(modelMap),
+                        itemStyle: { color: '#4fc3f7' }
+                    }]
+                });
+
+                // 3. Time distribution (line chart)
+                const timeMap = {};
+                uniqueItems.forEach(item => {
+                    if (item.created_at) {
+                        const date = new Date(item.created_at).toLocaleDateString('zh-CN');
+                        timeMap[date] = (timeMap[date] || 0) + 1;
+                    }
+                });
+
+                const sortedDates = Object.keys(timeMap).sort();
+                const chartTime = echarts.init(document.getElementById('chartTime'));
+                chartTime.setOption({
+                    title: { text: '记忆创建趋势', left: 'center', textStyle: { color: '#aaa', fontSize: 12 } },
+                    tooltip: { trigger: 'axis' },
+                    xAxis: {
+                        type: 'category',
+                        data: sortedDates.slice(-10),
+                        axisLabel: { color: '#aaa', fontSize: 10, interval: 'auto' }
+                    },
+                    yAxis: { type: 'value', axisLabel: { color: '#aaa' } },
+                    series: [{
+                        type: 'line',
+                        data: sortedDates.slice(-10).map(d => timeMap[d]),
+                        smooth: true,
+                        itemStyle: { color: '#4caf50' }
+                    }]
+                });
+
+                // 4. Word cloud (simulated with bar chart since word cloud needs plugin)
+                // Extract common words from content
+                const wordFreq = {};
+                const stopWords = new Set(['的','了','是','我','有','在','不','这','个','你','他','她','它','们','那','里','上','下','中','出','去','来','到','可','也','就','都','会','要','说','过','时','好','看','用','能','被','把','给','对','从','还','以','和','与','及','等','等']);
+                uniqueItems.forEach(item => {
+                    const words = item.content.match(/[\u4e00-\u9fa5]{2,}/g) || [];
+                    words.forEach(word => {
+                        if (!stopWords.has(word) && word.length >= 2) {
+                            wordFreq[word] = (wordFreq[word] || 0) + 1;
+                        }
+                    });
+                });
+
+                const topWords = Object.entries(wordFreq)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+                const chartWord = echarts.init(document.getElementById('chartWord'));
+                chartWord.setOption({
+                    title: { text: '高频关键词', left: 'center', textStyle: { color: '#aaa', fontSize: 12 } },
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: {
+                        type: 'value',
+                        axisLabel: { color: '#aaa' },
+                        splitLine: { show: false }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: topWords.map(w => w[0]).reverse(),
+                        axisLabel: { color: '#aaa', fontSize: 11 }
+                    },
+                    series: [{
+                        type: 'bar',
+                        data: topWords.map(w => w[1]).reverse(),
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                { offset: 0, color: '#9c27b0' },
+                                { offset: 1, color: '#4fc3f7' }
+                            ])
+                        }
+                    }]
+                });
+
+                // Update total stats
+                document.getElementById('totalMemNum').textContent = uniqueItems.length;
+                document.getElementById('sourceCount').textContent = Object.keys(sourceMap).length;
+                document.getElementById('modelCount').textContent = Object.keys(modelMap).length;
+                document.getElementById('dayCount').textContent = sortedDates.length;
+
+            } catch(err) {
+                console.error('Chart init failed:', err);
+            }
+        }
+
+        // Initialize charts when home tab is shown
+        const originalSwitchTab = window.switchTab;
+        window.switchTab = function(tabName) {
+            originalSwitchTab(tabName);
+            if (tabName === 'home') {
+                setTimeout(initCharts, 100);
+            }
+        };
+
+        // Start carousel and charts on load
+        setTimeout(loadRandomMemory, 2000);
+        setTimeout(initCharts, 2500);
+    </script>
+</body>
+</html>

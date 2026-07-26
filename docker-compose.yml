@@ -39,7 +39,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: backend/Dockerfile
     container_name: memory-hub-app
     restart: unless-stopped
     environment:
@@ -55,29 +55,15 @@ services:
         condition: service_healthy
     volumes:
       # Mount source for development (hot reload)
-      - ./src:/app/src
-      - ./tests:/app/tests
-      - ./scripts:/app/scripts
-    command: >
+      - ./backend/src:/app/src
+      - ./backend/tests:/app/tests
+      - ./backend/scripts:/app/scripts
+    command: >-
       sh -c "
         echo 'Waiting for database...' &&
-        python -c \"
-        import time, sys
-        for i in range(30):
-            try:
-                import socket
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect(('db', 5432))
-                s.close()
-                break
-            except ConnectionRefusedError:
-                time.sleep(1)
-        else:
-            print('Database not ready', file=sys.stderr)
-            sys.exit(1)
-        \" &&
+        while ! python -c \"import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.connect(('db', 5432)); s.close()\" 2>/dev/null; do sleep 1; done &&
         echo 'Starting application...' &&
-        python -m backend.cli
+        python -m uvicorn backend.app:app --host 0.0.0.0 --port 8000
       "
 
 volumes:

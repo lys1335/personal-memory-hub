@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记忆检索测试面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(79, 195, 247, 0.3);
+        }
+        
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            color: white;
+            margin-left: 20px;
+        }
+        
+        .system-message {
+            background: linear-gradient(135deg, #43a047, #2e7d32);
+            color: white;
+            margin-right: 20px;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-area input {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .input-area input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
+        }
+        
+        .input-area button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #4fc3f7, #2196f3);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .input-area button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.5);
+        }
+        
+        .result-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .memory-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 3px solid #4fc3f7;
+            transition: all 0.3s;
+        }
+        
+        .memory-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+        
+        .memory-title {
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 5px;
+        }
+        
+        .memory-content {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #b0b0b0;
+        }
+        
+        .status-bar {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(79, 195, 247, 0.5);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(79, 195, 247, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">💬 对话测试区</div>
+            <div class="chat-area" id="chatArea">
+                <div class="message system-message">
+                    欢迎使用记忆检索测试面板！输入问题，系统将查询数据库并显示相关记忆。
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="questionInput" placeholder="输入问题，例如：'codex为什么没有iphone版'">
+                <button onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">📚 记忆检索结果</div>
+            <div class="result-area" id="resultArea">
+                <div style="text-align: center; color: #666; padding: 20px;">
+                    等待查询...
+                </div>
+            </div>
+            <div class="status-bar">
+                当前连接：Memory Hub API (localhost:8000) | 状态：<span id="connectionStatus" style="color: #4caf50;">● 已连接</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let conversationHistory = [];
+        
+        function addMessage(text, isUser = true) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'system-message'}`;
+            messageDiv.textContent = text;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            if (isUser) {
+                conversationHistory.push({role: 'user', content: text});
+            } else {
+                conversationHistory.push({role: 'assistant', content: text});
+            }
+        }
+        
+        function clearResults() {
+            const resultArea = document.getElementById('resultArea');
+            resultArea.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">加载中...</div>';
+        }
+        
+        function displayResults(results) {
+            const resultArea = document.getElementById('resultArea');
+            resultArea.innerHTML = '';
+            
+            if (!results || results.length === 0) {
+                resultArea.innerHTML = '<div style="text-align: center; color: #ff9800; padding: 20px;">未找到相关记忆</div>';
+                return;
+            }
+            
+            results.forEach((item, index) => {
+                const memoryItem = document.createElement('div');
+                memoryItem.className = 'memory-item';
+                memoryItem.innerHTML = `
+                    <div class="memory-title">记忆 #${index + 1} (相似度: ${(item.score * 100).toFixed(1)}%)</div>
+                    <div class="memory-content">${item.content}</div>
+                    <div style="font-size: 11px; color: #666; margin-top: 5px;">来源: ${item.source} | 时间: ${item.created_at}</div>
+                `;
+                resultArea.appendChild(memoryItem);
+            });
+        }
+        
+        async function sendMessage() {
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                alert('请输入问题');
+                return;
+            }
+            
+            addMessage(question);
+            questionInput.value = '';
+            clearResults();
+            
+            try {
+                const response = await fetch('http://localhost:8000/memories/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        workspace_id: 'fd0223ed-7aa2-491e-8db5-b0de71b75219',
+                        query: question,
+                        limit: 5,
+                        ranking_approach: 'hybrid'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const items = data.data.items || [];
+                    displayResults(items.map(item => ({
+                        content: item.content,
+                        score: item.confidence || item.score || 0,
+                        source: item.source,
+                        created_at: item.created_at
+                    })));
+                    
+                    // Generate AI response based on search results
+                    if (items.length > 0) {
+                        const context = items.map(item => item.content).join('\n');
+                        const aiResponse = generateAIResponse(question, items);
+                        addMessage(aiResponse, false);
+                    } else {
+                        addMessage('抱歉，未在记忆中找到相关内容。', false);
+                    }
+                } else {
+                    throw new Error(data.message || '查询失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                clearResults();
+                document.getElementById('resultArea').innerHTML = 
+                    `<div style="text-align: center; color: #f44336; padding: 20px;">
+                        查询失败: ${error.message}<br>
+                        请确保 Memory Hub API 正在运行 (localhost:8000)
+                    </div>`;
+                addMessage(`查询出错: ${error.message}`, false);
+            }
+        }
+        
+        function generateAIResponse(question, memories) {
+            if (memories.length === 0) {
+                return "我还没有关于这个问题的记忆记录。";
+            }
+            
+            const relevantMemories = memories.slice(0, 3).map(m => m.content).join('; ');
+            return `根据我的记忆，关于"${question}"，我找到以下相关信息：\n\n${relevantMemories}\n\n这些信息可能对你有帮助。`;
+        }
+        
+        // Enter key support
+        document.getElementById('questionInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Check connection status
+        function checkConnection() {
+            fetch('http://localhost:8000/health')
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('connectionStatus').textContent = '● 已连接';
+                        document.getElementById('connectionStatus').style.color = '#4caf50';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('connectionStatus').textContent = '● 断开';
+                    document.getElementById('connectionStatus').style.color = '#f44336';
+                });
+        }
+        
+        // Initial connection check
+        checkConnection();
+        setInterval(checkConnection, 5000);
+    </script>
+</body>
+</html>

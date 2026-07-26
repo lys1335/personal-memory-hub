@@ -29,11 +29,9 @@ import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from backend.ingest.adapters.open_webui import OpenWebUIAdapter
-
 # Import from ingest framework (Phase F)
 from backend.ingest.base import ImportSource
-from backend.ingest.registry import ImportRegistry
+from backend.ingest.registry import create_default_registry
 from backend.repository.exceptions import RepositoryError
 from backend.service.base import BaseService
 from backend.service.dto import (
@@ -455,9 +453,8 @@ class MemoryService(BaseService):
         """
         job_id = job_id or self._generate_id()
 
-        # Create registry and register adapters
-        registry = ImportRegistry()
-        registry.register(OpenWebUIAdapter())
+        # Create registry and register all adapters
+        registry = create_default_registry()
 
         # Parse and validate using the pipeline
         try:

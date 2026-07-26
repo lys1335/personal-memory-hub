@@ -202,7 +202,7 @@ async def capture_memory(body: dict = Body(...), services: dict = Depends(get_se
 
 
 @app.post("/memories/search", tags=["memories"])
-async def search_memory(body: dict = Body(...), services: dict = Depends(get_services)):
+async def search_memory(body: dict = Body(..., embed=False), services: dict = Depends(get_services)):
     """POST /memories/search - search memories."""
     adapter = RESTAdapter(services)
     try:
@@ -301,4 +301,6 @@ async def import_memories(body: dict = Body(...), services: dict = Depends(get_s
     raise HTTPException(status_code=422, detail=asdict(response))
 
 
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
