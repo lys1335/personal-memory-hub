@@ -201,20 +201,20 @@ class MemoryQueryRepository(QueryRepository):  # type: ignore[type-arg]
         Returns:
             List of MemoryNode entities matching the query.
         """
-        from sqlalchemy import func, or_
-
         # Split query into meaningful tokens
         import re
 
+        from sqlalchemy import func, or_
+
         # Strategy: extract English words AND Chinese character sequences separately
         # This handles mixed content like "帮我回忆一下docker的事情"
-        
+
         # Extract English/alphanumeric words (including mixed with numbers)
         en_words = re.findall(r'[a-zA-Z][a-zA-Z0-9.-]{0,30}', query.lower())
-        
+
         # Extract Chinese character sequences (2+ chars)
         cn_sequences = re.findall(r'[\u4e00-\u9fff]{2,}', query)
-        
+
         # Combine and deduplicate, preserving order
         all_tokens = []
         seen = set()
@@ -222,7 +222,7 @@ class MemoryQueryRepository(QueryRepository):  # type: ignore[type-arg]
             if t not in seen and 2 <= len(t) <= 30:
                 seen.add(t)
                 all_tokens.append(t)
-        
+
         tokens = all_tokens
 
         if not tokens:
