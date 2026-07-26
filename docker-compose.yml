@@ -58,13 +58,10 @@ services:
       - ./backend/src:/app/src
       - ./backend/tests:/app/tests
       - ./backend/scripts:/app/scripts
+      # Mount logs directory for dashboard log viewer
+      - ./logs:/app/logs
     command: >-
-      sh -c "
-        echo 'Waiting for database...' &&
-        while ! python -c \"import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.connect(('db', 5432)); s.close()\" 2>/dev/null; do sleep 1; done &&
-        echo 'Starting application...' &&
-        python -m uvicorn backend.app:app --host 0.0.0.0 --port 8000
-      "
+      sh -c "/app/scripts/start.sh"
 
 volumes:
   db_data:

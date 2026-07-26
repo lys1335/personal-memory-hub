@@ -24,6 +24,8 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 COPY --from=builder /build/.venv /app/.venv
 COPY backend/src/ ./src/
+COPY backend/scripts/start.sh ./scripts/start.sh
+RUN chmod +x ./scripts/start.sh
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/src"

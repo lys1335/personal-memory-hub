@@ -223,6 +223,12 @@
                 <div class="nav-item" data-tab="sql" onclick="switchTab('sql')">
                     <span class="nav-icon">🔍</span> 数据查询
                 </div>
+                <div class="nav-item" data-tab="log" onclick="switchTab('log')">
+                    <span class="nav-icon">📋</span> 系统日志
+                </div>
+                <div class="nav-item" data-tab="cron" onclick="switchTab('cron')">
+                    <span class="nav-icon">⏱</span> 定时任务
+                </div>
             </div>
             <div class="sidebar-footer">
                 <div class="status-bar">
@@ -328,6 +334,78 @@
                         <div class="empty-state">输入 SQL 查询并执行，结果将在此显示</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- LOG VIEWER TAB -->
+            <div class="tab-content" id="tab-log">
+                <div style="display:flex; flex-direction:column; height:100%; padding:15px; overflow:hidden;">
+                    <!-- Filter Bar -->
+                    <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <input type="text" id="logKeyword" placeholder="搜索关键字（如：batch、import、error）..." style="flex:1; min-width:200px; padding:8px 14px; border:none; border-radius:20px; background:rgba(255,255,255,0.1); color:#e0e0e0; font-size:13px; outline:none;" />
+                        <select id="logLevelFilter" style="padding:8px 14px; border:none; border-radius:20px; background:rgba(255,255,255,0.1); color:#e0e0e0; font-size:13px; cursor:pointer; outline:none;">
+                            <option value="">全部级别</option>
+                            <option value="INFO">INFO</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="WARNING">WARNING</option>
+                        </select>
+                        <button onclick="refreshLogs()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-weight:bold; font-size:13px;">🔄 刷新</button>
+                        <button onclick="clearLogView()" style="padding:8px 18px; border:none; border-radius:20px; background:rgba(255,255,255,0.1); color:#aaa; cursor:pointer; font-size:13px;">清空</button>
+                        <span id="logStatus" style="font-size:12px; color:#888; margin-left:auto;"></span>
+                    </div>
+                    <!-- Log Output Area -->
+                    <div id="logOutputArea" style="flex:1; overflow:auto; background:rgba(0,0,0,0.4); border-radius:8px; padding:12px; font-family:'Consolas','Courier New',monospace; font-size:12px; line-height:1.8; white-space:pre-wrap; word-break:break-all;">
+                        <div class="empty-state">点击下方"刷新"按钮加载日志，或使用上方搜索框过滤关键字...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- CRON CONTROL TAB -->
+    <div class="tab-content" id="tab-cron">
+        <div style="display:flex; flex-direction:column; height:100%; padding:15px; overflow:hidden;">
+            <!-- Toolbar -->
+            <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button onclick="loadCronTasks()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-weight:bold; font-size:13px;">🔄 刷新任务</button>
+                <button onclick="showCreateTaskForm()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#66bb6a,#43a047); color:white; cursor:pointer; font-weight:bold; font-size:13px;">＋ 新建任务</button>
+            </div>
+            <!-- Create / Edit Form (collapsible) -->
+            <div id="cronFormArea" style="display:none; margin-bottom:12px; padding:14px; background:rgba(79,195,247,0.08); border-radius:8px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="font-size:12px; color:#aaa;">任务名称</label>
+                        <input type="text" id="cronTaskName" placeholder="例如：每日记忆演化" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#aaa;">任务类型</label>
+                        <select id="cronTaskType" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                            <option value="evolution">记忆演化 (Reflection)</option>
+                            <option value="batch_import">批量导入</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#aaa;">执行间隔（秒，最小10）</label>
+                        <input type="number" id="cronTaskInterval" value="300" min="10" step="10" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#aaa;">Cron 表达式（可选）</label>
+                        <input type="text" id="cronTaskExpr" placeholder="例如：0 */6 * * *" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="font-size:12px; color:#aaa;">Payload（JSON）</label>
+                        <textarea id="cronTaskPayload" rows="2" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px; resize:vertical; font-family:monospace;" placeholder='{"source_filter":null, "limit":50}'>{"source_filter": null, "limit": 50}</textarea>
+                    </div>
+                </div>
+                <div style="margin-top:10px; display:flex; gap:8px;">
+                    <button onclick="saveCronTask()" id="cronSaveBtn" style="padding:6px 16px; border:none; border-radius:16px; background:#43a047; color:white; cursor:pointer; font-size:13px;">保存</button>
+                    <button onclick="hideCreateTaskForm()" style="padding:6px 16px; border:none; border-radius:16px; background:rgba(255,255,255,0.1); color:#aaa; cursor:pointer; font-size:13px;">取消</button>
+                </div>
+            </div>
+            <!-- Task List -->
+            <div id="cronTaskList" style="flex:1; overflow:auto;">
+                <div class="empty-state">点击"刷新任务"加载已配置的任务</div>
             </div>
         </div>
     </div>
@@ -900,6 +978,246 @@
                 });
             }
         });
+
+        // === Log Viewer Tab Functions ===
+        let logAutoRefreshTimer = null;
+
+        async function refreshLogs() {
+            const status = document.getElementById('logStatus');
+            const outputArea = document.getElementById('logOutputArea');
+            const keyword = document.getElementById('logKeyword').value.trim();
+            const level = document.getElementById('logLevelFilter').value;
+
+            let url = '/api/logs?lines=-1';
+            if (keyword) url += `&q=${encodeURIComponent(keyword)}`;
+            if (level) url += `&level=${encodeURIComponent(level)}`;
+
+            status.textContent = '加载中...';
+            status.style.color = '#4fc3f7';
+            outputArea.innerHTML = '<div style="color:#4fc3f7;">⏳ 正在加载日志...</div>';
+
+            try {
+                const r = await fetch(url);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const data = await r.json();
+
+                if (data.logs.length === 0) {
+                    outputArea.innerHTML = '<div class="empty-state">暂无日志记录</div>';
+                    status.textContent = `共 ${data.total_lines} 条，无匹配`;
+                    status.style.color = '#888';
+                    return;
+                }
+
+                // Color-code by level
+                let html = '';
+                for (const line of data.logs) {
+                    let color = '#aaa';
+                    if (line.includes('[ERROR]')) color = '#f44336';
+                    else if (line.includes('[WARNING]')) color = '#ff9800';
+                    else if (line.includes('[INFO]')) color = '#4caf50';
+                    
+                    const highlighted = keyword 
+                        ? line.replace(new RegExp(`(${keyword})`, 'gi'), '<mark style="background:rgba(255,235,59,0.3);color:#fff;padding:0 2px;border-radius:2px;">$1</mark>')
+                        : escapeHtml(line);
+                    
+                    html += `<span style="color:${color};">${highlighted}</span>\n`;
+                }
+                outputArea.innerHTML = html;
+                status.textContent = `✅ 共 ${data.total_lines} 条 | 筛选后 ${data.filtered_lines} 条`;
+                status.style.color = '#4caf50';
+            } catch(e) {
+                outputArea.innerHTML = `<div style="color:#f44336;">❌ 加载失败: ${escapeHtml(e.message)}</div>`;
+                status.textContent = '加载失败';
+                status.style.color = '#f44336';
+            }
+        }
+
+        function clearLogView() {
+            document.getElementById('logKeyword').value = '';
+            document.getElementById('logLevelFilter').value = '';
+            document.getElementById('logOutputArea').innerHTML = '<div class="empty-state">点击下方"刷新"按钮加载日志，或使用上方搜索框过滤关键字...</div>';
+            document.getElementById('logStatus').textContent = '';
+        }
+
+        // Auto-refresh logs every 5 seconds when on Log tab
+        setInterval(() => {
+            const logTab = document.getElementById('tab-log');
+            if (logTab && logTab.classList.contains('active')) {
+                refreshLogs();
+            }
+        }, 5000);
+
+        // === Cron Control Tab Functions ===
+        let editingTaskId = null;
+
+        async function loadCronTasks() {
+            const listArea = document.getElementById('cronTaskList');
+            try {
+                const r = await fetch('/api/cron/tasks');
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const data = await r.json();
+                const tasks = data.tasks || [];
+
+                if (tasks.length === 0) {
+                    listArea.innerHTML = '<div class="empty-state">暂无定时任务，点击"新建任务"创建</div>';
+                    return;
+                }
+
+                let html = '';
+                for (const t of tasks) {
+                    const statusColor = t.enabled ? '#4caf50' : '#f44336';
+                    const statusText = t.enabled ? '运行中' : '已停止';
+                    const typeLabel = {evolution:'🧠 记忆演化', batch_import:'📦 批量导入', custom:'⚙️ 自定义'}[t.type] || t.type;
+                    
+                    html += `
+                    <div style="padding:12px; margin-bottom:8px; background:rgba(255,255,255,0.05); border-radius:8px; border-left:3px solid ${statusColor};">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <div>
+                                <strong style="color:#e0e0e0; font-size:14px;">${escapeHtml(t.name)}</strong>
+                                <span style="font-size:12px; color:#888; margin-left:8px;">${typeLabel}</span>
+                            </div>
+                            <span style="padding:2px 10px; border-radius:10px; font-size:11px; background:${statusColor}22; color:${statusColor}; border:1px solid ${statusColor}44;">
+                                ${statusText}
+                            </span>
+                        </div>
+                        <div style="display:flex; gap:12px; font-size:12px; color:#888; margin-bottom:8px;">
+                            <span>间隔: ${t.interval_seconds}s</span>
+                            ${t.schedule_expr ? `<span>Cron: ${escapeHtml(t.schedule_expr)}</span>` : ''}
+                            ${t.last_run ? `<span>上次运行: ${new Date(t.last_run).toLocaleString()}</span>` : ''}
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="toggleCronTask('${t.id}', '${t.enabled ? 'stop' : 'start'}')" 
+                                style="padding:4px 12px; border:none; border-radius:12px; font-size:12px; cursor:pointer; 
+                                    ${t.enabled ? 'background:rgba(244,67,54,0.2); color:#f44336;' : 'background:rgba(76,175,80,0.2); color:#4caf50;'}">
+                                ${t.enabled ? '⏹ 停止' : '▶ 启动'}
+                            </button>
+                            <button onclick="runCronNow('${t.id}')" 
+                                style="padding:4px 12px; border:none; border-radius:12px; font-size:12px; cursor:pointer; background:rgba(79,195,247,0.2); color:#4fc3f7;">
+                                ▶ 立即执行
+                            </button>
+                            <button onclick="editCronTask('${t.id}')" 
+                                style="padding:4px 12px; border:none; border-radius:12px; font-size:12px; cursor:pointer; background:rgba(255,255,255,0.1); color:#aaa;">
+                                ✏️ 编辑
+                            </button>
+                            <button onclick="deleteCronTask('${t.id}')" 
+                                style="padding:4px 12px; border:none; border-radius:12px; font-size:12px; cursor:pointer; background:rgba(255,255,255,0.05); color:#f44336;">
+                                🗑 删除
+                            </button>
+                        </div>
+                    </div>`;
+                }
+                listArea.innerHTML = html;
+            } catch(e) {
+                listArea.innerHTML = `<div style="color:#f44336; padding:20px;">❌ 加载失败: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function showCreateTaskForm(taskId) {
+            editingTaskId = taskId || null;
+            document.getElementById('cronFormArea').style.display = 'block';
+            document.getElementById('cronSaveBtn').textContent = taskId ? '更新' : '保存';
+            
+            if (taskId) {
+                // Load existing task data
+                loadCronTasks().then(() => {
+                    // Will be filled by editCronTask
+                });
+            } else {
+                document.getElementById('cronTaskName').value = '';
+                document.getElementById('cronTaskType').value = 'evolution';
+                document.getElementById('cronTaskInterval').value = '300';
+                document.getElementById('cronTaskExpr').value = '';
+                document.getElementById('cronTaskPayload').value = '{"source_filter": null, "limit": 50}';
+            }
+        }
+
+        function hideCreateTaskForm() {
+            document.getElementById('cronFormArea').style.display = 'none';
+            editingTaskId = null;
+        }
+
+        function editCronTask(taskId) {
+            showCreateTaskForm(taskId);
+            // Fetch and populate form
+            fetch(`/api/cron/tasks/${taskId}`)
+                .then(r => r.json())
+                .catch(() => {});
+        }
+
+        async function saveCronTask() {
+            const name = document.getElementById('cronTaskName').value.trim();
+            if (!name) { alert('请输入任务名称'); return; }
+            
+            const payload = document.getElementById('cronTaskPayload').value.trim();
+            let parsedPayload = {};
+            try { parsedPayload = JSON.parse(payload); } catch(e) { alert('Payload 必须是有效 JSON'); return; }
+            
+            const taskData = {
+                name: name,
+                type: document.getElementById('cronTaskType').value,
+                interval_seconds: parseInt(document.getElementById('cronTaskInterval').value) || 300,
+                schedule_expr: document.getElementById('cronTaskExpr').value.trim(),
+                enabled: true,
+                payload: parsedPayload,
+            };
+            
+            try {
+                let url, method;
+                if (editingTaskId) {
+                    url = `/api/cron/tasks/${editingTaskId}`;
+                    method = 'PUT';
+                } else {
+                    url = '/api/cron/tasks';
+                    method = 'POST';
+                }
+                
+                const r = await fetch(url, {
+                    method: method,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(taskData),
+                });
+                
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                
+                hideCreateTaskForm();
+                loadCronTasks();
+            } catch(e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+
+        async function toggleCronTask(taskId, action) {
+            try {
+                const r = await fetch(`/api/cron/tasks/${taskId}/${action}`, {method: 'POST'});
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                loadCronTasks();
+            } catch(e) {
+                alert(`${action} 失败: ${e.message}`);
+            }
+        }
+
+        async function deleteCronTask(taskId) {
+            if (!confirm('确定要删除这个任务吗？')) return;
+            try {
+                const r = await fetch(`/api/cron/tasks/${taskId}`, {method: 'DELETE'});
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                loadCronTasks();
+            } catch(e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+
+        async function runCronNow(taskId) {
+            try {
+                const r = await fetch(`/api/cron/tasks/${taskId}/run-now`, {method: 'POST'});
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const data = await r.json();
+                alert(`执行结果: ${data.message || '已完成'}`);
+                loadCronTasks();
+            } catch(e) {
+                alert('执行失败: ' + e.message);
+            }
+        }
     </script>
 </body>
 </html>

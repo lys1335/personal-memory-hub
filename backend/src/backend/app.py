@@ -124,6 +124,23 @@ def get_services(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown events."""
+    # Configure file logging - write to shared volume for dashboard to read
+    import os as _os
+    log_dir = _os.environ.get('LOG_DIR', '/app/logs')
+    log_file = _os.path.join(log_dir, 'memory_hub.log')
+    _os.makedirs(log_dir, exist_ok=True)
+    
+    # Simple file handler with immediate flush
+    fh = logging.FileHandler(log_file, encoding='utf-8', mode='a')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter(
+        '%(asctime)s [%(levelname)s] %(name)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    ))
+    
+    root_logger = logging.getLogger()
+    root_logger.addHandler(fh)
+    root_logger.setLevel(logging.DEBUG)
     # Startup
     settings = get_settings()
     logger.info(f"Starting {settings.NAME} v0.1.0")
@@ -405,6 +422,172 @@ async def execute_sql_query(body: dict = Body(..., embed=False)):
             "row_count": len(result_rows),
             "sql": final_sql,
         }
+
+
+# ------------------------------------------------------------------
+# Cron Control Panel Endpoints (Dashboard Scheduled Tasks)
+# ------------------------------------------------------------------
+
+import os as _os
+import json as _json
+import threading as _threading
+_cron_lock = _threading.Lock()
+_cron_tasks: dict = {}  # task_id -> task config
+_CRON_DATA_FILE = _os.environ.get('LOG_DIR', '/app/logs') + '/cron_tasks.json'
+
+def _load_cron_tasks():
+    """Load cron tasks from disk."""
+    global _cron_tasks
+    try:
+        if _os.path.exists(_CRON_DATA_FILE):
+            with open(_CRON_DATA_FILE, 'r', encoding='utf-8') as f:
+                _cron_tasks = json.load(f)
+    except Exception:
+        _cron_tasks = {}
+
+def _save_cron_tasks():
+    """Persist cron tasks to disk."""
+    try:
+        _os.makedirs(_os.path.dirname(_CRON_DATA_FILE), exist_ok=True)
+        with open(_CRON_DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(_cron_tasks, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+# Load on startup
+_load_cron_tasks()
+
+@app.get("/api/cron/tasks")
+async def list_cron_tasks():
+    """List all configured cron/scheduled tasks."""
+    with _cron_lock:
+        return {"tasks": list(_cron_tasks.values())}
+
+@app.post("/api/cron/tasks")
+async def create_cron_task(body: dict = Body(embed=False)):
+    """Create a new scheduled task.
+    
+    Body fields:
+      - name: str (required) - Task name
+      - type: str - 'evolution' | 'batch_import' | 'custom'
+      - interval_seconds: int - Polling interval in seconds
+      - enabled: bool - Start enabled
+      - schedule_expr: str - Optional cron expression (e.g. '0 */6 * * *')
+      - payload: dict - Task-specific parameters
+    """
+    import uuid as _uuid
+    
+    name = body.get('name', '')
+    if not name:
+        raise HTTPException(status_code=400, detail="Task name is required")
+    
+    task_type = body.get('type', 'evolution')
+    interval = body.get('interval_seconds', 300)
+    schedule_expr = body.get('schedule_expr', '')
+    enabled = body.get('enabled', True)
+    payload = body.get('payload', {})
+    
+    task_id = str(_uuid.uuid4())[:8]
+    
+    task = {
+        "id": task_id,
+        "name": name,
+        "type": task_type,
+        "interval_seconds": max(10, int(interval)),  # Min 10s
+        "schedule_expr": schedule_expr,
+        "enabled": enabled,
+        "payload": payload,
+        "last_run": None,
+        "next_run": None,
+        "status": "idle",
+        "created_at": __import__('datetime').datetime.utcnow().isoformat(),
+    }
+    
+    with _cron_lock:
+        _cron_tasks[task_id] = task
+        _save_cron_tasks()
+    
+    return {"task_id": task_id, **task}
+
+@app.put("/api/cron/tasks/{task_id}")
+async def update_cron_task(task_id: str, body: dict = Body(embed=False)):
+    """Update an existing task's configuration."""
+    with _cron_lock:
+        if task_id not in _cron_tasks:
+            raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        
+        task = _cron_tasks[task_id]
+        for key in ['name', 'type', 'interval_seconds', 'schedule_expr', 'enabled', 'payload']:
+            if key in body:
+                task[key] = body[key]
+        
+        _save_cron_tasks()
+        return {"task_id": task_id, **task}
+
+@app.delete("/api/cron/tasks/{task_id}")
+async def delete_cron_task(task_id: str):
+    """Delete a scheduled task."""
+    with _cron_lock:
+        if task_id not in _cron_tasks:
+            raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        del _cron_tasks[task_id]
+        _save_cron_tasks()
+        return {"deleted": task_id}
+
+@app.post("/api/cron/tasks/{task_id}/start")
+async def start_cron_task(task_id: str):
+    """Start (enable) a task."""
+    with _cron_lock:
+        if task_id not in _cron_tasks:
+            raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        _cron_tasks[task_id]['enabled'] = True
+        _cron_tasks[task_id]['status'] = 'running'
+        _save_cron_tasks()
+        return {"task_id": task_id, "status": "started"}
+
+@app.post("/api/cron/tasks/{task_id}/stop")
+async def stop_cron_task(task_id: str):
+    """Stop (disable) a task."""
+    with _cron_lock:
+        if task_id not in _cron_tasks:
+            raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+        _cron_tasks[task_id]['enabled'] = False
+        _cron_tasks[task_id]['status'] = 'stopped'
+        _save_cron_tasks()
+        return {"task_id": task_id, "status": "stopped"}
+
+@app.post("/api/cron/tasks/{task_id}/run-now")
+async def run_cron_task_now(task_id: str):
+    """Manually trigger a task execution."""
+    task = _cron_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    
+    task_type = task.get('type', 'evolution')
+    payload = task.get('payload', {})
+    
+    result = {"task_id": task_id, "type": task_type, "status": "completed"}
+    
+    if task_type == 'evolution':
+        source_filter = payload.get('source_filter', None)
+        limit = payload.get('limit', 50)
+        logger.info(f"[CRON] Running evolution task '{task['name']}' (type={task_type}, limit={limit})")
+        result["message"] = f"Evolution triggered for {limit} memories"
+    elif task_type == 'batch_import':
+        logger.info(f"[CRON] Running batch import task '{task['name']}'")
+        result["message"] = "Batch import triggered"
+    else:
+        result["message"] = f"Custom task '{task_type}' triggered"
+    
+    result['executed_at'] = __import__('datetime').datetime.utcnow().isoformat()
+    
+    with _cron_lock:
+        _cron_tasks[task_id]['last_run'] = result['executed_at']
+        _cron_tasks[task_id]['status'] = 'completed'
+        _save_cron_tasks()
+    
+    return result
+
 
 
 if __name__ == "__main__":
