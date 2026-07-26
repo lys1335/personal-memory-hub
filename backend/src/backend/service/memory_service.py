@@ -1052,6 +1052,11 @@ class MemoryService(BaseService):
                 target_id=str(target_id),
             )
             try:
-                await self._tag_repo.link_tag(tag_link)  # type: ignore[arg-type, misc, call-arg]  # type: ignore[arg-type, misc, call-arg]
+                await self._tag_repo.link_tag(
+                    tag_id=tag.id,
+                    target_type=target_type,
+                    target_id=target_id,
+                    workspace_id=workspace_id,
+                )
             except RepositoryError:
                 pass  # Link may already exist

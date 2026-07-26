@@ -110,13 +110,14 @@ class ReflectionEngine(EngineBase):
         # Step 4: Validate all proposals (ReflectionValidator)
         validation_result = self._validate_proposals(proposals)
         if not validation_result.success:
+            msg = validation_result.error.message if validation_result.error else "unknown"
             execution_log.append(
-                f"Validation FAILED: {validation_result.error.message}"
+                f"Validation FAILED: {msg}"
             )
             # Don't block — log warning but still return results for review
             logger.warning(
                 "Reflection validation failed, returning for human review: %s",
-                validation_result.error.message,
+                msg,
             )
 
         execution_log.append(
@@ -255,7 +256,7 @@ class ReflectionEngine(EngineBase):
             ]
 
         # Analyze evidence density per entity
-        entity_evidence: dict[str, list[dict]] = {}
+        entity_evidence: dict[str, list[dict[str, Any]]] = {}
         for fact in facts:
             entity = fact.get("entity", "unknown")
             if entity not in entity_evidence:

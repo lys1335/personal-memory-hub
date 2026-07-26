@@ -74,7 +74,6 @@ class OllamaReflectionProvider(ReflectionProvider):
         self, prompt: str, context: dict[str, Any]
     ) -> dict[str, Any]:
         """Call Ollama API with structured prompt."""
-        import os
 
         try:
             import httpx
@@ -105,8 +104,8 @@ class OllamaReflectionProvider(ReflectionProvider):
         self, prompt: str, context: dict[str, Any]
     ) -> dict[str, Any]:
         """Fallback using urllib for environments without httpx."""
-        import urllib.request
         import urllib.error
+        import urllib.request
 
         payload = {
             "model": self.model,
@@ -154,7 +153,11 @@ class OllamaReflectionProvider(ReflectionProvider):
             text = "\n".join(lines).strip()
 
         try:
-            return json.loads(text)
+            result = json.loads(text)
+            if not isinstance(result, dict):
+                logger.warning("LLM output is not a dict: %s", text[:200])
+                return {"error": "invalid_json", "raw": text}
+            return result
         except json.JSONDecodeError:
             logger.warning("Failed to parse LLM output as JSON: %s", text[:200])
             return {"error": "invalid_json", "raw": text}
