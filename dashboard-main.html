@@ -220,6 +220,9 @@
                 <div class="nav-item" data-tab="chat" onclick="switchTab('chat')">
                     <span class="nav-icon">💬</span> AI 问答
                 </div>
+                <div class="nav-item" data-tab="sql" onclick="switchTab('sql')">
+                    <span class="nav-icon">🔍</span> 数据查询
+                </div>
             </div>
             <div class="sidebar-footer">
                 <div class="status-bar">
@@ -297,6 +300,32 @@
                         <div class="results-area" id="resultsArea2">
                             <div class="empty-state">等待查询...</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SQL QUERY TAB -->
+            <div class="tab-content" id="tab-sql">
+                <div style="display:flex; flex-direction:column; height:100%; padding:15px; overflow:hidden;">
+                    <!-- SQL Input Area -->
+                    <div style="margin-bottom:12px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                            <span style="font-size:14px; color:#4fc3f7;">SQL 查询</span>
+                            <select id="sqlTableSelect" onchange="insertTableName()" style="padding:6px 12px; border:none; border-radius:15px; background:rgba(255,255,255,0.1); color:#e0e0e0; font-size:12px; cursor:pointer; outline:none;">
+                                <option value="">-- 选择表名 --</option>
+                            </select>
+                            <button onclick="loadTableSchema()" style="padding:6px 12px; border:none; border-radius:15px; background:rgba(79,195,247,0.3); color:#4fc3f7; cursor:pointer; font-size:12px;">刷新表列表</button>
+                        </div>
+                        <textarea id="sqlInput" style="width:100%; height:100px; padding:12px; border:none; border-radius:8px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-family:'Consolas','Courier New',monospace; font-size:13px; resize:vertical; outline:none; line-height:1.6;" placeholder="输入 SQL 查询语句，例如：&#10;SELECT * FROM memory_nodes WHERE source='import' ORDER BY created_at DESC LIMIT 50;"></textarea>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <button onclick="executeSqlQuery()" style="padding:8px 20px; border:none; border-radius:20px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-weight:bold; font-size:13px;">▶ 执行查询</button>
+                            <button onclick="clearSqlResult()" style="padding:8px 20px; border:none; border-radius:20px; background:rgba(255,255,255,0.1); color:#aaa; cursor:pointer; font-size:13px;">清空结果</button>
+                            <span id="sqlStatus" style="font-size:12px; color:#888; line-height:32px; margin-left:auto;"></span>
+                        </div>
+                    </div>
+                    <!-- Results Table -->
+                    <div id="sqlResultArea" style="flex:1; overflow:auto; background:rgba(0,0,0,0.2); border-radius:8px; padding:8px;">
+                        <div class="empty-state">输入 SQL 查询并执行，结果将在此显示</div>
                     </div>
                 </div>
             </div>
@@ -731,6 +760,146 @@
         // Start carousel and charts on load
         setTimeout(loadRandomMemory, 2000);
         setTimeout(initCharts, 2500);
+
+        // === SQL Query Tab Functions ===
+        let tableColumnsCache = {};
+
+        async function loadTableSchema() {
+            const select = document.getElementById('sqlTableSelect');
+            const status = document.getElementById('sqlStatus');
+            try {
+                const r = await fetch('/api/sql/tables');
+                if (!r.ok) throw new Error('Failed to load tables');
+                const data = await r.json();
+                select.innerHTML = '<option value="">-- 选择表名 --</option>';
+                tableColumnsCache = {};
+                for (const t of data.tables) {
+                    const opt = document.createElement('option');
+                    opt.value = t.name;
+                    opt.textContent = `${t.name} (${t.columns.length}列)`;
+                    select.appendChild(opt);
+                    tableColumnsCache[t.name] = t.columns;
+                }
+                status.textContent = `已加载 ${data.tables.length} 张表`;
+                status.style.color = '#4caf50';
+            } catch(e) {
+                status.textContent = '加载表列表失败: ' + e.message;
+                status.style.color = '#f44336';
+            }
+        }
+
+        function insertTableName() {
+            const select = document.getElementById('sqlTableSelect');
+            const textarea = document.getElementById('sqlInput');
+            const tableName = select.value;
+            if (tableName) {
+                // Replace placeholder or append table name
+                const sql = textarea.value.trim();
+                if (!sql || sql.toUpperCase().startsWith('SELECT')) {
+                    textarea.value = `SELECT * FROM ${tableName} LIMIT 50;`;
+                } else {
+                    textarea.value = sql.replace(/FROM\s+\w+/i, `FROM ${tableName}`);
+                }
+            }
+        }
+
+        async function executeSqlQuery() {
+            const sql = document.getElementById('sqlInput').value.trim();
+            const status = document.getElementById('sqlStatus');
+            const resultArea = document.getElementById('sqlResultArea');
+
+            if (!sql) {
+                status.textContent = '请输入 SQL 查询语句';
+                status.style.color = '#ff9800';
+                return;
+            }
+
+            status.textContent = '执行中...';
+            status.style.color = '#4fc3f7';
+            resultArea.innerHTML = '<div class="empty-state">⏳ 执行中...</div>';
+
+            try {
+                const r = await fetch('/api/sql/query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ sql: sql })
+                });
+
+                if (!r.ok) {
+                    const errData = await r.json();
+                    throw new Error(errData.detail || '查询失败');
+                }
+
+                const data = await r.json();
+                renderSqlResult(data);
+                status.textContent = `✅ 查询成功 | 返回 ${data.row_count} 行 | SQL: ${data.sql}`;
+                status.style.color = '#4caf50';
+            } catch(e) {
+                status.textContent = '❌ ' + e.message;
+                status.style.color = '#f44336';
+                resultArea.innerHTML = `<div class="empty-state" style="color:#f44336;">错误: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function renderSqlResult(data) {
+            const resultArea = document.getElementById('sqlResultArea');
+
+            if (!data.columns || data.columns.length === 0) {
+                resultArea.innerHTML = '<div class="empty-state">查询无结果</div>';
+                return;
+            }
+
+            // Build table
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
+
+            // Header
+            html += '<thead><tr style="border-bottom:2px solid rgba(79,195,247,0.3);">';
+            for (const col of data.columns) {
+                html += `<th style="padding:8px 12px; text-align:left; color:#4fc3f7; white-space:nowrap; position:sticky; top:0; background:#1a1a2e; z-index:1;">${escapeHtml(col)}</th>`;
+            }
+            html += '</tr></thead>';
+
+            // Body
+            html += '<tbody>';
+            for (const row of data.rows) {
+                html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+                for (const col of data.columns) {
+                    let val = row[col];
+                    if (val === null || val === undefined) val = '<span style="color:#666;">NULL</span>';
+                    else {
+                        const strVal = String(val);
+                        // Truncate long content
+                        const displayVal = strVal.length > 200 ? strVal.substring(0, 200) + '...' : escapeHtml(strVal);
+                        const titleAttr = strVal.length > 200 ? `title="${escapeHtml(strVal)}"` : '';
+                        val = `<td style="padding:6px 12px; max-width:300px; overflow:hidden; text-overflow:ellipsis;" ${titleAttr}>${displayVal}</td>`;
+                    }
+                    html += val;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+
+            resultArea.innerHTML = html;
+        }
+
+        function clearSqlResult() {
+            document.getElementById('sqlInput').value = '';
+            document.getElementById('sqlResultArea').innerHTML = '<div class="empty-state">输入 SQL 查询并执行，结果将在此显示</div>';
+            document.getElementById('sqlStatus').textContent = '';
+        }
+
+        // Allow Ctrl+Enter to execute SQL
+        document.addEventListener('DOMContentLoaded', () => {
+            const sqlInput = document.getElementById('sqlInput');
+            if (sqlInput) {
+                sqlInput.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        executeSqlQuery();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

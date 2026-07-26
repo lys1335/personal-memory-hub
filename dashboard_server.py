@@ -28,6 +28,8 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/api/memories'):
             return self._proxy(MEM_HUB, '/api')
+        elif self.path.startswith('/api/sql'):
+            return self._proxy(MEM_HUB, '/api' + self.path[len('/api/sql'):])
         elif self.path.startswith('/api/ollama'):
             return self._proxy(OLLAMA, '/api/ollama')
         # Serve static files
@@ -39,6 +41,8 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         
         if self.path.startswith('/api/memories'):
             return self._proxy(MEM_HUB, '/api', body)
+        elif self.path.startswith('/api/sql'):
+            return self._proxy(MEM_HUB, '/api' + self.path[len('/api/sql'):], body)
         elif self.path.startswith('/api/ollama'):
             return self._proxy(OLLAMA, '/api/ollama', body)
         

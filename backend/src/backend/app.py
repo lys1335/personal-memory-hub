@@ -301,6 +301,112 @@ async def import_memories(body: dict = Body(...), services: dict = Depends(get_s
     raise HTTPException(status_code=422, detail=asdict(response))
 
 
+# ------------------------------------------------------------------
+# SQL Query Endpoints (Dashboard Data Browser)
+# ------------------------------------------------------------------
+
+@app.get("/api/sql/tables", tags=["sql"])
+async def list_tables():
+    """GET /api/sql/tables - List all tables with column info."""
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text
+
+    engine = get_engine()
+    async with engine.connect() as conn:
+        # Get table names
+        rows = await conn.execute(text("""
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+        """))
+        tables = []
+        for r in rows:
+            tname = r[0]
+            cols = await conn.execute(
+                text("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = :tname ORDER BY ordinal_position"),
+                {"tname": tname}
+            )
+            tables.append({
+                "name": tname,
+                "columns": [{"name": c[0], "type": c[1]} for c in cols],
+            })
+        return {"tables": tables}
+
+
+@app.post("/api/sql/query", tags=["sql"])
+async def execute_sql_query(body: dict = Body(..., embed=False)):
+    """POST /api/sql/query - Execute a read-only SQL query and return results."""
+    sql = body.get("sql", "").strip()
+    limit = min(int(body.get("limit", 100)), 500)  # Max 500 rows
+
+    if not sql:
+        raise HTTPException(status_code=400, detail="SQL query is empty")
+
+    # Security: only allow SELECT statements
+    first_word = sql.split()[0].upper() if sql else ""
+    if first_word != "SELECT":
+        raise HTTPException(status_code=403, detail="Only SELECT queries are allowed")
+
+    # Block dangerous keywords - use word boundary matching to avoid false positives like 'created_at'
+    import re
+    sql_upper = sql.upper()
+    dangerous_patterns = [
+        r'\bINSERT\b', r'\bUPDATE\b', r'\bDELETE\b', r'\bDROP\b',
+        r'\bALTER\b', r'\bCREATE\b', r'\bTRUNCATE\b', r'\bGRANT\b',
+        r'\bREVOKE\b', r'\bEXEC\b', r'\bEXECUTE\b', r'\bMERGE\b',
+    ]
+    for pattern in dangerous_patterns:
+        if re.search(pattern, sql_upper):
+            raise HTTPException(status_code=403, detail=f"Query contains disallowed operation")
+
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text, MetaData, Table, Column
+    import uuid
+    import json
+
+    engine = get_engine()
+    async with engine.connect() as conn:
+        # Add LIMIT if not present
+        final_sql = sql.rstrip(";").strip()
+        if "LIMIT" not in final_sql.upper():
+            final_sql += f" LIMIT {limit}"
+
+        try:
+            result = await conn.execute(text(final_sql))
+            rows_list = result.fetchall()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Query error: {str(e)}")
+
+        columns = list(result.keys())
+
+        if not rows_list:
+            return {"columns": columns, "rows": [], "row_count": 0, "sql": final_sql}
+
+        # Convert rows to serializable dicts using _mapping for named access
+        result_rows = []
+        for row in rows_list:
+            mapping = row._mapping
+            row_dict = {}
+            for col in columns:
+                val = mapping[col]
+                if isinstance(val, uuid.UUID):
+                    row_dict[col] = str(val)
+                elif isinstance(val, bytes):
+                    row_dict[col] = val.decode('utf-8', errors='replace')
+                elif isinstance(val, (dict, list)):
+                    row_dict[col] = json.dumps(val, ensure_ascii=False)
+                else:
+                    row_dict[col] = val
+            result_rows.append(row_dict)
+
+        return {
+            "columns": columns,
+            "rows": result_rows,
+            "row_count": len(result_rows),
+            "sql": final_sql,
+        }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
