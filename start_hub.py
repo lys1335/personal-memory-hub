@@ -4,7 +4,7 @@ Personal Memory Hub - Unified Startup Script
 
 Auto-detect environment (Windows/Linux/macOS) and provide interactive menu:
   [1] Docker Compose mode (recommended, includes database)
-  [2] Local Python mode (requires manual venv & DB setup)
+  [2] Local Python mode (requires manual venv and DB setup)
   [q] Quit
 
 Usage: python start_hub.py
@@ -63,7 +63,7 @@ def start_with_docker():
     
     use_new_syntax = command_exists("docker compose")
     
-    print("\nStarting database and API services...")
+    print("\nStarting database and API services (port 8000)...")
     compose_cmd = ["docker", "compose", "up", "-d", "db", "app"] if use_new_syntax else ["docker-compose", "up", "-d", "db", "app"]
     success, code, stdout, stderr = run_cmd(compose_cmd, cwd=PROJECT_ROOT, timeout=120)
     if not success:
@@ -72,26 +72,43 @@ def start_with_docker():
     
     print("✅ Docker containers started!")
     
-    print("\nWaiting for PostgreSQL to be ready...")
+    print("\n⏳ Waiting for PostgreSQL to be ready...")
     for i in range(12):
         ok, _, _, _ = run_cmd(["docker", "exec", "-it", "memory-hub-db", "pg_isready", "-U", "postgres"], timeout=5)
         if ok:
             break
         print(f"  ({i+1}/12) Waiting...")
     
-    print("\nChecking API health...")
+    print("\n⏳ Waiting for Memory Hub API (port 8000)...")
     time.sleep(5)
     ok, _, _, _ = run_cmd(["curl", "-s", "http://localhost:8000/health"], timeout=10)
     if ok:
         print("✅ API health check passed!")
+    else:
+        print("⚠️ API may still be starting up...")
     
-    print("\n🌐 Opening Dashboard in browser...")
-    webbrowser.open("http://localhost:8080")
-    
-    print("\n🎉 Personal Memory Hub is running!")
-    print("   • API: http://localhost:8000")
-    print("   • Dashboard: http://localhost:8080")
-    print("   • To stop: docker compose down (in another terminal)")
+    # IMPORTANT: Start the dashboard server separately
+    print("\n" + "=" * 60)
+    print("📝 Next step - Dashboard needs to be started separately:")
+    print("=" * 60)
+    print()
+    print("Please start the Dashboard proxy server in ANOTHER terminal:")
+    print()
+    if platform.system() == "Windows":
+        print("Option A (recommended): Double-click `start_hub.bat` from project root")
+        print("Option B: Run manually:")
+        print(f"    cd {PROJECT_ROOT}")
+        print("    python dashboard_server.py --no-browser")
+    else:
+        print(f"    cd {PROJECT_ROOT}")
+        print("    python3 dashboard_server.py --no-browser")
+    print()
+    print("After that, open your browser at:")
+    print("    http://localhost:8080")
+    print()
+    print("=" * 60)
+    print("💡 To stop all services: docker compose down (in another terminal)")
+    print("=" * 60)
     
     try:
         while True:
@@ -106,7 +123,7 @@ def start_local_python():
     print("\n🚀 Starting Local Python mode...")
     
     if not command_exists("python"):
-        print("❌ Error: Python not found! Please install Python 3.11+.")
+        print("❌ Error: Python not found! Please install Python 3.11+. ")
         return False
     
     venv_py = BACKEND_DIR / ".venv" / "Scripts" / "python.exe" if platform.system() == "Windows" else BACKEND_DIR / ".venv" / "bin" / "python"
@@ -132,45 +149,40 @@ def start_local_python():
         print("⚠️ .env file not found! Copy .env.example to .env and configure DB connection.")
         return False
     
-    print("\n✅ Ready to start!")
-    print("   1. Activating virtual environment...")
-    print("   2. Starting Memory Hub API (port 8000)...")
-    print("   3. Starting Dashboard Server (port 8080)...")
+    print("\n✅ Ready to start instructions:")
+    print()
+    print("Step 1 - Activate virtual environment:")
+    win_activate = "venv\\\\Scripts\\\\activate" if platform.system() == "Windows" else "venv/bin/activate"
+    print(f"    cd backend && {win_activate}")
+    print()
+    print("Step 2 - Start Memory Hub API (port 8000) in ONE terminal:")
+    print("    python -m uvicorn backend.app:app --host 0.0.0.0 --port 8000")
+    print()
     
-    confirm = input("\nConfirm startup? [y/N]: ").strip().lower()
+    confirm = input("\nConfirm you've completed Step 1 & 2? [y/N]: ").strip().lower()
     if confirm != "y":
         print("Cancelled.")
         return False
     
-    # Start API (foreground)
-    api_cmd = [str(venv_py), "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
-    print("\n🟢 Starting Memory Hub API...")
-    api_process = subprocess.Popen(api_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # IMPORTANT: Start the dashboard server separately
+    print("\n" + "=" * 60)
+    print("📝 Next step - Dashboard needs to be started separately:")
+    print("=" * 60)
+    print()
+    print("In ANOTHER terminal, run:")
+    print(f"    cd {PROJECT_ROOT}")
+    print("    python dashboard_server.py --no-browser")
+    print()
+    print("Then open your browser at:")
+    print("    http://localhost:8080")
+    print()
+    print("=" * 60)
+    print("💡 Stop API with Ctrl+C in its terminal")
+    print("=" * 60)
     
-    time.sleep(3)
-    
-    # Start Dashboard with --no-browser (main script will open it)
-    dash_cmd = [sys.executable, str(DASHBOARD_SERVER), "--no-browser", "--port", "8080"]
-    print("\n🟢 Starting Dashboard Server...")
-    dash_process = subprocess.Popen(dash_cmd)
-    
-    print("\n🌐 Opening Dashboard in browser...")
-    webbrowser.open("http://localhost:8080")
-    
-    try:
-        api_process.wait()
-    except KeyboardInterrupt:
-        print("\n\n🛑 Stopping services...")
-        api_process.terminate()
-        dash_process.terminate()
-        if api_process.poll() is None:
-            api_process.kill()
-        if dash_process.poll() is None:
-            dash_process.kill()
-        print("✅ Services stopped.")
-        return False
-    
-    dash_process.wait()
+    print("\n📘 Personal Memory Hub is now ready in manual mode!")
+    print("   • API: http://localhost:8000")
+    print("   • Dashboard: http://localhost:8080 (after starting dashboard_server.py)")
     return True
 
 
@@ -214,7 +226,6 @@ def main():
     print("# Personal Memory Hub Startup Script v1.0  #")
     print("#" * 50 + "\n")
     
-    # Parse command line args
     if len(sys.argv) > 1:
         arg = sys.argv[1].lower()
         if arg in ("-h", "--help"):
@@ -223,7 +234,7 @@ Usage: python start_hub.py [mode]
 
 Modes:
   docker   : Direct Docker Compose startup
-  local    : Direct Local Python startup
+  local    : Direct Local Python mode instructions
   (none)   : Interactive menu (default)
 
 Examples:
@@ -240,7 +251,6 @@ Examples:
             start_local_python()
             return
     
-    # Interactive mode
     show_menu()
     mode = choose_mode()
     
