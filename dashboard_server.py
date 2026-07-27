@@ -1,7 +1,14 @@
-"""
-Dashboard proxy server.
+"""Dashboard proxy server.
+
 Serves HTML dashboard on :8080 and proxies API calls to Memory Hub (8000) and Ollama (11434).
 Avoids CORS by running everything on same origin.
+
+Usage:
+    python dashboard_server.py [--no-browser] [--port 8080]
+
+Options:
+    --no-browser        Do not auto-open browser on startup
+    --port PORT         Server port (default: 8080)
 """
 import http.server
 import socketserver
@@ -10,6 +17,7 @@ import os
 import sys
 import urllib.request
 import urllib.error
+import argparse
 
 try:
     import requests as req_lib
@@ -21,6 +29,19 @@ except ImportError:
 DASHBOARD_DIR = os.path.dirname(os.path.abspath(__file__))
 MEM_HUB = "http://localhost:8000"
 OLLAMA = "http://localhost:11434"
+
+
+def parse_args():
+    """解析命令行参数。"""
+    parser = argparse.ArgumentParser(description='Personal Memory Hub Dashboard Proxy Server')
+    parser.add_argument('--no-browser', action='store_true', help='Do not auto-open browser')
+    parser.add_argument('--type', choices=['serve', 'cli'], default='serve',
+                        help='Internal use only (for start_hub.py)')
+    parser.add_argument('--port', type=int, default=8080, help='Server port')
+    return parser.parse_args()
+
+
+args = parse_args()
 
 
 class ProxyHandler(http.server.BaseHTTPRequestHandler):
@@ -195,11 +216,31 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 # Allow reuse of address
 socketserver.TCPServer.allow_reuse_address = True
 
-if __name__ == '__main__':
-    port = 8080
+
+def start_server(port: int = 8080, open_browser: bool = True):
+    """启动 Dashboard 服务器。"""
     server = http.server.HTTPServer(('0.0.0.0', port), ProxyHandler)
     print(f"Dashboard running at http://localhost:{port}")
     print(f"  /api/memories/* -> {MEM_HUB}")
     print(f"  /api/ollama/*   -> {OLLAMA}")
     print(f"  Static files     -> {DASHBOARD_DIR}")
-    server.serve_forever()
+    
+    # 打开浏览器（如果用户未禁用）
+    if open_browser:
+        try:
+            import webbrowser
+            webbrowser.open("http://localhost:{port}".format(port=port))
+        except Exception as e:
+            print(f"⚠️  无法自动打开浏览器: {e}")
+    
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n🛑 Server shutting down...")
+        server.shutdown()
+
+
+if __name__ == '__main__':
+    port = args.port
+    open_browser = not args.no_browser
+    start_server(port, open_browser)
