@@ -49,25 +49,24 @@ set PY_EXE=python
 if exist ".\backend\.venv\Scripts\python.exe" set PY_EXE=".\\backend\\.venv\\Scripts\\python.exe"
 
 :: Dashboard server command
-set DASH_CMD=%PY_EX% dashboard_server.py --port 8080
+set DASH_CMD=%PY_EXE% dashboard_server.py --port 5000
 
-echo Starting Dashboard Server on port 8080...
+echo Starting Dashboard Server on port 5000...
 echo Command: %DASH_CMD%
 echo.
 
 :: Launch Dashboard in a new console window so this script can keep running and open browser
-start "" "%PY_EXE%" "%~dp0dashboard_server.py" --port 8080
-
-:: Wait a moment for Dashboard to start
-timeout /t 2 >nul
-
-:: Open browser
-echo Opening browser...
-start "" "http://localhost:8080"
+start "" "%PY_EXE%" "%~dp0dashboard_server.py" --port 5000
 
 echo.
-echo Dashboard should be opening in your default browser.
-echo If it doesn't, manually visit http://localhost:8080
+echo [SUCCESS] Dashboard Server started successfully in a new window!
 echo.
+echo Please wait a moment for initialization...
+echo Then open your browser manually and go to:
+echo   http://localhost:5000
+echo.
+echo If the page doesn't load, try refreshing or check the Dashboard window for errors.
+echo.
+pause
 echo Press any key to continue...
 pause

@@ -42,6 +42,7 @@ def parse_args():
 
 
 args = parse_args()
+PORT_DEFAULT = 5000  # Changed from 8080 to avoid Windows excluded port range
 
 
 class ProxyHandler(http.server.BaseHTTPRequestHandler):
@@ -219,7 +220,7 @@ socketserver.TCPServer.allow_reuse_address = True
 
 def start_server(port: int = 8080, open_browser: bool = True):
     """启动 Dashboard 服务器。"""
-    server = http.server.HTTPServer(('0.0.0.0', port), ProxyHandler)
+    server = http.server.HTTPServer(('127.0.0.1', port), ProxyHandler)
     print(f"Dashboard running at http://localhost:{port}")
     print(f"  /api/memories/* -> {MEM_HUB}")
     print(f"  /api/ollama/*   -> {OLLAMA}")
@@ -241,6 +242,6 @@ def start_server(port: int = 8080, open_browser: bool = True):
 
 
 if __name__ == '__main__':
-    port = args.port
+    port = args.port if args.port else PORT_DEFAULT
     open_browser = not args.no_browser
     start_server(port, open_browser)
