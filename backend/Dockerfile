@@ -32,7 +32,8 @@ ENV PYTHONPATH="/app/src"
 
 USER appuser
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "from backend.shared.infrastructure.config.settings import get_settings; print(get_settings().APP_NAME)" || exit 1
+# HEALTHCHECK removed for now - use compose-level healthcheck instead
+# HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+#     CMD python -c "from backend.shared.infrastructure.config.settings import get_settings; print(get_settings().NAME)" || exit 1
 
 CMD ["python", "-m", "backend.app"]
