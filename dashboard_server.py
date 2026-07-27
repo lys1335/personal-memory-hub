@@ -4,11 +4,11 @@ Serves HTML dashboard on :8080 and proxies API calls to Memory Hub (8000) and Ol
 Avoids CORS by running everything on same origin.
 
 Usage:
-    python dashboard_server.py [--no-browser] [--port 8080]
+    python dashboard_server.py [--no-browser] [--port 5000]
 
 Options:
     --no-browser        Do not auto-open browser on startup
-    --port PORT         Server port (default: 8080)
+    --port PORT         Server port (default: 5000, changed from 8080 to avoid Windows excluded port range)
 """
 import http.server
 import socketserver
@@ -37,19 +37,21 @@ def parse_args():
     parser.add_argument('--no-browser', action='store_true', help='Do not auto-open browser')
     parser.add_argument('--type', choices=['serve', 'cli'], default='serve',
                         help='Internal use only (for start_hub.py)')
-    parser.add_argument('--port', type=int, default=8080, help='Server port')
+    parser.add_argument('--port', type=int, default=5000, help='Server port (5000 instead of 8080 to avoid Windows port exclusion)')
     return parser.parse_args()
 
 
 args = parse_args()
-PORT_DEFAULT = 5000  # Changed from 8080 to avoid Windows excluded port range
+PORT_DEFAULT = args.port
 
 
 class ProxyHandler(http.server.BaseHTTPRequestHandler):
     
     def do_GET(self):
         if self.path.startswith('/api/memories'):
-            return self._proxy(MEM_HUB, '/api/memories', self.path)
+            # Map /api/memories -> /memories (Memory Hub doesn't have /api prefix for memories)
+            target_path = self.path.replace('/api/memories', '/memories', 1)
+            return self._proxy(MEM_HUB, target_path, self.path)
         elif self.path.startswith('/api/sql'):
             return self._proxy(MEM_HUB, '/api', self.path)
         elif self.path.startswith('/api/logs'):
@@ -70,17 +72,19 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         body = self.rfile.read(content_length) if content_length > 0 else None
         
         if self.path.startswith('/api/memories'):
-            return self._proxy(MEM_HUB, '/api/memories', self.path, body)
+            # Map /api/memories -> /memories (Memory Hub doesn't have /api prefix for memories)
+            target_path = self.path.replace('/api/memories', '/memories', 1)
+            return self._proxy(MEM_HUB, target_path, self.path, body)
         elif self.path.startswith('/api/sql'):
             return self._proxy(MEM_HUB, '/api', self.path, body)
         elif self.path.startswith('/api/ollama'):
             return self._proxy(OLLAMA, '/api/ollama', self.path, body)
         elif self.path.startswith('/api/cron'):
             return self._proxy(MEM_HUB, '/api', self.path, body)
-
+        
         if self.path.startswith('/api/review'):
             return self._proxy(MEM_HUB, '/api', self.path, body)
-
+        
         self.send_error(404, "Not found")
 
     def _serve_file(self):
@@ -185,7 +189,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
                 continue
             # Level filter
             if level_filter and level_filter != 'all':
-                if f' {level_filter.upper()} ' not in line and not line.endswith(f'"{level_filter.upper()}"'):
+                if f' {level_filter.upper()} ' not in line and not line.endswith(f'"{level_filter.upper()}\"'):
                     continue
             # Keyword filter
             if keyword and keyword.lower() not in line.lower():
@@ -218,11 +222,11 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 socketserver.TCPServer.allow_reuse_address = True
 
 
-def start_server(port: int = 8080, open_browser: bool = True):
+def start_server(port=PORT_DEFAULT, open_browser=True):
     """启动 Dashboard 服务器。"""
     server = http.server.HTTPServer(('127.0.0.1', port), ProxyHandler)
-    print(f"Dashboard running at http://localhost:{port}")
-    print(f"  /api/memories/* -> {MEM_HUB}")
+    print(f"Dashboard running at http://{port}")
+    print(f"  /api/memories/* -> {MEM_HUB}/memories (mapped)")
     print(f"  /api/ollama/*   -> {OLLAMA}")
     print(f"  Static files     -> {DASHBOARD_DIR}")
     
@@ -230,7 +234,7 @@ def start_server(port: int = 8080, open_browser: bool = True):
     if open_browser:
         try:
             import webbrowser
-            webbrowser.open("http://localhost:{port}".format(port=port))
+            webbrowser.open(f"http://localhost:{port}")
         except Exception as e:
             print(f"⚠️  无法自动打开浏览器: {e}")
     
@@ -242,6 +246,4 @@ def start_server(port: int = 8080, open_browser: bool = True):
 
 
 if __name__ == '__main__':
-    port = args.port if args.port else PORT_DEFAULT
-    open_browser = not args.no_browser
-    start_server(port, open_browser)
+    start_server(args.port, not args.no_browser)

@@ -22,9 +22,10 @@ echo [OK] Docker available.
 
 :: Start services if not running
 echo Checking containers...
-docker ps --filter "name=memory-hub-app" --format "{{.Names}}" | findstr /i memory-hub-app >nul
+docker ps --filter "name=memory-hub-app" --format "{{.Names}}}" | findstr /i memory-hub-app >nul
 if errorlevel 1 (
     echo Containers not running. Starting Docker Compose...
+    echo.
     cd /d %~dp0
     docker compose up -d db app
     timeout /t 5 >nul
@@ -45,8 +46,8 @@ echo.
 
 :: Determine correct Python path to use
 set PY_EXE=python
-:: Prefer backend venv's python if exists
-if exist ".\backend\.venv\Scripts\python.exe" set PY_EXE=".\\backend\\.venv\\Scripts\\python.exe"
+:: Prefer backend venvs python if exists
+if exist ".\backend\.venv\Scripts\python.exe" set PY_EXE=.\\backend\\.venv\\Scripts\\python.exe
 
 :: Dashboard server command
 set DASH_CMD=%PY_EXE% dashboard_server.py --port 5000
@@ -55,8 +56,9 @@ echo Starting Dashboard Server on port 5000...
 echo Command: %DASH_CMD%
 echo.
 
-:: Launch Dashboard in a new console window so this script can keep running and open browser
-start "" "%PY_EXE%" "%~dp0dashboard_server.py" --port 5000
+:: Launch Dashboard in a new console window so this script can keep running
+:: Use start with cmd /c to avoid quoting issues
+start "" cmd /c "%PY_EXE%" "%~dp0dashboard_server.py" --port 5000
 
 echo.
 echo [SUCCESS] Dashboard Server started successfully in a new window!
@@ -65,8 +67,6 @@ echo Please wait a moment for initialization...
 echo Then open your browser manually and go to:
 echo   http://localhost:5000
 echo.
-echo If the page doesn't load, try refreshing or check the Dashboard window for errors.
+echo If the page doesnot load, try refreshing or check the Dashboard window for errors.
 echo.
-pause
-echo Press any key to continue...
 pause
