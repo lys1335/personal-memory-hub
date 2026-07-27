@@ -1017,7 +1017,7 @@ class MemoryService(BaseService):
             target_id: Target UUID.
             tag_names: List of tag name strings.
         """
-        from backend.shared.domain.memory_models import Tag, TagLink
+        from backend.shared.domain.memory_models import Tag
 
         for tag_name in tag_names:
             # Find or create tag
@@ -1044,13 +1044,6 @@ class MemoryService(BaseService):
                     continue
 
             # Link tag to target
-            tag_link = TagLink(
-                id=self._generate_id(),
-                workspace_id=workspace_id,
-                tag_id=tag.id,
-                target_type=target_type,
-                target_id=str(target_id),
-            )
             try:
                 await self._tag_repo.link_tag(
                     tag_id=tag.id,

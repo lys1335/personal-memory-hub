@@ -5,11 +5,14 @@ Per D5_Entry_Layer_Architecture, this is the primary Entry Adapter for HTTP requ
 """
 
 import logging
+import os
 import sys
+import json
+import threading
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -125,10 +128,9 @@ def get_services(
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown events."""
     # Configure file logging - write to shared volume for dashboard to read
-    import os as _os
-    log_dir = _os.environ.get('LOG_DIR', '/app/logs')
-    log_file = _os.path.join(log_dir, 'memory_hub.log')
-    _os.makedirs(log_dir, exist_ok=True)
+    log_dir = os.environ.get('LOG_DIR', '/app/logs')
+    log_file = os.path.join(log_dir, 'memory_hub.log')
+    os.makedirs(log_dir, exist_ok=True)
     
     # Simple file handler with immediate flush
     fh = logging.FileHandler(log_file, encoding='utf-8', mode='a')
@@ -374,10 +376,10 @@ async def execute_sql_query(body: dict = Body(..., embed=False)):
     ]
     for pattern in dangerous_patterns:
         if re.search(pattern, sql_upper):
-            raise HTTPException(status_code=403, detail=f"Query contains disallowed operation")
+            raise HTTPException(status_code=403, detail="Query contains disallowed operation")
 
     from backend.shared.infrastructure.database.engine import get_engine
-    from sqlalchemy import text, MetaData, Table, Column
+    from sqlalchemy import text
     import uuid
     import json
 
@@ -428,18 +430,15 @@ async def execute_sql_query(body: dict = Body(..., embed=False)):
 # Cron Control Panel Endpoints (Dashboard Scheduled Tasks)
 # ------------------------------------------------------------------
 
-import os as _os
-import json as _json
-import threading as _threading
-_cron_lock = _threading.Lock()
+_cron_lock = threading.Lock()
 _cron_tasks: dict = {}  # task_id -> task config
-_CRON_DATA_FILE = _os.environ.get('LOG_DIR', '/app/logs') + '/cron_tasks.json'
+_CRON_DATA_FILE = os.environ.get('LOG_DIR', '/app/logs') + '/cron_tasks.json'
 
 def _load_cron_tasks():
     """Load cron tasks from disk."""
     global _cron_tasks
     try:
-        if _os.path.exists(_CRON_DATA_FILE):
+        if os.path.exists(_CRON_DATA_FILE):
             with open(_CRON_DATA_FILE, 'r', encoding='utf-8') as f:
                 _cron_tasks = json.load(f)
     except Exception:
@@ -448,7 +447,7 @@ def _load_cron_tasks():
 def _save_cron_tasks():
     """Persist cron tasks to disk."""
     try:
-        _os.makedirs(_os.path.dirname(_CRON_DATA_FILE), exist_ok=True)
+        os.makedirs(os.path.dirname(_CRON_DATA_FILE), exist_ok=True)
         with open(_CRON_DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(_cron_tasks, f, ensure_ascii=False, indent=2)
     except Exception:
@@ -569,7 +568,6 @@ async def run_cron_task_now(task_id: str):
     result = {"task_id": task_id, "type": task_type, "status": "completed"}
     
     if task_type == 'evolution':
-        source_filter = payload.get('source_filter', None)
         limit = payload.get('limit', 50)
         
         # Store evolution metadata for dashboard display
@@ -588,7 +586,6 @@ async def run_cron_task_now(task_id: str):
                 pass
             
             async def _run_evolution():
-                from backend.service.reflection_service import ReflectionService
                 from backend.engine.reflection_engine import ReflectionEngine
                 from backend.shared.providers.reflection_provider import OllamaReflectionProvider
                 
@@ -597,7 +594,6 @@ async def run_cron_task_now(task_id: str):
                 provider = OllamaReflectionProvider()
                 
                 # Get candidates from memory_node_repo (simplified)
-                from backend.repository.memory_node_repository import MemoryNodeRepository
                 from backend.shared.infrastructure.database.engine import get_engine
                 from sqlalchemy import text
                 

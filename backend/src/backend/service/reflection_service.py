@@ -26,7 +26,6 @@ import time
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from backend.repository.exceptions import RepositoryError
 from backend.service.base import BaseService
 from backend.service.dto import (
     ReflectionExecutionResult,
