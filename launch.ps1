@@ -16,7 +16,7 @@ Try {
 
 # Start Database container
 echo "[DB] Database: starting container..."
-docker compose up -d db --no-recreate 2>$null
+docker compose -f "$base/docker-compose.yml" up -d db --no-recreate 2>$null
 Start-Sleep -Seconds 3
 
 # API Configuration - set PYTHONPATH relative to backend directory
