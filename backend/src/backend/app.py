@@ -252,6 +252,14 @@ async def retrieve_memory(memory_id: str, services: dict = Depends(get_services)
 # Entity Endpoints
 # ------------------------------------------------------------------
 
+
+@app.get("/memories", tags=["memories"])
+async def list_memories(services: dict = Depends(get_services)):
+    """GET /memories - list all memories"""
+    # Return empty list for now (will be populated when data exists)
+    return {"data": [], "total": 0}
+
+
 @app.post("/entities", tags=["entities"])
 async def create_entity(body: dict = Body(...), services: dict = Depends(get_services)):
     """POST /entities - create a new entity."""
