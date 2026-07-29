@@ -69,3 +69,7 @@ logs/
 # Generated files
 *.pyc
 *.pyo
+
+# Agnes workspace state - should never be committed to source control
+.agnes/
+
