@@ -32,7 +32,16 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
     
     def do_GET(self):
         if self.path.startswith("/api/memories"):
-            target_path = self.path.replace("/api/memories", "/memories", 1)
+            # Extract path after /api/memories/ (includes leading slash if present)
+            mem_path = self.path[len("/api/memories"):]
+ 
+            # Special case: /health maps to /health (not /memories/health)
+            if mem_path == "/health":
+                target_path = "/health"
+            else:
+                # For all other /api/memories/* paths, prepend /memories/
+                target_path = "/memories" + mem_path if mem_path else "/memories"
+
             target_url = f"{MEM_HUB}{target_path}"
             try:
                 resp = req_lib.request(
@@ -72,7 +81,16 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         body = self.rfile.read(content_length) if content_length > 0 else None
         
         if self.path.startswith("/api/memories"):
-            target_path = self.path.replace("/api/memories", "/memories", 1)
+            # Extract path after /api/memories/ (includes leading slash if present)
+            mem_path = self.path[len("/api/memories"):]
+ 
+            # Special case: /health maps to /health (not /memories/health)
+            if mem_path == "/health":
+                target_path = "/health"
+            else:
+                # For all other /api/memories/* paths, prepend /memories/
+                target_path = "/memories" + mem_path if mem_path else "/memories"
+
             target_url = f"{MEM_HUB}{target_path}"
             try:
                 resp = req_lib.request(
@@ -231,6 +249,7 @@ def start_server(port=5000, open_browser=True):
     server.allow_reuse_address = True
     
     print(f"Dashboard running at http://{port}")
+    print(f"  /api/memories/health -> {MEM_HUB}/health (mapped)")
     print(f"  /api/memories/* -> {MEM_HUB}/memories (mapped)")
     print(f"  /api/ollama/*   -> {OLLAMA}")
     print(f"Static files     -> {DASHBOARD_DIR}")
