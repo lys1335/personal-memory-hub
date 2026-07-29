@@ -15,12 +15,16 @@ Try {
 
 # Start Database container (absolute path to compose file)
 echo "[DB] Database: starting container..."
-docker compose -f "$base/docker-compose.yml" up -d db --no-recreate 2>$null
+# docker compose -f "$base/docker-compose.yml" up -d db --no-recreate 2>$null
+try {
+    docker compose -f "$base/docker-compose.yml" up -d db --no-recreate 2>&1 | Out-Null
+} catch {
+}
 Start-Sleep -Seconds 3
 
 # Start API server in a new console window
 echo "[API] API: starting uvicorn in separate window..."
-Start-Process pwsh -NoNewWindow -ArgumentList "-ExecutionPolicy Bypass", "-File", "$base\backend\start-uvicorn.ps1"
+Start-Process powershell -NoNewWindow -ArgumentList "-ExecutionPolicy Bypass", "-File", "$base\backend\start-uvicorn.ps1"
 
 # Wait for API to start
 Start-Sleep -Seconds 5
@@ -28,7 +32,7 @@ Start-Sleep -Seconds 5
 # Start Dashboard proxy with port auto-detect
 echo "[DASH] Starting dashboard proxy..."
 $dashPort = 5000
-while ((Test-Connection -ComputerName localhost -Count 1 -Quiet -Port $dashPort) -eq $true) {
+while ((Test-NetConnection -ComputerName localhost -Port $dashPort -InformationLevel Quiet) -eq $true) {
     $dashPort++
     if ($dashPort -gt 6000) { $dashPort = 5001; break }
 }
@@ -37,7 +41,7 @@ Start-Process python -ArgumentList "$base\dashboard_server.py", "--port", $dashP
 
 # Open browser
 echo "[BROW] Opening browser at http://localhost:$dashPort..."
-Start-Item "http://localhost:$dashPort"
+Start-Process "http://localhost:$dashPort"
 
 echo ""
 echo "=== ALL SERVICES LAUNCHED ==="

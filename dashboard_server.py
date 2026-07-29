@@ -50,7 +50,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(resp.content)
             except Exception as e:
-                self.send_error(502, f"Proxy error: {e}")
+                self.send_error(502, "Proxy connection aborted")
             return
         
         elif self.path.startswith("/api/sql"):
@@ -92,7 +92,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(resp.content)
                     return
             except Exception as e:
-                self.send_error(502, f"Proxy error: {e}")
+                self.send_error(502, "Proxy connection aborted")
                 return
         elif self.path.startswith("/api/sql"):
             return self._proxy(MEM_HUB, "/api", self.path, body)
