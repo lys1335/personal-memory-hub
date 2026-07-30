@@ -256,7 +256,8 @@ async def retrieve_memory(memory_id: str, services: dict = Depends(get_services)
 @app.get("/memories", tags=["memories"])
 async def list_memories(
     repos: dict = Depends(get_repositories),
-    workspace_id: str = Query(None, description="Workspace UUID")
+    workspace_id: str = Query(None, description="Workspace UUID"),
+    limit: int | None = Query(None, description="Max number of memories to return")
 ):
     """GET /memories - list memories with total count."""
     from uuid import UUID
@@ -265,13 +266,19 @@ async def list_memories(
     target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
 
     memory_node_repo = repos["memory_node"]
-    all_memories = await memory_node_repo.find_active_by_workspace(workspace_id=target_wid, limit=999999)
+    
+    # Use provided limit or large default to fetch all memories
+    repo_limit = limit if limit is not None else 999999
+    all_memories = await memory_node_repo.find_active_by_workspace(
+        workspace_id=target_wid, 
+        limit=repo_limit
+    )
 
     total_count = len(all_memories)
 
-    # Return a few sample memories (first 5)
+    # Return all memories (with content truncation for long entries)
     data = []
-    for m in all_memories[:5]:
+    for m in all_memories:
         item = {
             "id": str(m.id),
             "level": m.level,

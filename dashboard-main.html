@@ -1032,12 +1032,15 @@
                 return;
             }
 
+            // Filter out any NULL/empty column names to avoid rendering issues
+            const columns = data.columns.filter(c => c != null && c !== '');
+            
             // Build table
             let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
 
             // Header
             html += '<thead><tr style="border-bottom:2px solid rgba(79,195,247,0.3);">';
-            for (const col of data.columns) {
+            for (const col of columns) {
                 html += `<th style="padding:8px 12px; text-align:left; color:#4fc3f7; white-space:nowrap; position:sticky; top:0; background:#1a1a2e; z-index:1;">${escapeHtml(col)}</th>`;
             }
             html += '</tr></thead>';
@@ -1046,12 +1049,12 @@
             html += '<tbody>';
             for (const row of data.rows) {
                 html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-                for (const col of data.columns) {
+                for (const col of columns) {
                     let val = row[col];
-                    if (val === null || val === undefined) val = '<span style="color:#666;">NULL</span>';
-                    else {
+                    if (val === null || val === undefined) {
+                        val = `<td style="padding:6px 12px; color:#666;">NULL</td>`;
+                    } else {
                         const strVal = String(val);
-                        // Truncate long content
                         const displayVal = strVal.length > 200 ? strVal.substring(0, 200) + '...' : escapeHtml(strVal);
                         const titleAttr = strVal.length > 200 ? `title="${escapeHtml(strVal)}"` : '';
                         val = `<td style="padding:6px 12px; max-width:300px; overflow:hidden; text-overflow:ellipsis;" ${titleAttr}>${displayVal}</td>`;
