@@ -67,7 +67,7 @@
         
         async function approveProposal(id) {
             try {
-                const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'POST'});
+                const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'GET'});
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 alert('已批准');
                 loadEvolutionProposals();
@@ -78,7 +78,7 @@
         
         async function rejectProposal(id) {
             try {
-                const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'POST'});
+                const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'GET'});
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 alert('已驳回');
                 loadEvolutionProposals();
@@ -89,7 +89,7 @@
         
         async function clearEvolutionProposals() {
             try {
-                const r = await fetch('/api/review/proposals/clear', {method: 'POST'});
+                const r = await fetch('/api/review/proposals/clear', {method: 'GET'});
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 const data = await r.json();
                 alert('已清空 ' + data.cleared + ' 条建议');
@@ -101,7 +101,7 @@
         
         async function runEvolutionTask(taskId) {
             try {
-                const r = await fetch('/api/cron/tasks/' + taskId + '/run-now', {method: 'POST'});
+                const r = await fetch('/api/cron/tasks/' + taskId + '/run-now', {method: 'GET'});
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 const data = await r.json();
                 alert('执行结果: ' + (data.message || '已完成') + ' (' + (data.facts||0) + ' facts, ' + (data.proposals||0) + ' proposals)');
@@ -521,9 +521,9 @@
     </div>
 
     <script>
-        const MEM_HUB = '/api/memories';
+        const MEM_HUB = 'http://localhost:8000';;
         const OLLAMA_BASE = '/api/ollama';
-        const WORKSPACE_ID = 'fd0223ed-7aa2-491e-8db5-b0de71b75219';
+        const WORKSPACE_ID = 'fb77c6ce-1e15-47e9-a8b7-2e707a011071';
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -541,10 +541,9 @@
                 } else throw new Error();
             } catch(e) {
                 try {
-                    const r2 = await fetch(MEM_HUB + '/search', {
-                        method: 'POST',
+                    const r2 = await fetch(MEM_HUB + '/memories', {
+                        method: 'GET',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: '_test_', limit: 1 }),
                         signal: AbortSignal.timeout(5000)
                     });
                     if (r2.ok) {
@@ -616,10 +615,9 @@
             const t0 = Date.now();
 
             try {
-                const sr = await fetch(MEM_HUB + '/search', {
-                    method: 'POST',
+                const sr = await fetch(MEM_HUB + '/memories', {
+                    method: 'GET',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: question, limit: 5 })
                 });
                 const sd = await sr.json();
                 const elapsed = ((Date.now()-t0)/1000).toFixed(2);
@@ -631,7 +629,7 @@
                 const lastSys = msgs[msgs.length-1];
                 if (lastSys && lastSys.textContent.includes('正在检索')) lastSys.remove();
 
-                const items = sd.data?.items || [];
+                const items = sd.data || [];
                 showResults2(items);
 
                 if (items.length === 0) {
@@ -706,13 +704,12 @@
             const randKeyword = keywords[Math.floor(Math.random() * keywords.length)];
 
             try {
-                const r = await fetch(MEM_HUB + '/search', {
-                    method: 'POST',
+                const r = await fetch(MEM_HUB + '/memories', {
+                    method: 'GET',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: randKeyword, limit: 50 })
                 });
                 const d = await r.json();
-                const items = d.data?.items || [];
+                const items = d.data || [];
 
                 const seen = new Set();
                 carouselMemories = [];
@@ -790,13 +787,11 @@
 
             try {
                 // Fetch all memories for statistics
-                const r = await fetch(MEM_HUB + '/search', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ workspace_id: WORKSPACE_ID, query: 'test', limit: 1000 })
+                const r = await fetch(MEM_HUB + '/memories', {
+                    method: 'GET'
                 });
                 const d = await r.json();
-                const items = d.data?.items || [];
+                const items = d.data || [];
 
                 // Deduplicate
                 const seen = new Set();
@@ -1298,7 +1293,7 @@
 
         async function toggleCronTask(taskId, action) {
             try {
-                const r = await fetch(`/api/cron/tasks/${taskId}/${action}`, {method: 'POST'});
+                const r = await fetch(`/api/cron/tasks/${taskId}/${action}`, {method: 'GET'});
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 loadCronTasks();
             } catch(e) {
@@ -1319,7 +1314,7 @@
 
         async function runCronNow(taskId) {
             try {
-                const r = await fetch(`/api/cron/tasks/${taskId}/run-now`, {method: 'POST'});
+                const r = await fetch(`/api/cron/tasks/${taskId}/run-now`, {method: 'GET'});
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const data = await r.json();
                 alert(`执行结果: ${data.message || '已完成'}`);

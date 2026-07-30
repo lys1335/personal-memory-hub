@@ -4,10 +4,10 @@ This module provides the main FastAPI application for the Personal Memory Hub.
 Per D5_Entry_Layer_Architecture, this is the primary Entry Adapter for HTTP requests.
 """
 
+import json
 import logging
 import os
 import sys
-import json
 import threading
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -17,12 +17,12 @@ from typing import Any
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.entry.rest_adapter import RESTAdapter
 from backend.entry.dto import ResponseStatus
+from backend.entry.rest_adapter import RESTAdapter
 from backend.service.entity_service import EntityService
 from backend.service.memory_service import MemoryService
 from backend.service.query_service import QueryService
@@ -131,7 +131,7 @@ async def lifespan(app: FastAPI):
     log_dir = os.environ.get('LOG_DIR', '/app/logs')
     log_file = os.path.join(log_dir, 'memory_hub.log')
     os.makedirs(log_dir, exist_ok=True)
-    
+
     # Simple file handler with immediate flush
     fh = logging.FileHandler(log_file, encoding='utf-8', mode='a')
     fh.setLevel(logging.DEBUG)
@@ -139,7 +139,7 @@ async def lifespan(app: FastAPI):
         '%(asctime)s [%(levelname)s] %(name)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     ))
-    
+
     root_logger = logging.getLogger()
     root_logger.addHandler(fh)
     root_logger.setLevel(logging.DEBUG)
@@ -254,10 +254,34 @@ async def retrieve_memory(memory_id: str, services: dict = Depends(get_services)
 
 
 @app.get("/memories", tags=["memories"])
-async def list_memories(services: dict = Depends(get_services)):
-    """GET /memories - list all memories"""
-    # Return empty list for now (will be populated when data exists)
-    return {"data": [], "total": 0}
+async def list_memories(
+    repos: dict = Depends(get_repositories),
+    workspace_id: str = Query(None, description="Workspace UUID")
+):
+    """GET /memories - list memories with total count."""
+    from uuid import UUID
+
+    default_ws_id = "fb77c6ce-1e15-47e9-a8b7-2e707a011071"
+    target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
+
+    memory_node_repo = repos["memory_node"]
+    all_memories = await memory_node_repo.find_active_by_workspace(workspace_id=target_wid, limit=999999)
+
+    total_count = len(all_memories)
+
+    # Return a few sample memories (first 5)
+    data = []
+    for m in all_memories[:5]:
+        item = {
+            "id": str(m.id),
+            "level": m.level,
+            "source": m.source,
+            "content": (m.content[:100] + "...") if m.content and len(m.content) > 100 else m.content,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        data.append(item)
+
+    return {"data": data, "total": total_count}
 
 
 @app.post("/entities", tags=["entities"])
@@ -335,8 +359,9 @@ async def import_memories(body: dict = Body(...), services: dict = Depends(get_s
 @app.get("/api/sql/tables", tags=["sql"])
 async def list_tables():
     """GET /api/sql/tables - List all tables with column info."""
-    from backend.shared.infrastructure.database.engine import get_engine
     from sqlalchemy import text
+
+    from backend.shared.infrastructure.database.engine import get_engine
 
     engine = get_engine()
     async with engine.connect() as conn:
@@ -386,10 +411,12 @@ async def execute_sql_query(body: dict = Body(..., embed=False)):
         if re.search(pattern, sql_upper):
             raise HTTPException(status_code=403, detail="Query contains disallowed operation")
 
-    from backend.shared.infrastructure.database.engine import get_engine
-    from sqlalchemy import text
-    import uuid
     import json
+    import uuid
+
+    from sqlalchemy import text
+
+    from backend.shared.infrastructure.database.engine import get_engine
 
     engine = get_engine()
     async with engine.connect() as conn:
@@ -402,7 +429,7 @@ async def execute_sql_query(body: dict = Body(..., embed=False)):
             result = await conn.execute(text(final_sql))
             rows_list = result.fetchall()
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Query error: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Query error: {e!s}")
 
         columns = list(result.keys())
 
@@ -447,7 +474,7 @@ def _load_cron_tasks():
     global _cron_tasks
     try:
         if os.path.exists(_CRON_DATA_FILE):
-            with open(_CRON_DATA_FILE, 'r', encoding='utf-8') as f:
+            with open(_CRON_DATA_FILE, encoding='utf-8') as f:
                 _cron_tasks = json.load(f)
     except Exception:
         _cron_tasks = {}
@@ -473,7 +500,7 @@ async def list_cron_tasks():
 @app.post("/api/cron/tasks")
 async def create_cron_task(body: dict = Body(embed=False)):
     """Create a new scheduled task.
-    
+
     Body fields:
       - name: str (required) - Task name
       - type: str - 'evolution' | 'batch_import' | 'custom'
@@ -483,19 +510,19 @@ async def create_cron_task(body: dict = Body(embed=False)):
       - payload: dict - Task-specific parameters
     """
     import uuid as _uuid
-    
+
     name = body.get('name', '')
     if not name:
         raise HTTPException(status_code=400, detail="Task name is required")
-    
+
     task_type = body.get('type', 'evolution')
     interval = body.get('interval_seconds', 300)
     schedule_expr = body.get('schedule_expr', '')
     enabled = body.get('enabled', True)
     payload = body.get('payload', {})
-    
+
     task_id = str(_uuid.uuid4())[:8]
-    
+
     task = {
         "id": task_id,
         "name": name,
@@ -509,11 +536,11 @@ async def create_cron_task(body: dict = Body(embed=False)):
         "status": "idle",
         "created_at": __import__('datetime').datetime.utcnow().isoformat(),
     }
-    
+
     with _cron_lock:
         _cron_tasks[task_id] = task
         _save_cron_tasks()
-    
+
     return {"task_id": task_id, **task}
 
 @app.put("/api/cron/tasks/{task_id}")
@@ -522,12 +549,12 @@ async def update_cron_task(task_id: str, body: dict = Body(embed=False)):
     with _cron_lock:
         if task_id not in _cron_tasks:
             raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-        
+
         task = _cron_tasks[task_id]
         for key in ['name', 'type', 'interval_seconds', 'schedule_expr', 'enabled', 'payload']:
             if key in body:
                 task[key] = body[key]
-        
+
         _save_cron_tasks()
         return {"task_id": task_id, **task}
 
@@ -569,20 +596,20 @@ async def run_cron_task_now(task_id: str):
     task = _cron_tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-    
+
     task_type = task.get('type', 'evolution')
     payload = task.get('payload', {})
-    
+
     result = {"task_id": task_id, "type": task_type, "status": "completed"}
-    
+
     if task_type == 'evolution':
         limit = payload.get('limit', 50)
-        
+
         # Store evolution metadata for dashboard display
         result["message"] = f"Evolution triggered for {limit} memories"
         result["scope"] = "daily"
         result["limit"] = limit
-        
+
         # Try to run actual evolution pipeline
         try:
             # Use current event loop instead of asyncio.run() since we're already in an async context
@@ -592,19 +619,20 @@ async def run_cron_task_now(task_id: str):
                 loop = _asyncio.get_running_loop()
             except RuntimeError:
                 pass
-            
+
             async def _run_evolution():
                 from backend.engine.reflection_engine import ReflectionEngine
                 from backend.shared.providers.reflection_provider import OllamaReflectionProvider
-                
+
                 # Create engine instances
                 engine = ReflectionEngine()
                 provider = OllamaReflectionProvider()
-                
+
                 # Get candidates from memory_node_repo (simplified)
-                from backend.shared.infrastructure.database.engine import get_engine
                 from sqlalchemy import text
-                
+
+                from backend.shared.infrastructure.database.engine import get_engine
+
                 engine_obj = get_engine()
                 async with engine_obj.begin() as conn:
                     rows = await conn.execute(
@@ -615,21 +643,21 @@ async def run_cron_task_now(task_id: str):
                     for row in rows:
                         mapping = dict(row._mapping)
                         candidate_dicts.append(mapping)
-                
+
                 if not candidate_dicts:
                     return {"status": "completed", "message": "No candidates found", "facts": 0, "proposals": 0}
-                
+
                 # Run reflection pipeline
                 pipeline_result = await engine.reflect_pipeline(
                     scope="daily",
                     candidates=candidate_dicts,
                     provider=provider,
                 )
-                
+
                 facts = pipeline_result.get("facts", [])
                 proposals = pipeline_result.get("proposals", [])
                 execution_log = pipeline_result.get("execution_log", [])
-                
+
                 # Store proposals in sandbox
                 import uuid as _uuid_mod
                 with _sandbox_lock:
@@ -640,15 +668,15 @@ async def run_cron_task_now(task_id: str):
                         prop["task_id"] = task_id
                         prop["executed_at"] = result['executed_at']
                         _sandbox_proposals.append(prop)
-                
+
                 result["facts"] = len(facts)
                 result["proposals"] = len(proposals)
                 result["execution_log"] = execution_log
                 result["sandbox_proposal_ids"] = [p.get("id") for p in proposals]
-                
+
                 logger.info(f"[EVOLUTION] Pipeline complete: {len(facts)} facts, {len(proposals)} proposals stored in sandbox")
                 return result
-            
+
             if loop:
                 await _run_evolution()
             else:
@@ -662,14 +690,14 @@ async def run_cron_task_now(task_id: str):
         result["message"] = "Batch import triggered"
     else:
         result["message"] = f"Custom task '{task_type}' triggered"
-    
+
     result['executed_at'] = __import__('datetime').datetime.utcnow().isoformat()
-    
+
     with _cron_lock:
         _cron_tasks[task_id]['last_run'] = result['executed_at']
         _cron_tasks[task_id]['status'] = 'completed'
         _save_cron_tasks()
-    
+
     return result
 
 

@@ -204,8 +204,9 @@ class ContractValidator:
             return self.errors
 
         query = data.get("query", "")
-        if not isinstance(query, str) or not query.strip():
-            self.add_error("CONTRACT_INVALID_TYPE", "query", "Query cannot be empty")
+        if not isinstance(query, str):
+            self.add_error("CONTRACT_INVALID_TYPE", "query", "Query must be a string")
+        # Allow empty string to mean "no filter" - do not add error for empty query
 
         limit = data.get("limit", 50)
         if not isinstance(limit, int) or limit < 1 or limit > 1000:

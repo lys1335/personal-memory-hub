@@ -210,12 +210,15 @@ class QueryService(BaseService):
         self._validate_workspace_id(workspace_id)
 
         if not query or not query.strip():
-            raise ValidationError(
-                "Search query cannot be empty",
-                field="query",
+            # Empty query means "no filter" - retrieve all active memories in workspace
+            # Use memory_node_repo directly for reliability
+            results = await self._memory_node_repo.find_active_by_workspace(
+                workspace_id=workspace_id,
+                limit=limit,
+                offset=offset,
             )
-
-        results = await self._memory_query_repo.search_by_keyword(
+        else:
+            results = await self._memory_query_repo.search_by_keyword(
             workspace_id=workspace_id,
             query=query.strip(),
             entity_id=entity_id,
