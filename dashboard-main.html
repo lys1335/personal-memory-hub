@@ -523,7 +523,7 @@
     <script>
         const MEM_HUB = 'http://localhost:8000';;
         const OLLAMA_BASE = '/api/ollama';
-        const WORKSPACE_ID = 'fb77c6ce-1e15-47e9-a8b7-2e707a011071';
+        const WORKSPACE_ID = "fd0223ed-7aa2-491e-8db5-b0de71b75219";
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -541,7 +541,7 @@
                 } else throw new Error();
             } catch(e) {
                 try {
-                    const r2 = await fetch(MEM_HUB + '/memories', {
+                    const r2 = await fetch(MEM_HUB + '/memories' + '?workspace_id=' + WORKSPACE_ID , {
                         method: 'GET',
                         headers: {'Content-Type': 'application/json'},
                         signal: AbortSignal.timeout(5000)
@@ -615,7 +615,7 @@
             const t0 = Date.now();
 
             try {
-                const sr = await fetch(MEM_HUB + '/memories', {
+                const sr = await fetch(MEM_HUB + '/memories' + '?workspace_id=' + WORKSPACE_ID , {
                     method: 'GET',
                     headers: {'Content-Type': 'application/json'},
                 });
@@ -704,7 +704,7 @@
             const randKeyword = keywords[Math.floor(Math.random() * keywords.length)];
 
             try {
-                const r = await fetch(MEM_HUB + '/memories', {
+                const r = await fetch(MEM_HUB + '/memories' + '?workspace_id=' + WORKSPACE_ID , {
                     method: 'GET',
                     headers: {'Content-Type': 'application/json'},
                 });
@@ -787,7 +787,7 @@
 
             try {
                 // Fetch all memories for statistics
-                const r = await fetch(MEM_HUB + '/memories', {
+                const r = await fetch(MEM_HUB + '/memories' + '?workspace_id=' + WORKSPACE_ID , {
                     method: 'GET'
                 });
                 const d = await r.json();
