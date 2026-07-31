@@ -187,10 +187,11 @@ def test_validator_search_valid(validator):
 
 @pytest.mark.unit
 def test_validator_search_empty_query(validator):
-    """Verify search validation catches empty query."""
+    """Verify search validation accepts empty query (means no filter)."""
     data = {"workspace_id": str(uuid4()), "query": ""}
     errors = validator.validate_search_request(data)
-    assert any(e.field == "query" for e in errors)
+    # Empty string is allowed as a valid query value (means no text filter)
+    assert len(errors) == 0
 
 
 @pytest.mark.unit
