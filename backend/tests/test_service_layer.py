@@ -529,7 +529,7 @@ async def test_query_service_search_empty_query(
     mock_entity_repo, mock_entity_query_repo,
     mock_vector_query_repo, mock_vector_doc_repo,
 ):
-    """Verify QueryService rejects empty search query."""
+    """Verify QueryService accepts empty search query (means no filter)."""
     service = QueryService(
         memory_node_repo=mock_memory_node_repo,
         memory_query_repo=mock_memory_query_repo,
@@ -539,11 +539,12 @@ async def test_query_service_search_empty_query(
         vector_doc_repo=mock_vector_doc_repo,
     )
 
-    with pytest.raises(ValidationError, match="query"):
-        await service.search_by_keyword(
-            workspace_id=uuid4(),
-            query="",
-        )
+    # Empty query is valid - means retrieve all active memories in workspace
+    result = await service.search_by_keyword(
+        workspace_id=uuid4(),
+        query="",
+    )
+    assert result is not None
 
 
 # ---------------------------------------------------------------------------
