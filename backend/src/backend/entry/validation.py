@@ -52,7 +52,7 @@ class ContractValidator:
     # Max lengths
     MAX_CANONICAL_NAME_LENGTH = 255
     MAX_ENTITY_TYPE_LENGTH = 50
-    MAX_CONTENT_LENGTH = 100000  # 100KB
+    MAX_CONTENT_LENGTH = 50000000  # 100KB
 
     # Validation rules
     MIN_CONTENT_LENGTH = 1

@@ -4,114 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>记忆中枢 Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js">
-    
-        </div>
-    </div>
-
-
-        // === Evolution Review Tab Functions ===
-        
-        async function loadEvolutionProposals() {
-            const logArea = document.getElementById('evolutionLogArea');
-            try {
-                const r1 = await fetch('/api/review/proposals');
-                const data1 = await r1.json();
-                const proposals = data1.proposals || [];
-                
-                let html = '';
-                if (proposals.length === 0) {
-                    html = '<div style="color:#666;">暂无待审建议。运行一次演化任务后这里会显示结果。</div>';
-                } else {
-                    for (const p of proposals) {
-                        const typeColors = {Create:'#4caf50',Strengthen:'#ff9800',Refine:'#2196f3',Split:'#9c27b0',Ignore:'#999'};
-                        const color = typeColors[p.type] || '#888';
-                        html += `<div style="padding:8px; margin-bottom:6px; background:rgba(255,255,255,0.03); border-radius:6px; border-left:3px solid ${color};">`;
-                        html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">`;
-                        html += `<span style="font-size:11px; color:${color}; font-weight:bold;">${p.type}</span>`;
-                        html += `<span style="font-size:10px; color:#666;">L${p.target_level || '?'} | confidence: ${p.confidence || '?'}</span></div>`;
-                        html += `<div style="font-size:12px; color:#ccc; margin-bottom:4px;">${escapeHtml(p.summary || '')}</div>`;
-                        html += `<div style="font-size:10px; color:#666;">entities: ${(p.entities||[]).join(', ') || 'N/A'}</div>`;
-                        html += `<div style="font-size:10px; color:#666;">evidence: ${(p.evidence_chain||[]).length} sources</div>`;
-                        html += `<div style="margin-top:6px; display:flex; gap:4px;">`;
-                        html += `<button onclick="approveProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(76,175,80,0.2); color:#4caf50;">✅ 批准</button>`;
-                        html += `<button onclick="rejectProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(244,67,54,0.2); color:#f44336;">❌ 驳回</button>`;
-                        html += `</div></div>`;
-                    }
-                }
-                
-                // Load evolution task list
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script>
+            // === Evolution Review Tab Functions ===
+            
+            async function loadEvolutionProposals() {
+                const logArea = document.getElementById('evolutionLogArea');
                 try {
-                    const r2 = await fetch('/api/cron/tasks');
-                    const data2 = await r2.json();
-                    const tasks = data2.tasks || [];
-                    const evolutionTasks = tasks.filter(t => t.type === 'evolution');
+                    const r1 = await fetch('/api/review/proposals');
+                    const data1 = await r1.json();
+                    const proposals = data1.proposals || [];
                     
-                    if (evolutionTasks.length > 0) {
-                        html += '<hr style="border-color:rgba(255,255,255,0.1); margin:12px 0;">';
-                        html += '<div style="font-size:12px; color:#888; margin-bottom:8px;">📋 最近演化执行记录</div>';
-                        for (const t of evolutionTasks) {
-                            const lastRun = t.last_run ? new Date(t.last_run).toLocaleString() : '从未';
-                            html += `<div style="font-size:11px; color:#aaa; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">`;
-                            html += `${escapeHtml(t.name)} — 上次: ${lastRun} — 间隔: ${t.interval_seconds}s`;
-                            html += ` <button onclick="runEvolutionTask('${t.id}')" style="padding:1px 6px; border:none; border-radius:3px; font-size:10px; cursor:pointer; background:rgba(79,195,247,0.2); color:#4fc3f7;">▶ 立即执行</button></div>`;
+                    let html = '';
+                    if (proposals.length === 0) {
+                        html = '<div style="color:#666;">暂无待审建议。运行一次演化任务后这里会显示结果。</div>';
+                    } else {
+                        for (const p of proposals) {
+                            const typeColors = {Create:'#4caf50',Strengthen:'#ff9800',Refine:'#2196f3',Split:'#9c27b0',Ignore:'#999'};
+                            const color = typeColors[p.type] || '#888';
+                            html += `<div style="padding:8px; margin-bottom:6px; background:rgba(255,255,255,0.03); border-radius:6px; border-left:3px solid ${color};">`;
+                            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">`;
+                            html += `<span style="font-size:11px; color:${color}; font-weight:bold;">${p.type}</span>`;
+                            html += `<span style="font-size:10px; color:#666;">L${p.target_level || '?'} | confidence: ${p.confidence || '?'}</span></div>`;
+                            html += `<div style="font-size:12px; color:#ccc; margin-bottom:4px;">${escapeHtml(p.summary || '')}</div>`;
+                            html += `<div style="font-size:10px; color:#666;">entities: ${(p.entities||[]).join(', ') || 'N/A'}</div>`;
+                            html += `<div style="font-size:10px; color:#666;">evidence: ${(p.evidence_chain||[]).length} sources</div>`;
+                            html += `<div style="margin-top:6px; display:flex; gap:4px;">`;
+                            html += `<button onclick="approveProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(76,175,80,0.2); color:#4caf50;">✅ 批准</button>`;
+                            html += `<button onclick="rejectProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(244,67,54,0.2); color:#f44336;">❌ 驳回</button>`;
+                            html += `</div></div>`;
                         }
                     }
-                } catch(e) {}
-                
-                logArea.innerHTML = html;
-            } catch(e) {
-                logArea.innerHTML = `<div style="color:#f44336;">加载失败: ${escapeHtml(e.message)}</div>`;
+                    
+                    // Load evolution task list
+                    try {
+                        const r2 = await fetch('/api/cron/tasks');
+                        const data2 = await r2.json();
+                        const tasks = data2.tasks || [];
+                        const evolutionTasks = tasks.filter(t => t.type === 'evolution');
+                        
+                        if (evolutionTasks.length > 0) {
+                            html += '<hr style="border-color:rgba(255,255,255,0.1); margin:12px 0;">';
+                            html += '<div style="font-size:12px; color:#888; margin-bottom:8px;">📋 最近演化执行记录</div>';
+                            for (const t of evolutionTasks) {
+                                const lastRun = t.last_run ? new Date(t.last_run).toLocaleString() : '从未';
+                                html += `<div style="font-size:11px; color:#aaa; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">`;
+                                html += `${escapeHtml(t.name)} — 上次: ${lastRun} — 间隔: ${t.interval_seconds}s`;
+                                html += ` <button onclick="runEvolutionTask('${t.id}')" style="padding:1px 6px; border:none; border-radius:3px; font-size:10px; cursor:pointer; background:rgba(79,195,247,0.2); color:#4fc3f7;">▶ 立即执行</button></div>`;
+                            }
+                        }
+                    } catch(e) {}
+                    
+                    logArea.innerHTML = html;
+                } catch(e) {
+                    logArea.innerHTML = `<div style="color:#f44336;">加载失败: ${escapeHtml(e.message)}</div>`;
+                }
             }
-        }
-        
-        async function approveProposal(id) {
-            try {
-                const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'GET'});
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                alert('已批准');
-                loadEvolutionProposals();
-            } catch(e) {
-                alert('批准失败: ' + e.message);
+            
+            async function approveProposal(id) {
+                try {
+                    const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'GET'});
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    alert('已批准');
+                    loadEvolutionProposals();
+                } catch(e) {
+                    alert('批准失败: ' + e.message);
+                }
             }
-        }
-        
-        async function rejectProposal(id) {
-            try {
-                const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'GET'});
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                alert('已驳回');
-                loadEvolutionProposals();
-            } catch(e) {
-                alert('驳回失败: ' + e.message);
+            
+            async function rejectProposal(id) {
+                try {
+                    const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'GET'});
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    alert('已驳回');
+                    loadEvolutionProposals();
+                } catch(e) {
+                    alert('驳回失败: ' + e.message);
+                }
             }
-        }
-        
-        async function clearEvolutionProposals() {
-            try {
-                const r = await fetch('/api/review/proposals/clear', {method: 'GET'});
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                const data = await r.json();
-                alert('已清空 ' + data.cleared + ' 条建议');
-                loadEvolutionProposals();
-            } catch(e) {
-                alert('清空失败: ' + e.message);
+            
+            async function clearEvolutionProposals() {
+                try {
+                    const r = await fetch('/api/review/proposals/clear', {method: 'GET'});
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const data = await r.json();
+                    alert('已清空 ' + data.cleared + ' 条建议');
+                    loadEvolutionProposals();
+                } catch(e) {
+                    alert('清空失败: ' + e.message);
+                }
             }
-        }
-        
-        async function runEvolutionTask(taskId) {
-            try {
-                const r = await fetch('/api/cron/tasks/' + taskId + '/run-now', {method: 'GET'});
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                const data = await r.json();
-                alert('执行结果: ' + (data.message || '已完成') + ' (' + (data.facts||0) + ' facts, ' + (data.proposals||0) + ' proposals)');
-                loadEvolutionProposals();
-            } catch(e) {
-                alert('执行失败: ' + e.message);
+            
+            async function runEvolutionTask(taskId) {
+                try {
+                    const r = await fetch('/api/cron/tasks/' + taskId + '/run-now', {method: 'GET'});
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const data = await r.json();
+                    alert('执行结果: ' + (data.message || '已完成') + ' (' + (data.facts||0) + ' facts, ' + (data.proposals||0) + ' proposals)');
+                    loadEvolutionProposals();
+                } catch(e) {
+                    alert('执行失败: ' + e.message);
+                }
             }
-        }
 
-</script>
+            function switchTab(tabName) {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                document.getElementById('tab-' + tabName).classList.add('active');
+                document.querySelector('.nav-item[data-tab="' + tabName + '"]').classList.add('active');
+            }
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -450,7 +452,7 @@
             <div class="tab-content" id="tab-log">
                 <div style="display:flex; flex-direction:column; height:100%; padding:15px; overflow:hidden;">
                     <!-- Filter Bar -->
-                    <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <div style="margin-bottom:16px; padding:12px; background:rgba(79,195,247,0.05); border-radius:8px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; border:1px solid rgba(79,195,247,0.2);">
                         <input type="text" id="logKeyword" placeholder="搜索关键字（如：batch、import、error）..." style="flex:1; min-width:200px; padding:8px 14px; border:none; border-radius:20px; background:rgba(255,255,255,0.1); color:#e0e0e0; font-size:13px; outline:none;" />
                         <select id="logLevelFilter" style="padding:8px 14px; border:none; border-radius:20px; background:rgba(255,255,255,0.1); color:#e0e0e0; font-size:13px; cursor:pointer; outline:none;">
                             <option value="">全部级别</option>
@@ -460,62 +462,83 @@
                         </select>
                         <button onclick="refreshLogs()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-weight:bold; font-size:13px;">🔄 刷新</button>
                         <button onclick="clearLogView()" style="padding:8px 18px; border:none; border-radius:20px; background:rgba(255,255,255,0.1); color:#aaa; cursor:pointer; font-size:13px;">清空</button>
-                        <span id="logStatus" style="font-size:12px; color:#888; margin-left:auto;"></span>
-                    </div>
+                        
+                        <label style="margin-left:20px;font-size:13px;display:flex;align-items:center;gap:6px;">
+                          <input type="checkbox" id="autoRefreshToggle">
+                          <span>自动刷新 (30s)</span>
+                        </label><span id="logStatus" style="font-size:12px; color:#888; margin-left:auto;"></span>
+                    <span id="cronTaskCount" style="font-size:13px;color:#aaa;margin-left:auto;"></span></div>
                     <!-- Log Output Area -->
                     <div id="logOutputArea" style="flex:1; overflow:auto; background:rgba(0,0,0,0.4); border-radius:8px; padding:12px; font-family:'Consolas','Courier New',monospace; font-size:12px; line-height:1.8; white-space:pre-wrap; word-break:break-all;">
-                        <div class="empty-state">点击下方"刷新"按钮加载日志，或使用上方搜索框过滤关键字...</div>
+                        <div class="empty-state">点击上方"刷新"按钮加载日志，或使用上方搜索框过滤关键字...</div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+            
+            <!-- CRON CONTROL TAB -->
+            <div class="tab-content" id="tab-cron">
+                <div style="display:flex; flex-direction:column; height:100%; padding:15px; overflow:hidden;">
+                    <!-- Toolbar -->
+                    <div style="margin-bottom:16px; padding:12px; background:rgba(79,195,247,0.05); border-radius:8px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; border:1px solid rgba(79,195,247,0.2);">
+                        <button onclick="loadCronTasks()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-weight:bold; font-size:13px;">🔄 刷新任务</button>
+                        <button onclick="showCreateTaskForm()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#66bb6a,#43a047); color:white; cursor:pointer; font-weight:bold; font-size:13px;">＋ 新建任务</button>
+                    </div>
+                    <!-- Create / Edit Form (collapsible) -->
+                    <div id="cronFormArea" style="display:none; margin-bottom:12px; padding:14px; background:rgba(79,195,247,0.08); border-radius:8px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div>
+                                <label style="font-size:12px; color:#aaa;">任务名称</label>
+                                <input type="text" id="cronTaskName" placeholder="例如：每日记忆演化" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
+                            </div>
+                            <div>
+                                <label style="font-size:12px; color:#aaa;">任务类型</label>
+                                <select id="cronTaskType" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                    <option value="evolution">记忆演化 (Reflection)</option>
+                                    <option value="batch_import">批量导入</option>
+                                    <option value="custom">自定义</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:12px; color:#aaa;">执行间隔（秒，最小10）</label>
+                                <input type="number" id="cronTaskInterval" value="300" min="10" step="10" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
+                            </div>
+                            <div>
+                                <label style="font-size:12px; color:#aaa;">Cron 表达式（可选）</label>
+                                <input type="text" id="cronTaskExpr" placeholder="例如：0 */6 * * *" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label style="font-size:12px; color:#aaa;">Payload（JSON）</label>
+                                <textarea id="cronTaskPayload" rows="2" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px; resize:vertical; font-family:monospace;" placeholder='{"source_filter":null, "limit":50}'>{"source_filter": null, "limit": 50}</textarea>
+                            </div>
+                        </div>
+                        <div style="margin-top:10px; display:flex; gap:8px;">
+                            <button onclick="saveCronTask()" id="cronSaveBtn" style="padding:6px 16px; border:none; border-radius:16px; background:#43a047; color:white; cursor:pointer; font-size:13px;">保存</button>
+                            <button onclick="hideCreateTaskForm()" style="padding:6px 16px; border:none; border-radius:16px; background:rgba(255,255,255,0.1); color:#aaa; cursor:pointer; font-size:13px;">取消</button>
+                        </div>
+                    </div>
+                    <!-- Task List -->
+                    <div id="cronTaskList" style="flex:1; overflow:auto;">
+                        <div class="empty-state">点击"刷新任务"加载已配置的任务</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- EVOLUTION REVIEW TAB -->
+            <div class="tab-content" id="tab-evolution">
 
-
-    <!-- CRON CONTROL TAB -->
-    <div class="tab-content" id="tab-cron">
-        <div style="display:flex; flex-direction:column; height:100%; padding:15px; overflow:hidden;">
-            <!-- Toolbar -->
-            <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <button onclick="loadCronTasks()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-weight:bold; font-size:13px;">🔄 刷新任务</button>
-                <button onclick="showCreateTaskForm()" style="padding:8px 18px; border:none; border-radius:20px; background:linear-gradient(135deg,#66bb6a,#43a047); color:white; cursor:pointer; font-weight:bold; font-size:13px;">＋ 新建任务</button>
-            </div>
-            <!-- Create / Edit Form (collapsible) -->
-            <div id="cronFormArea" style="display:none; margin-bottom:12px; padding:14px; background:rgba(79,195,247,0.08); border-radius:8px;">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div>
-                        <label style="font-size:12px; color:#aaa;">任务名称</label>
-                        <input type="text" id="cronTaskName" placeholder="例如：每日记忆演化" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
+                <div style="display:flex; flex-direction:column; height:100%;">
+                    <h2 style="font-size:16px; color:#e0e0e0; margin:0 0 12px;">🧠 记忆演化评审</h2>
+                    <p style="font-size:12px; color:#888; margin:0 0 16px;">查看和审批自动生成的记忆演化建议。批准后将写入正式数据库。</p>
+                    
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <button onclick="loadEvolutionProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(79,195,247,0.2); color:#4fc3f7; font-size:12px; cursor:pointer;">🔄 刷新建议</button>
+                        <button onclick="clearEvolutionProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(244,67,54,0.2); color:#f44336; font-size:12px; cursor:pointer;">🗑 清空已处理</button>
                     </div>
-                    <div>
-                        <label style="font-size:12px; color:#aaa;">任务类型</label>
-                        <select id="cronTaskType" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
-                            <option value="evolution">记忆演化 (Reflection)</option>
-                            <option value="batch_import">批量导入</option>
-                            <option value="custom">自定义</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:12px; color:#aaa;">执行间隔（秒，最小10）</label>
-                        <input type="number" id="cronTaskInterval" value="300" min="10" step="10" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
-                    </div>
-                    <div>
-                        <label style="font-size:12px; color:#aaa;">Cron 表达式（可选）</label>
-                        <input type="text" id="cronTaskExpr" placeholder="例如：0 */6 * * *" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;" />
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="font-size:12px; color:#aaa;">Payload（JSON）</label>
-                        <textarea id="cronTaskPayload" rows="2" style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px; resize:vertical; font-family:monospace;" placeholder='{"source_filter":null, "limit":50}'>{"source_filter": null, "limit": 50}</textarea>
+                    
+                    <div id="evolutionLogArea" style="flex:1; overflow-y:auto; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; font-family:monospace; font-size:11px; line-height:1.6; color:#aaa;">
+                        <div style="color:#666;">点击"刷新建议"加载演化输出...</div>
                     </div>
                 </div>
-                <div style="margin-top:10px; display:flex; gap:8px;">
-                    <button onclick="saveCronTask()" id="cronSaveBtn" style="padding:6px 16px; border:none; border-radius:16px; background:#43a047; color:white; cursor:pointer; font-size:13px;">保存</button>
-                    <button onclick="hideCreateTaskForm()" style="padding:6px 16px; border:none; border-radius:16px; background:rgba(255,255,255,0.1); color:#aaa; cursor:pointer; font-size:13px;">取消</button>
-                </div>
-            </div>
-            <!-- Task List -->
-            <div id="cronTaskList" style="flex:1; overflow:auto;">
-                <div class="empty-state">点击"刷新任务"加载已配置的任务</div>
             </div>
         </div>
     </div>
@@ -611,41 +634,54 @@
             btn.disabled = true;
             addMsg(question, 'msg-user');
 
-            addMsg('<em>正在检索记忆库...</em>', 'msg-sys');
+            addMsg('<em>正在检索相关记忆...</em>', 'msg-sys');
             const t0 = Date.now();
 
+            let items = [];
+            
             try {
-                const sr = await fetch(MEM_HUB + '/memories' + '?workspace_id=' + WORKSPACE_ID , {
-                    method: 'GET',
+                const searchResp = await fetch(MEM_HUB + '/memories/search', {
+                    method: 'POST',
                     headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        workspace_id: WORKSPACE_ID,
+                        query: question,
+                        limit: 5
+                    })
                 });
+                
+                if (!searchResp.ok) throw new Error('搜索API返回非成功状态');
+                const searchData = await searchResp.json();
+                items = searchData.data?.items || [];
+            } catch (searchErr) {
+                console.log('搜索失败，回退到全量检索:', searchErr);
+                const sr = await fetch(MEM_HUB + '/memories?workspace_id=' + WORKSPACE_ID + '&limit=50', { method: 'GET' });
+                if (!sr.ok) throw new Error('全量检索失败');
                 const sd = await sr.json();
-                const elapsed = ((Date.now()-t0)/1000).toFixed(2);
-
-                document.getElementById('foundNum').textContent = sd.data?.items?.length || 0;
-                document.getElementById('searchTime').textContent = elapsed + 's';
-
-                const msgs = document.querySelectorAll('#chatArea .msg');
-                const lastSys = msgs[msgs.length-1];
-                if (lastSys && lastSys.textContent.includes('正在检索')) lastSys.remove();
-
-                const items = sd.data || [];
-                showResults2(items);
-
-                if (items.length === 0) {
-                    addMsg('未找到相关记忆。将直接回答。', 'msg-sys');
-                    await callOllama(question, model, null);
-                } else {
-                    const ctx = items.map((it,i) => `[记忆${i+1}] ${it.content}`).join('\n\n');
-                    await callOllama(question, model, ctx);
-                }
-            } catch(err) {
-                console.error(err);
-                const sysMsgs = document.querySelectorAll('#chatArea .msg');
-                const last = sysMsgs[sysMsgs.length-1];
-                if (last && last.textContent.includes('正在检索')) last.remove();
-                addMsg(`检索失败: ${err.message}`, 'msg-sys');
+                items = sd.data || [];
             }
+
+            const elapsed = ((Date.now()-t0)/1000).toFixed(2);
+            document.getElementById('foundNum').textContent = items.length + ' 条找到';
+            document.getElementById('searchTime').textContent = elapsed + 's';
+            document.getElementById('carouselTotal2').textContent = items.length || 0;
+
+            const msgs = document.querySelectorAll('#chatArea .msg');
+            const lastSys = msgs[msgs.length-1];
+            if (lastSys && lastSys.textContent.includes('正在检索')) lastSys.remove();
+
+            showResults2(items);
+
+            if (items.length === 0) {
+                addMsg('未找到相关记忆。将直接回答。', 'msg-sys');
+                await callOllama(question, model, null);
+            } else {
+                const ctx = items.map(function(it,i) { 
+                    return '[记忆' + (i+1) + '] ' + it.content; 
+                }).join('\n\n');
+                await callOllama(question, model, ctx);
+            }
+            
             btn.disabled = false;
         }
 
@@ -731,7 +767,7 @@
                 showCarouselCard(carouselIndex);
                 document.getElementById('carouselCount').textContent = `${carouselIndex + 1} / ${carouselMemories.length}`;
                 document.getElementById('carouselTotal').textContent = carouselMemories.length;
-                document.getElementById('carouselTotal2').textContent = carouselMemories.length;
+                document.getElementById('carouselTotal2').textContent = '-';
             } catch(err) {
                 area.innerHTML = `<div class="empty-state">加载失败: ${err.message}</div>`;
             }
@@ -1105,7 +1141,10 @@
             outputArea.innerHTML = '<div style="color:#4fc3f7;">⏳ 正在加载日志...</div>';
 
             try {
-                const r = await fetch(url);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                const r = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const data = await r.json();
 
@@ -1113,6 +1152,12 @@
                     outputArea.innerHTML = '<div class="empty-state">暂无日志记录</div>';
                     status.textContent = `共 ${data.total_lines} 条，无匹配`;
                     status.style.color = '#888';
+                    // Auto-schedule if enabled even when empty
+                    const autoToggle = document.getElementById('autoRefreshToggle');
+                    if (autoToggle && autoToggle.checked) {
+                        if (logAutoRefreshTimer) clearTimeout(logAutoRefreshTimer);
+                        logAutoRefreshTimer = setTimeout(refreshLogs, 30000);
+                    }
                     return;
                 }
 
@@ -1125,40 +1170,45 @@
                     else if (line.includes('[INFO]')) color = '#4caf50';
                     
                     const highlighted = keyword 
-                        ? line.replace(new RegExp(`(${keyword})`, 'gi'), '<mark style="background:rgba(255,235,59,0.3);color:#fff;padding:0 2px;border-radius:2px;">$1</mark>')
+                        ? line.replace(new RegExp((`${keyword}`), 'gi'), '<mark style="background:rgba(255,235,59,0.3);color:#fff;padding:0 2px;border-radius:2px;">\$1</mark>')
                         : escapeHtml(line);
                     
-                    html += `<span style="color:${color};">${highlighted}</span>\n`;
+                    html += `${ `<span style="color:${color};">${highlighted}</span>\n` }`;
                 }
                 outputArea.innerHTML = html;
                 status.textContent = `✅ 共 ${data.total_lines} 条 | 筛选后 ${data.filtered_lines} 条`;
                 status.style.color = '#4caf50';
+                
+                // Auto-reschedule if checkbox is enabled (after successful load)
+                const autoToggle = document.getElementById('autoRefreshToggle');
+                if (autoToggle && autoToggle.checked) {
+                    if (logAutoRefreshTimer) clearTimeout(logAutoRefreshTimer);
+                    logAutoRefreshTimer = setTimeout(refreshLogs, 30000);
+                }
             } catch(e) {
-                outputArea.innerHTML = `<div style="color:#f44336;">❌ 加载失败: ${escapeHtml(e.message)}</div>`;
+                outputArea.innerHTML = '<div style="color:#f44336;">❌ 加载失败: ${escapeHtml(e.message)}</div>';
                 status.textContent = '加载失败';
                 status.style.color = '#f44336';
+                // Don't auto-schedule on failure
+                if (logAutoRefreshTimer) clearTimeout(logAutoRefreshTimer);
+                logAutoRefreshTimer = null;
             }
         }
 
         function clearLogView() {
             document.getElementById('logKeyword').value = '';
             document.getElementById('logLevelFilter').value = '';
-            document.getElementById('logOutputArea').innerHTML = '<div class="empty-state">点击下方"刷新"按钮加载日志，或使用上方搜索框过滤关键字...</div>';
+            document.getElementById('logOutputArea').innerHTML = '<div class="empty-state">点击上方"刷新"按钮加载日志，或使用上方搜索框过滤关键字...</div>';
             document.getElementById('logStatus').textContent = '';
         }
-
-        // Auto-refresh logs every 5 seconds when on Log tab
-        setInterval(() => {
-            const logTab = document.getElementById('tab-log');
-            if (logTab && logTab.classList.contains('active')) {
-                refreshLogs();
-            }
-        }, 5000);
 
         // === Cron Control Tab Functions ===
         let editingTaskId = null;
 
-        async function loadCronTasks() {
+        async function loadCronTasks() {            // Update task count display
+            document.getElementById('cronTaskCount').textContent = '正在加载任务...';
+
+
             const listArea = document.getElementById('cronTaskList');
             try {
                 const r = await fetch('/api/cron/tasks');
@@ -1328,28 +1378,24 @@
         }
     
 
-    </script>
-<!-- EVOLUTION REVIEW TAB -->
-    <div class="tab-content" id="tab-evolution">
+    
+    // Auto-refresh control for log tab
+    const autoToggle = document.getElementById('autoRefreshToggle');
+    if (autoToggle) {
+        function updateAutoRefresh() {
+            if (autoToggle.checked) {
+                if (logAutoRefreshTimer) clearTimeout(logAutoRefreshTimer);
+                logAutoRefreshTimer = setTimeout(refreshLogs, 30000);
+            } else {
+                if (logAutoRefreshTimer) clearTimeout(logAutoRefreshTimer);
+                logAutoRefreshTimer = null;
+            }
+        }
+        updateAutoRefresh();
+        autoToggle.addEventListener('change', updateAutoRefresh);
+    }
 
-        <div style="display:flex; flex-direction:column; height:100%;">
-            <h2 style="font-size:16px; color:#e0e0e0; margin:0 0 12px;">🧠 记忆演化评审</h2>
-            <p style="font-size:12px; color:#888; margin:0 0 16px;">查看和审批自动生成的记忆演化建议。批准后将写入正式数据库。</p>
-            
-            <div style="display:flex; gap:8px; margin-bottom:12px;">
-                <button onclick="loadEvolutionProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(79,195,247,0.2); color:#4fc3f7; font-size:12px; cursor:pointer;">🔄 刷新建议</button>
-                <button onclick="clearEvolutionProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(244,67,54,0.2); color:#f44336; font-size:12px; cursor:pointer;">🗑 清空已处理</button>
-            </div>
-            
-            <div id="evolutionLogArea" style="flex:1; overflow-y:auto; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; font-family:monospace; font-size:11px; line-height:1.6; color:#aaa;">
-                <div style="color:#666;">点击"刷新建议"加载演化输出...</div>
-            </div>
-        </div>
-    </div>
-
-
-
-
-
+</script>
 </body>
-</html>
+</html>  <span id="cronTaskCount" style="font-size:13px;color:#aaa;margin-left:auto;"></span>
+

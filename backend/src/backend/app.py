@@ -760,6 +760,62 @@ async def clear_review_proposals():
         return {"cleared": before}
 
 
+
+# ------------------------------------------------------------------
+# Log Viewer Endpoint (Dashboard Log Viewer)
+# ------------------------------------------------------------------
+
+@app.get("/api/logs", tags=["logs"])
+async def get_logs(
+    lines: int = Query(-1, description="Number of lines to return (-1 for most recent)"),
+    q: str | None = Query(None, description="Keyword filter"),
+    level: str | None = Query(None, description="Log level filter (INFO, WARNING, ERROR)")
+):
+    """GET /api/logs - Read log files for dashboard viewer."""
+    import os
+    
+    # Find log file
+    log_file = None
+    for d in ["/app/logs", "./logs"]:
+        potential = os.path.join(d, "memory_hub.log")
+        if os.path.exists(potential):
+            log_file = potential
+            break
+    
+    if not log_file or not os.path.exists(log_file):
+        return {"logs": [], "total_lines": 0, "filtered_lines": 0}
+    
+    try:
+        with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+            f.seek(0, 2)
+            file_size = f.tell()
+            max_recent = 5000
+            n = lines if lines > 0 else max_recent
+            bytes_to_read = n * 200
+            seek_pos = max(0, file_size - bytes_to_read)
+            f.seek(seek_pos)
+            content = f.read()
+            # Skip incomplete first line if any
+            if "\n" in content:
+                content = content[content.index("\n") + 1:]
+            log_lines = content.splitlines()
+            
+            total_count = len(log_lines)
+            filtered = log_lines
+            if q:
+                q_lower = q.lower()
+                filtered = [l for l in filtered if q_lower in l.lower()]
+            if level:
+                filtered = [l for l in filtered if level in l]
+            
+            return {
+                "logs": filtered,
+                "total_lines": total_count,
+                "filtered_lines": len(filtered)
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read logs: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
