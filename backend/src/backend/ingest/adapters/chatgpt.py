@@ -342,15 +342,15 @@ class ChatGPTImportAdapter(BaseImportAdapter):
             Extracted message content string.
         """
         content = msg.get("content", {})
-        
+
         # Handle different content types
         content_type = content.get("content_type", "text")
-        
+
         if content_type == "text":
             parts = content.get("parts", [])
             if parts:
                 return "\n".join(str(part) for part in parts)
-        
+
         # For other content types (multimodal_text, etc.), extract meaningful text
         if isinstance(content, dict):
             texts = []
@@ -364,21 +364,21 @@ class ChatGPTImportAdapter(BaseImportAdapter):
                     for item in val:
                         if isinstance(item, str) and item.strip() and len(item) > 2:
                             texts.append(item)
-            
+
             if texts:
                 return "\n".join(texts)
-        
+
         # Handle image attachments
         if content_type == "image":
             return "[Image attachment]"
-        
+
         # Fallback to generic extraction
         fallback = extract_text_segments(msg, ["content", "text", "message"])
         if fallback:
             return fallback
-        
+
         # Indicate non-text content instead of returning raw JSON
-        return "[非文本消息内容]"
+        return ""
 
     # Timestamp Extraction
     # ------------------------------------------------------------------
