@@ -608,30 +608,31 @@ async def startup_cron_scheduler():
     if _cron_scheduler_task is None or _cron_scheduler_task.done():
         _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
     
-    # Initialize services directly using existing patterns
+    # Initialize services using the same pattern as existing code
     try:
         engine = get_engine()
         session_factory = get_session_factory(engine)
         
-        # Create repositories and services manually
+        # Import required modules
         from backend.repository.factory import get_repositories
         from backend.service.factory import get_services as get_all_services
         
-        async def _init():
-            async with session_factory() as session:
-                repos = await get_repositories(session)
-                svc = await get_all_services(session, repos)
-                _services.update(svc)
+        logger.info(f"[STARTUP] Creating services with engine: {engine}, factory: {session_factory}")
+        
+        # Create services
+        async with session_factory() as session:
+            repos = await get_repositories(session)
+            svc = await get_all_services(session, repos)
+            _services.update(svc)
             _services_ready = True
             logger.info(f"[STARTUP] Services initialized: {list(_services.keys())}")
         
-        # Run and wait
-        await _init()
         logger.info("[CRON] Scheduler task created")
     except Exception as e:
         logger.error(f"[STARTUP] Failed to initialize services: {e}")
         import traceback
         logger.error(traceback.format_exc())
+        # Continue without services - will retry on first request
 
 @app.on_event("shutdown")
 async def shutdown_cron_scheduler():
