@@ -1006,13 +1006,26 @@ async def get_evidence_memories(proposal_id: str):
     
     # Query memories from DB
     from backend.shared.infrastructure.database.engine import get_engine
-    from sqlalchemy import text, create_engine
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy import text
+    import asyncio
     
     engine = get_engine()
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    
+    async def _query_evidence():
+        async with engine.connect() as conn:
+            placeholders = ",".join([f":id{i}" for i in range(len(evidence_chain))])
+            params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
+            sql = text(f"""
+                SELECT id, content, level, node_type, source, created_at, confidence
+                FROM memory_nodes
+                WHERE id IN ({placeholders})
+                ORDER BY created_at DESC
+            """)
+            rows = await conn.execute(sql, params)
+            return rows.fetchall()
+    
     try:
+        rows = asyncio.get_event_loop().run_until_complete(_query_evidence())
         placeholders = ",".join([f":id{i}" for i in range(len(evidence_chain))])
         params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
         sql = text(f"""
@@ -1043,8 +1056,6 @@ async def get_evidence_memories(proposal_id: str):
     except Exception as e:
         logger.error(f"[EVOLUTION] Failed to get evidence: {e}", exc_info=True)
         return {"proposal_id": proposal_id, "evidence": [], "error": str(e)}
-    finally:
-        session.close()
 
 
 
