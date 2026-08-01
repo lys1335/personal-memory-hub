@@ -22,6 +22,7 @@ MVP Evolution additions:
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta
 import time
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -477,7 +478,7 @@ class ReflectionService(BaseService):
                     "created_at": node.created_at.isoformat() if node.created_at else None,
                     "evidence_links": node.evidence_links or [],
                     # Mark as recently created for scope tracking
-                    "is_recent": scope in ("daily", "weekly", "monthly") and node.created_at and node.created_at >= start_time if scope in ("daily", "weekly", "monthly") else False,
+                    "is_recent": scope in ("daily", "weekly", "monthly") and node.created_at is not None and start_time is not None and node.created_at >= start_time if scope in ("daily", "weekly", "monthly") else False,
                 })
             else:
                 result.append(node)
