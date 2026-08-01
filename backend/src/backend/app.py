@@ -1005,10 +1005,13 @@ async def get_evidence_memories(proposal_id: str):
         return {"proposal_id": proposal_id, "evidence": []}
     
     # Query memories from DB
-    from backend.shared.infrastructure.database.engine import get_session
-    from sqlalchemy import text
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text, create_engine
+    from sqlalchemy.orm import sessionmaker
     
-    session = get_session()
+    engine = get_engine()
+    Session = sessionmaker(bind=engine)
+    session = Session()
     try:
         placeholders = ",".join([f":id{i}" for i in range(len(evidence_chain))])
         params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
