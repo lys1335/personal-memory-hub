@@ -865,7 +865,7 @@ async def approve_proposal(
     
     # Write to DB using FastAPI dependency injection
     try:
-        from backend.service.memory_service import MemoryService
+        # Import and use the existing factories
         from backend.repository.factory import get_repositories
         from backend.service.factory import get_services as get_all_services
         
