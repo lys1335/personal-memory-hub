@@ -313,8 +313,7 @@ class ReflectionEngine(EngineBase):
                 value_str = ", ".join(fact_values[:2])  # First 2 values
                 summary_text = f"{entity}: {value_str}"
             else:
-                summary_text = f"{proposal_type} memory for '{entity}' "
-                               f"({len(entity_facts)} facts, confidence={avg_confidence:.2f})"
+                summary_text = f"{proposal_type} memory for '{entity}' ({len(entity_facts)} facts, confidence={avg_confidence:.2f})"
             
             proposals.append({
                 "type": proposal_type,
