@@ -914,20 +914,27 @@ async def approve_proposal(
         )
         
         # Link evidence from proposal's evidence_chain to the new memory
-        # evidence_chain contains source memory IDs - we create derived_from relationships
+        # Filter to only valid UUIDs
         memory_id = result.memory_id
         evidence_count = 0
         
         if evidence_chain and len(evidence_chain) > 0:
             try:
-                from backend.repository.relationship_repository import RelationshipRepository
                 import uuid as uuid_mod
                 
-                # Create derived_from relationships from new memory to source memories
-                for source_memory_id_str in evidence_chain:
+                # Filter to valid UUIDs only
+                valid_evidence = []
+                for eid in evidence_chain:
+                    try:
+                        uuid_mod.UUID(eid)
+                        valid_evidence.append(eid)
+                    except ValueError:
+                        logger.warning(f"[EVOLUTION] Skipping invalid evidence ID: {eid}")
+                
+                # Create derived_from relationships
+                for source_memory_id_str in valid_evidence:
                     try:
                         source_uuid = uuid_mod.UUID(source_memory_id_str)
-                        # Create relationship: new_memory -> derived_from -> source_memory
                         await memory_service._relationship_repo.create_memory_relationship(
                             source_node_id=memory_id,
                             target_node_id=source_uuid,
@@ -937,9 +944,9 @@ async def approve_proposal(
                         )
                         evidence_count += 1
                     except Exception as e:
-                        logger.warning(f"[EVOLUTION] Failed to link source memory {source_memory_id_str}: {e}")
+                        logger.warning(f"[EVOLUTION] Failed to link {source_memory_id_str}: {e}")
                 
-                logger.info(f"[EVOLUTION] Linked {evidence_count} source memories to {memory_id}")
+                logger.info(f"[EVOLUTION] Linked {evidence_count}/{len(evidence_chain)} evidence items to {memory_id}")
             except Exception as e:
                 logger.warning(f"[EVOLUTION] Failed to create relationships: {e}")
         
