@@ -921,6 +921,7 @@ async def approve_proposal(
         if evidence_chain and len(evidence_chain) > 0:
             try:
                 import uuid as uuid_mod
+                from backend.shared.domain.memory_models import MemoryRelationship
                 
                 # Filter to valid UUIDs only
                 valid_evidence = []
@@ -935,13 +936,16 @@ async def approve_proposal(
                 for source_memory_id_str in valid_evidence:
                     try:
                         source_uuid = uuid_mod.UUID(source_memory_id_str)
-                        await memory_service._relationship_repo.create_memory_relationship(
+                        # Create MemoryRelationship object
+                        rel = MemoryRelationship(
+                            id=uuid_mod.uuid4(),
+                            workspace_id=PyUUID(DEFAULT_WORKSPACE),
                             source_node_id=memory_id,
                             target_node_id=source_uuid,
                             relationship_type="derived_from",
                             contribution_weight=float(confidence),
-                            workspace_id=PyUUID(DEFAULT_WORKSPACE),
                         )
+                        await memory_service._relationship_repo.create_memory_relationship(rel)
                         evidence_count += 1
                     except Exception as e:
                         logger.warning(f"[EVOLUTION] Failed to link {source_memory_id_str}: {e}")
