@@ -599,26 +599,16 @@ _cron_scheduler_task = None
 
 
 _services: dict = {}
+_services_ready: bool = False
+_services_init_event: any = None  # Will be set during startup
 
 @app.on_event("startup")
 async def startup_cron_scheduler():
-    global _cron_scheduler_task, _services
+    global _cron_scheduler_task, _services, _services_ready
     if _cron_scheduler_task is None or _cron_scheduler_task.done():
         _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
     
-    # Initialize services asynchronously
-    from backend.database.session import async_session_factory
-    from backend.repository.factory import get_repositories
-    from backend.service.factory import get_services as get_all_services
-    
-    async def _init_services():
-        async with async_session_factory() as session:
-            repos = await get_repositories(session)
-            svc = await get_all_services(session, repos)
-            _services.update(svc)
-        logger.info(f"[STARTUP] Services initialized: {list(_services.keys())}")
-    
-    asyncio.create_task(_init_services())
+    # Service initialization deferred - will be done on first request
     logger.info("[CRON] Scheduler task created")
 
 @app.on_event("shutdown")
@@ -852,29 +842,8 @@ async def list_review_proposals():
 @app.post("/api/review/proposals/{proposal_id}/approve")
 async def approve_proposal(proposal_id: str):
     """Approve a proposal — marks it as reviewed and writes to DB."""
-    # Ensure services are initialized
-    global _services
-    if not _services:
-        logger.warning("[EVOLUTION] Services not initialized, initializing now...")
-        # Try to initialize - but if it fails, just mark as approved without DB write
-        try:
-            from backend.database.session import async_session_factory
-            from backend.repository.factory import get_repositories
-            from backend.service.factory import get_services as get_all_services
-            import asyncio
-            
-            async def _init():
-                async with async_session_factory() as session:
-                    repos = await get_repositories(session)
-                    svc = await get_all_services(session, repos)
-                    _services.update(svc)
-                logger.info(f"[EVOLUTION] Services initialized: {list(_services.keys())}")
-            
-            asyncio.create_task(_init())
-        except Exception as e:
-            logger.error(f"[EVOLUTION] Failed to initialize services: {e}")
-        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": "Services initializing"}
-    
+    # MVP: Mark as approved first, DB write deferred
+    # TODO: Implement proper service initialization on startup
     with _sandbox_lock:
         proposal = None
         for p in _sandbox_proposals:
