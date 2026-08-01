@@ -950,6 +950,9 @@ async def approve_proposal(
                     except Exception as e:
                         logger.warning(f"[EVOLUTION] Failed to link {source_memory_id_str}: {e}")
                 
+                # Commit the relationships
+                await session.commit()
+                
                 logger.info(f"[EVOLUTION] Linked {evidence_count}/{len(evidence_chain)} evidence items to {memory_id}")
             except Exception as e:
                 logger.warning(f"[EVOLUTION] Failed to create relationships: {e}")
