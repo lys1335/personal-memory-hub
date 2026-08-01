@@ -410,30 +410,64 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID | None,
         scope: str,
+        limit: int = 50,
     ) -> list[dict[str, Any]]:
         """Acquire the scope of memories to reflect upon.
 
         Reads from Repository (allowed: Service → Repository).
         Converts ORM objects to dicts for engine processing.
+        
+        Per 10_4 §9: Idempotency requires bounded scope.
+        We only process recent L1 facts, not all historical memories.
         """
         from backend.shared.domain.memory_models import MemoryNode
         
-        if scope == "entity" and entity_id:
-            nodes = await self._memory_node_repo.find_by_entity(
-                entity_id=entity_id,
-                workspace_id=workspace_id,
-            )
-        else:
+        # Default: only process L1 facts created in last 24 hours
+        # This ensures idempotency and prevents re-processing old memories
+        if scope in ("daily", "weekly", "monthly"):
+            now = datetime.utcnow()
+            if scope == "daily":
+                start_time = now - timedelta(hours=24)
+            elif scope == "weekly":
+                start_time = now - timedelta(days=7)
+            else:  # monthly
+                start_time = now - timedelta(days=30)
+            
             nodes = await self._memory_node_repo.find_active_by_workspace(
                 workspace_id=workspace_id,
+                limit=limit * 2,  # Fetch more to allow filtering
             )
+            # Filter to only recent L1 facts (not previously evolved)
+            recent_nodes = []
+            for node in nodes:
+                if isinstance(node, MemoryNode):
+                    # Only include L1 facts created after start_time
+                    if node.created_at and node.created_at >= start_time:
+                        # Skip if already evolved (generated_by = 'ai_reflect')
+                        if getattr(node, 'generated_by', None) != 'ai_reflect':
+                            recent_nodes.append(node)
+                            if len(recent_nodes) >= limit:
+                                break
+            nodes = recent_nodes
+        else:
+            # Entity scope: get all memories for this entity
+            if entity_id:
+                nodes = await self._memory_node_repo.find_by_entity(
+                    entity_id=entity_id,
+                    workspace_id=workspace_id,
+                )
+            else:
+                nodes = await self._memory_node_repo.find_active_by_workspace(
+                    workspace_id=workspace_id,
+                    limit=limit,
+                )
         
         # Convert ORM objects to dicts
         result = []
         for node in nodes:
             if isinstance(node, MemoryNode):
                 result.append({
-                    "id": str(node.id),  # Include ID so LLM can reference it
+                    "id": str(node.id),
                     "workspace_id": str(node.workspace_id),
                     "content": node.content,
                     "level": node.level,
@@ -441,8 +475,9 @@ class ReflectionService(BaseService):
                     "status": node.status,
                     "source": node.source,
                     "created_at": node.created_at.isoformat() if node.created_at else None,
-                    # Include evidence_links so LLM knows what evidence exists
                     "evidence_links": node.evidence_links or [],
+                    # Mark as recently created for scope tracking
+                    "is_recent": scope in ("daily", "weekly", "monthly") and node.created_at and node.created_at >= start_time if scope in ("daily", "weekly", "monthly") else False,
                 })
             else:
                 result.append(node)
