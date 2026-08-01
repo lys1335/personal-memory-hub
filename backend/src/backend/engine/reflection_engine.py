@@ -162,10 +162,10 @@ class ReflectionEngine(EngineBase):
         
         system_prompt = (
             "You are a Memory Evolution Fact Extractor for Personal Memory Hub.\n"
-            "Analyze the following memories and extract structured facts.\n"
+            "Analyze the following memories and extract structured facts with specific values.\n"
             "Output ONLY valid JSON with this structure:\n"
             "{\n"
-            '  "facts": [{"entity": str, "relation": str, "timestamp": str, "confidence": float, "source_ids": [str]}, ...],\n'
+            '  "facts": [{"entity": str, "relation": str, "value": str, "timestamp": str, "confidence": float, "source_ids": [str]}, ...],\n'
             '  "entities": [str, ...]\n'
             "}\n"
             f"AVAILABLE MEMORY IDS: {memory_ids}\n"
@@ -173,6 +173,9 @@ class ReflectionEngine(EngineBase):
             "Example: source_ids=[\"06a6d826-6ef8-7de4-8000-2019742f29ab\"]\n"
             "NEVER invent new IDs like \"memory_1\" or \"memory_id_2\".\n"
             "Each fact should capture a new piece of knowledge about the user.\n"
+            "The 'value' field MUST contain the actual fact value, not just repeat the entity name.\n"
+            "Example: entity='user's birthday', value='1984-11-01' (NOT 'user's birthday')\n"
+            "Example: entity='user's hometown', value='Tokyo, Japan' (NOT 'user's hometown')\n"
             "confidence should be between 0.0 and 1.0."
         )
 
@@ -304,14 +307,22 @@ class ReflectionEngine(EngineBase):
                         # Skip invalid placeholder like "memory_1"
                         pass
 
+            # Build meaningful summary from fact values
+            fact_values = [f.get("value", "") for f in entity_facts if f.get("value")]
+            if fact_values:
+                value_str = ", ".join(fact_values[:2])  # First 2 values
+                summary_text = f"{entity}: {value_str}"
+            else:
+                summary_text = f"{proposal_type} memory for '{entity}' "
+                               f"({len(entity_facts)} facts, confidence={avg_confidence:.2f})"
+            
             proposals.append({
                 "type": proposal_type,
                 "target_level": target_level,
                 "entity": entity,
                 "evidence_chain": evidence_chain,
                 "confidence": round(avg_confidence, 3),
-                "summary": f"{proposal_type} memory for '{entity}' "
-                           f"({len(entity_facts)} facts, confidence={avg_confidence:.2f})",
+                "summary": summary_text,
             })
 
         return proposals
