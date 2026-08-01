@@ -913,8 +913,23 @@ async def approve_proposal(
             metadata=metadata
         )
         
-        logger.info(f"[EVOLUTION] Written to DB: memory_id={result.memory_id}")
-        return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(result.memory_id)}
+        # Link evidence from proposal's evidence_chain to the new memory
+        memory_id = result.memory_id
+        if evidence_chain and len(evidence_chain) > 0:
+            try:
+                # evidence_chain contains source memory IDs
+                for evidence_id in evidence_chain:
+                    # Try to link evidence - use a simple JSON format
+                    await memory_service._memory_node_repo.link_evidence(
+                        memory_node_id=memory_id,
+                        evidence_id=evidence_id,
+                    )
+                logger.info(f"[EVOLUTION] Linked {len(evidence_chain)} evidence items to memory {memory_id}")
+            except Exception as e:
+                logger.warning(f"[EVOLUTION] Failed to link evidence: {e}")
+        
+        logger.info(f"[EVOLUTION] Written to DB: memory_id={memory_id}, evidence_count={len(evidence_chain) if evidence_chain else 0}")
+        return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(memory_id), "evidence_count": len(evidence_chain) if evidence_chain else 0}
     except Exception as e:
         logger.error(f"[EVOLUTION] Failed to write to DB: {e}")
         import traceback
