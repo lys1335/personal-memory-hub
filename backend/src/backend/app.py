@@ -1007,25 +1007,10 @@ async def get_evidence_memories(proposal_id: str):
     # Query memories from DB
     from backend.shared.infrastructure.database.engine import get_engine
     from sqlalchemy import text
-    import asyncio
     
     engine = get_engine()
     
-    async def _query_evidence():
-        async with engine.connect() as conn:
-            placeholders = ",".join([f":id{i}" for i in range(len(evidence_chain))])
-            params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
-            sql = text(f"""
-                SELECT id, content, level, node_type, source, created_at, confidence
-                FROM memory_nodes
-                WHERE id IN ({placeholders})
-                ORDER BY created_at DESC
-            """)
-            rows = await conn.execute(sql, params)
-            return rows.fetchall()
-    
-    try:
-        rows = asyncio.get_event_loop().run_until_complete(_query_evidence())
+    async with engine.connect() as conn:
         placeholders = ",".join([f":id{i}" for i in range(len(evidence_chain))])
         params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
         sql = text(f"""
@@ -1034,28 +1019,26 @@ async def get_evidence_memories(proposal_id: str):
             WHERE id IN ({placeholders})
             ORDER BY created_at DESC
         """)
-        rows = session.execute(sql, params).fetchall()
-        
-        evidence = []
-        for row in rows:
-            evidence.append({
-                "id": str(row[0]),
-                "content": row[1] if row[1] else "",
-                "level": row[2] if row[2] else 1,
-                "node_type": row[3] if row[3] else "Observation",
-                "source": row[4] if row[4] else "unknown",
-                "created_at": str(row[5])[:19] if row[5] else "",
-                "confidence": float(row[6]) if row[6] else 0.0
-            })
-        
-        return {
-            "proposal_id": proposal_id,
-            "evidence_count": len(evidence),
-            "evidence": evidence
-        }
-    except Exception as e:
-        logger.error(f"[EVOLUTION] Failed to get evidence: {e}", exc_info=True)
-        return {"proposal_id": proposal_id, "evidence": [], "error": str(e)}
+        rows = await conn.execute(sql, params)
+        result_rows = rows.fetchall()
+    
+    evidence = []
+    for row in result_rows:
+        evidence.append({
+            "id": str(row[0]),
+            "content": row[1] if row[1] else "",
+            "level": row[2] if row[2] else 1,
+            "node_type": row[3] if row[3] else "Observation",
+            "source": row[4] if row[4] else "unknown",
+            "created_at": str(row[5])[:19] if row[5] else "",
+            "confidence": float(row[6]) if row[6] else 0.0
+        })
+    
+    return {
+        "proposal_id": proposal_id,
+        "evidence_count": len(evidence),
+        "evidence": evidence
+    }
 
 
 
