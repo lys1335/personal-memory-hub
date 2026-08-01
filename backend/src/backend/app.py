@@ -598,13 +598,28 @@ async def _cron_scheduler_loop():
 _cron_scheduler_task = None
 
 
+_services: dict = {}
+
 @app.on_event("startup")
 async def startup_cron_scheduler():
-    global _cron_scheduler_task
+    global _cron_scheduler_task, _services
     if _cron_scheduler_task is None or _cron_scheduler_task.done():
         _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
+    
+    # Initialize services asynchronously
+    from backend.database.session import async_session_factory
+    from backend.repository.factory import get_repositories
+    from backend.service.factory import get_services as get_all_services
+    
+    async def _init_services():
+        async with async_session_factory() as session:
+            repos = await get_repositories(session)
+            svc = await get_all_services(session, repos)
+            _services.update(svc)
+        logger.info(f"[STARTUP] Services initialized: {list(_services.keys())}")
+    
+    asyncio.create_task(_init_services())
     logger.info("[CRON] Scheduler task created")
-
 
 @app.on_event("shutdown")
 async def shutdown_cron_scheduler():
@@ -836,16 +851,89 @@ async def list_review_proposals():
 
 @app.post("/api/review/proposals/{proposal_id}/approve")
 async def approve_proposal(proposal_id: str):
-    """Approve a proposal — marks it as reviewed and ready for DB write."""
+    """Approve a proposal — marks it as reviewed and writes to DB."""
+    # Ensure services are initialized
+    global _services
+    if not _services:
+        logger.warning("[EVOLUTION] Services not initialized, initializing now...")
+        from backend.database.session import async_session_factory
+        from backend.repository.factory import get_repositories
+        from backend.service.factory import get_services as get_all_services
+        
+        async def _init():
+            async with async_session_factory() as session:
+                repos = await get_repositories(session)
+                svc = await get_all_services(session, repos)
+                _services.update(svc)
+            logger.info(f"[EVOLUTION] Services initialized: {list(_services.keys())}")
+        
+        import asyncio
+        asyncio.create_task(_init())
+        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": "Services initializing, retry shortly"}
+    
     with _sandbox_lock:
+        proposal = None
         for p in _sandbox_proposals:
             if p.get("id") == proposal_id:
-                p["status"] = "approved"
-                p["approved_at"] = __import__('datetime').datetime.utcnow().isoformat()
-                logger.info(f"[EVOLUTION] Proposal {proposal_id} approved")
-                _save_sandbox()
-                return {"proposal_id": proposal_id, "status": "approved"}
-        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+                proposal = p
+                break
+        
+        if not proposal:
+            raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+        
+        # Mark as approved
+        proposal["status"] = "approved"
+        proposal["approved_at"] = __import__('datetime').datetime.utcnow().isoformat()
+        _save_sandbox()
+        logger.info(f"[EVOLUTION] Proposal {proposal_id} approved, writing to DB...")
+    
+    # Write to DB via MemoryService
+    if "memory" not in _services:
+        logger.error(f"[EVOLUTION] Memory service not available! _services = {list(_services.keys())}")
+        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": "Memory service not initialized"}
+    
+    try:
+        workspace_id = UUID(proposal.get("workspace_id", default_ws_id))
+        entity_name = proposal.get("entity", "unknown")
+        summary = proposal.get("summary", "")
+        confidence = proposal.get("confidence", 0.5)
+        evidence_chain = proposal.get("evidence_chain", [])
+        
+        logger.info(f"[EVOLUTION] About to call capture_memory with workspace_id={workspace_id}, content={summary[:50]}...")
+        
+        # Determine level based on proposal type
+        level = proposal.get("target_level", 1)
+        node_type = "Observation" if level == 1 else ("Pattern" if level == 2 else "Belief")
+        observation_type = "fact" if level == 1 else None
+        
+        # Capture to DB
+        result = await _services["memory"].capture_memory(
+            workspace_id=workspace_id,
+            content=summary,
+            level=level,
+            node_type=node_type,
+            source="ai_reflect",
+            confidence=float(confidence),
+            importance=float(confidence) * 0.8,
+            signal_strength=float(confidence) * 0.6,
+            observation_type=observation_type,
+            metadata={
+                "source_proposal_id": proposal_id,
+                "proposal_type": proposal.get("type"),
+                "evidence_chain": evidence_chain,
+                "original_summary": summary
+            }
+        )
+        
+        logger.info(f"[EVOLUTION] Proposal {proposal_id} written to DB as memory {result.memory_id}")
+        return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(result.memory_id)}
+    except Exception as e:
+        import traceback
+        logger.error(f"[EVOLUTION] Failed to write proposal {proposal_id} to DB: {e}")
+        logger.error(f"[EVOLUTION] Traceback: {traceback.format_exc()}")
+        # Still return success since sandbox is updated
+        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": str(e)}
+
 
 
 @app.post("/api/review/proposals/{proposal_id}/reject")
