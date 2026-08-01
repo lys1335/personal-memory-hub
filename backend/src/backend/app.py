@@ -839,10 +839,14 @@ async def list_review_proposals():
 
 
 @app.post("/api/review/proposals/{proposal_id}/approve")
-async def approve_proposal(proposal_id: str):
+async def approve_proposal(
+    proposal_id: str,
+    session: AsyncSession = Depends(get_session)
+):
     """Approve a proposal — marks it as reviewed and writes to DB."""
-    global _services, _services_ready
+    global _sandbox_proposals, _sandbox_lock
     
+    # Mark as approved in sandbox
     with _sandbox_lock:
         proposal = None
         for p in _sandbox_proposals:
@@ -853,44 +857,58 @@ async def approve_proposal(proposal_id: str):
         if not proposal:
             raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
         
-        # Mark as approved in sandbox
+        # Mark as approved
         proposal["status"] = "approved"
         proposal["approved_at"] = __import__('datetime').datetime.utcnow().isoformat()
         _save_sandbox()
         logger.info(f"[EVOLUTION] Proposal {proposal_id} approved in sandbox")
     
-    # Write to DB via MemoryService
-    if "memory" not in _services:
-        logger.error(f"[EVOLUTION] Memory service not available! _services = {list(_services.keys())}")
-        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": "Memory service not initialized"}
-    
+    # Write to DB using FastAPI dependency injection
     try:
-        # Extract entity and facts from proposal
-        entity_name = proposal.get("entity", "")
-        facts = proposal.get("facts", [])
+        from backend.service.memory_service import MemoryService
+        from backend.repository.factory import get_repositories
+        from backend.service.factory import get_services as get_all_services
         
-        # Create a consolidated memory content
-        content = proposal.get("summary", f"AI-Generated: {entity_name}")
+        repos = await get_repositories(session)
+        services = await get_all_services(session, repos)
+        memory_service = services["memory"]
         
-        # Determine node type and confidence
-        node_type = proposal.get("type", "Belief").lower()
+        # Extract data from proposal
+        entity_name = proposal.get("entity", "unknown")
+        summary = proposal.get("summary", f"AI-generated memory for {entity_name}")
         confidence = proposal.get("confidence", 0.5)
+        proposal_type = proposal.get("type", "Refine")
+        evidence_chain = proposal.get("evidence_chain", [])
         
-        # Build facts string
-        facts_str = "; ".join([f.get("content", str(f)) for f in facts]) if facts else content
+        # Determine memory level based on proposal type
+        level = 1  # Default to Observation
+        if proposal_type == "Refine":
+            level = 2
+        elif proposal_type == "Merge":
+            level = 3
         
-        # Prepare the memory capture request
-        capture_request = {
-            "workspace_id": DEFAULT_WORKSPACE,
-            "entity_name": entity_name,
-            "content": facts_str,
-            "node_type": node_type,
-            "confidence": confidence,
+        # Prepare metadata
+        metadata = {
+            "source_proposal_id": proposal_id,
+            "proposal_type": proposal_type,
+            "evidence_chain": evidence_chain,
+            "original_summary": summary,
             "generated_by": "ai_reflect"
         }
         
-        # Call MemoryService to capture
-        result = await _services["memory"].capture_memory(capture_request)
+        # Capture memory
+        result = await memory_service.capture_memory(
+            workspace_id=UUID(DEFAULT_WORKSPACE),
+            entity_name=entity_name,
+            content=summary,
+            level=level,
+            node_type="Pattern" if level == 2 else ("Belief" if level == 3 else "Observation"),
+            source="ai_reflect",
+            confidence=float(confidence),
+            importance=float(confidence) * 0.8,
+            signal_strength=float(confidence) * 0.6,
+            metadata=metadata
+        )
         
         logger.info(f"[EVOLUTION] Written to DB: memory_id={result.memory_id}")
         return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(result.memory_id)}
@@ -899,49 +917,6 @@ async def approve_proposal(proposal_id: str):
         import traceback
         logger.error(traceback.format_exc())
         return {"proposal_id": proposal_id, "status": "approved", "db_write_error": str(e)}
-    
-    try:
-        workspace_id = UUID(proposal.get("workspace_id", default_ws_id))
-        entity_name = proposal.get("entity", "unknown")
-        summary = proposal.get("summary", "")
-        confidence = proposal.get("confidence", 0.5)
-        evidence_chain = proposal.get("evidence_chain", [])
-        
-        logger.info(f"[EVOLUTION] About to call capture_memory with workspace_id={workspace_id}, content={summary[:50]}...")
-        
-        # Determine level based on proposal type
-        level = proposal.get("target_level", 1)
-        node_type = "Observation" if level == 1 else ("Pattern" if level == 2 else "Belief")
-        observation_type = "fact" if level == 1 else None
-        
-        # Capture to DB
-        result = await _services["memory"].capture_memory(
-            workspace_id=workspace_id,
-            content=summary,
-            level=level,
-            node_type=node_type,
-            source="ai_reflect",
-            confidence=float(confidence),
-            importance=float(confidence) * 0.8,
-            signal_strength=float(confidence) * 0.6,
-            observation_type=observation_type,
-            metadata={
-                "source_proposal_id": proposal_id,
-                "proposal_type": proposal.get("type"),
-                "evidence_chain": evidence_chain,
-                "original_summary": summary
-            }
-        )
-        
-        logger.info(f"[EVOLUTION] Proposal {proposal_id} written to DB as memory {result.memory_id}")
-        return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(result.memory_id)}
-    except Exception as e:
-        import traceback
-        logger.error(f"[EVOLUTION] Failed to write proposal {proposal_id} to DB: {e}")
-        logger.error(f"[EVOLUTION] Traceback: {traceback.format_exc()}")
-        # Still return success since sandbox is updated
-        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": str(e)}
-
 
 
 @app.post("/api/review/proposals/{proposal_id}/reject")
