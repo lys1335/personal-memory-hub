@@ -598,6 +598,9 @@ async def _cron_scheduler_loop():
 _cron_scheduler_task = None
 
 
+# Default workspace ID (user workspace)
+DEFAULT_WORKSPACE = "fd0223ed-7aa2-491e-8db5-b0de71b75219"
+
 _services: dict = {}
 _services_ready: bool = False
 _services_init_event: any = None  # Will be set during startup
