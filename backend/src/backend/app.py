@@ -897,10 +897,20 @@ async def approve_proposal(
             "generated_by": "ai_reflect"
         }
         
-        # Capture memory
+        # Capture memory - note: capture_memory uses workspace_id, entity_id, content, level, etc.
+        # We need to find or create the entity first
+        from uuid import UUID as PyUUID
+        
+        workspace_uuid = PyUUID(DEFAULT_WORKSPACE)
+        
+        # Try to find entity by name
+        entity_repo = repos["entity"]
+        entity = await entity_repo.find_by_name(workspace_uuid, entity_name)
+        
+        # Prepare the capture request
         result = await memory_service.capture_memory(
-            workspace_id=UUID(DEFAULT_WORKSPACE),
-            entity_name=entity_name,
+            workspace_id=workspace_uuid,
+            entity_id=entity.id if entity else None,
             content=summary,
             level=level,
             node_type="Pattern" if level == 2 else ("Belief" if level == 3 else "Observation"),
