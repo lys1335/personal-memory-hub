@@ -283,11 +283,19 @@ class ReflectionEngine(EngineBase):
                 target_level = 1
 
             # Build evidence chain from source_ids
+            # Filter out invalid placeholders (must be valid UUIDs)
+            import uuid as _uuid_mod
             evidence_chain = []
             for f in entity_facts:
                 for sid in f.get("source_ids", []):
-                    if sid not in evidence_chain:
-                        evidence_chain.append(sid)
+                    # Validate UUID format
+                    try:
+                        _uuid_mod.UUID(sid)
+                        if sid not in evidence_chain:
+                            evidence_chain.append(sid)
+                    except ValueError:
+                        # Skip invalid placeholder like "memory_1"
+                        pass
 
             proposals.append({
                 "type": proposal_type,

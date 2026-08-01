@@ -433,7 +433,7 @@ class ReflectionService(BaseService):
         for node in nodes:
             if isinstance(node, MemoryNode):
                 result.append({
-                    "id": str(node.id),
+                    "id": str(node.id),  # Include ID so LLM can reference it
                     "workspace_id": str(node.workspace_id),
                     "content": node.content,
                     "level": node.level,
@@ -441,6 +441,8 @@ class ReflectionService(BaseService):
                     "status": node.status,
                     "source": node.source,
                     "created_at": node.created_at.isoformat() if node.created_at else None,
+                    # Include evidence_links so LLM knows what evidence exists
+                    "evidence_links": node.evidence_links or [],
                 })
             else:
                 result.append(node)
