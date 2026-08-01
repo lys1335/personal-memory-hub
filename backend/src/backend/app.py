@@ -608,8 +608,30 @@ async def startup_cron_scheduler():
     if _cron_scheduler_task is None or _cron_scheduler_task.done():
         _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
     
-    # Service initialization deferred - will be done on first request
-    logger.info("[CRON] Scheduler task created")
+    # Initialize services directly using existing patterns
+    try:
+        engine = get_engine()
+        session_factory = get_session_factory(engine)
+        
+        # Create repositories and services manually
+        from backend.repository.factory import get_repositories
+        from backend.service.factory import get_services as get_all_services
+        
+        async def _init():
+            async with session_factory() as session:
+                repos = await get_repositories(session)
+                svc = await get_all_services(session, repos)
+                _services.update(svc)
+            _services_ready = True
+            logger.info(f"[STARTUP] Services initialized: {list(_services.keys())}")
+        
+        # Run and wait
+        await _init()
+        logger.info("[CRON] Scheduler task created")
+    except Exception as e:
+        logger.error(f"[STARTUP] Failed to initialize services: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
 @app.on_event("shutdown")
 async def shutdown_cron_scheduler():
@@ -842,8 +864,8 @@ async def list_review_proposals():
 @app.post("/api/review/proposals/{proposal_id}/approve")
 async def approve_proposal(proposal_id: str):
     """Approve a proposal — marks it as reviewed and writes to DB."""
-    # MVP: Mark as approved first, DB write deferred
-    # TODO: Implement proper service initialization on startup
+    global _services, _services_ready
+    
     with _sandbox_lock:
         proposal = None
         for p in _sandbox_proposals:
@@ -854,16 +876,52 @@ async def approve_proposal(proposal_id: str):
         if not proposal:
             raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
         
-        # Mark as approved
+        # Mark as approved in sandbox
         proposal["status"] = "approved"
         proposal["approved_at"] = __import__('datetime').datetime.utcnow().isoformat()
         _save_sandbox()
-        logger.info(f"[EVOLUTION] Proposal {proposal_id} approved, writing to DB...")
+        logger.info(f"[EVOLUTION] Proposal {proposal_id} approved in sandbox")
     
     # Write to DB via MemoryService
     if "memory" not in _services:
         logger.error(f"[EVOLUTION] Memory service not available! _services = {list(_services.keys())}")
         return {"proposal_id": proposal_id, "status": "approved", "db_write_error": "Memory service not initialized"}
+    
+    try:
+        # Extract entity and facts from proposal
+        entity_name = proposal.get("entity", "")
+        facts = proposal.get("facts", [])
+        
+        # Create a consolidated memory content
+        content = proposal.get("summary", f"AI-Generated: {entity_name}")
+        
+        # Determine node type and confidence
+        node_type = proposal.get("type", "Belief").lower()
+        confidence = proposal.get("confidence", 0.5)
+        
+        # Build facts string
+        facts_str = "; ".join([f.get("content", str(f)) for f in facts]) if facts else content
+        
+        # Prepare the memory capture request
+        capture_request = {
+            "workspace_id": DEFAULT_WORKSPACE,
+            "entity_name": entity_name,
+            "content": facts_str,
+            "node_type": node_type,
+            "confidence": confidence,
+            "generated_by": "ai_reflect"
+        }
+        
+        # Call MemoryService to capture
+        result = await _services["memory"].capture_memory(capture_request)
+        
+        logger.info(f"[EVOLUTION] Written to DB: memory_id={result.memory_id}")
+        return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(result.memory_id)}
+    except Exception as e:
+        logger.error(f"[EVOLUTION] Failed to write to DB: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": str(e)}
     
     try:
         workspace_id = UUID(proposal.get("workspace_id", default_ws_id))
