@@ -499,6 +499,52 @@ def _save_cron_tasks():
 # Load on startup
 _load_cron_tasks()
 
+
+# Default evolution task configuration
+_DEFAULT_EVOLUTION_TASK = {
+    "name": "记忆演化",
+    "type": "evolution",
+    "interval_seconds": int(os.environ.get("CRON_EVOLUTION_INTERVAL", "3600")),
+    "enabled": True,
+    "payload": {
+        "workspace_id": "fd0223ed-7aa2-491e-8db5-b0de71b75219",
+        "limit": int(os.environ.get("CRON_EVOLUTION_LIMIT", "50"))
+    }
+}
+
+
+def _initialize_default_tasks():
+    """Initialize default cron tasks if not exist."""
+    global _cron_tasks
+    import uuid as _uuid
+    from datetime import datetime, timezone
+    
+    # Check if evolution task exists
+    has_evolution = any(
+        t.get('type') == 'evolution' for t in _cron_tasks.values()
+    )
+    
+    if not has_evolution:
+        # Create default evolution task
+        task_id = str(_uuid.uuid4())[:8]
+        _cron_tasks[task_id] = {
+            "id": task_id,
+            "name": _DEFAULT_EVOLUTION_TASK["name"],
+            "type": _DEFAULT_EVOLUTION_TASK["type"],
+            "interval_seconds": _DEFAULT_EVOLUTION_TASK["interval_seconds"],
+            "enabled": _DEFAULT_EVOLUTION_TASK["enabled"],
+            "payload": _DEFAULT_EVOLUTION_TASK["payload"],
+            "last_run": None,
+            "status": "idle",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        _save_cron_tasks()
+        logger.info(f"[CRON] Initialized default evolution task: {task_id}")
+
+
+_initialize_default_tasks()
+
+
 # ================================================================
 # Background Cron Scheduler
 # ================================================================
@@ -713,8 +759,10 @@ async def run_cron_task_now(
                     prop["id"] = str(_uuid_mod.uuid4())[:8]
                     prop["status"] = "pending"
                     prop["task_id"] = task_id
+                    prop["created_at"] = __import__('datetime').datetime.utcnow().isoformat()
                     _sandbox_proposals.append(prop)
                 result["sandbox_proposal_count"] = len(proposals)
+                _save_sandbox()  # Persist after adding
 
             logger.info(f"[EVOLUTION] ReflectionService completed: {exec_result.reflections_performed} ops, {len(proposals)} proposals")
 
@@ -744,8 +792,37 @@ async def run_cron_task_now(
 
 # ================================================================
 
+# Sandbox storage - persisted to file
+_SANDBOX_FILE = os.environ.get('LOG_DIR', '/app/logs') + '/sandbox_proposals.json'
 _sandbox_proposals: list[dict[str, Any]] = []
 _sandbox_lock = __import__('threading').Lock()
+
+
+def _load_sandbox():
+    """Load sandbox proposals from disk."""
+    global _sandbox_proposals
+    try:
+        if os.path.exists(_SANDBOX_FILE):
+            with open(_SANDBOX_FILE, encoding='utf-8') as f:
+                _sandbox_proposals = json.load(f)
+            logger.info(f"[SANDBOX] Loaded {len(_sandbox_proposals)} proposals from disk")
+    except Exception as e:
+        logger.warning(f"[SANDBOX] Failed to load sandbox: {e}")
+        _sandbox_proposals = []
+
+
+def _save_sandbox():
+    """Persist sandbox proposals to disk."""
+    try:
+        os.makedirs(os.path.dirname(_SANDBOX_FILE), exist_ok=True)
+        with open(_SANDBOX_FILE, 'w', encoding='utf-8') as f:
+            json.dump(_sandbox_proposals, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.warning(f"[SANDBOX] Failed to save: {e}")
+
+
+# Load sandbox on startup
+_load_sandbox()
 
 
 @app.get("/api/review/proposals")
@@ -753,6 +830,7 @@ async def list_review_proposals():
     """List all pending evolution proposals from sandbox."""
     with _sandbox_lock:
         pending = [p for p in _sandbox_proposals if p.get("status") == "pending"]
+        _save_sandbox()  # Persist after read
         return {"proposals": pending, "total": len(pending)}
 
 
@@ -765,6 +843,7 @@ async def approve_proposal(proposal_id: str):
                 p["status"] = "approved"
                 p["approved_at"] = __import__('datetime').datetime.utcnow().isoformat()
                 logger.info(f"[EVOLUTION] Proposal {proposal_id} approved")
+                _save_sandbox()
                 return {"proposal_id": proposal_id, "status": "approved"}
         raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
 
@@ -778,6 +857,7 @@ async def reject_proposal(proposal_id: str):
                 p["status"] = "rejected"
                 p["rejected_at"] = __import__('datetime').datetime.utcnow().isoformat()
                 logger.info(f"[EVOLUTION] Proposal {proposal_id} rejected")
+                _save_sandbox()
                 return {"proposal_id": proposal_id, "status": "rejected"}
         raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
 
@@ -788,6 +868,7 @@ async def clear_review_proposals():
     with _sandbox_lock:
         before = len(_sandbox_proposals)
         _sandbox_proposals.clear()
+        _save_sandbox()  # Persist after clearing
         logger.info(f"[EVOLUTION] Cleared {before} sandbox proposals")
         return {"cleared": before}
 
