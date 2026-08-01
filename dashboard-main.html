@@ -68,7 +68,7 @@
 
             async function approveProposal(id, autoMode = false) {
                 try {
-                    const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'GET'});
+                    const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'POST'});
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     
                     if (!autoMode) {
@@ -89,7 +89,7 @@
 
             async function rejectProposal(id) {
                 try {
-                    const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'GET'});
+                    const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'POST'});
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     alert('已驳回');
                     loadEvolutionProposals();
