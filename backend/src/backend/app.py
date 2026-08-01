@@ -994,12 +994,11 @@ async def clear_review_proposals():
 @app.get("/api/review/evidence/{proposal_id}")
 async def get_evidence_memories(proposal_id: str):
     """Get evidence memories for a proposal."""
-    import json
     with _sandbox_lock:
         proposal = next((p for p in _sandbox_proposals if p.get("id") == proposal_id), None)
     
     if not proposal:
-        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+        return {"proposal_id": proposal_id, "evidence": [], "error": "Proposal not found in sandbox"}
     
     evidence_chain = proposal.get("evidence_chain", [])
     if not evidence_chain:
@@ -1011,7 +1010,7 @@ async def get_evidence_memories(proposal_id: str):
     
     session = get_session()
     try:
-        placeholders = ",".join([":id" + str(i) for i in range(len(evidence_chain))])
+        placeholders = ",".join([f":id{i}" for i in range(len(evidence_chain))])
         params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
         sql = text(f"""
             SELECT id, content, level, node_type, source, created_at, confidence
@@ -1024,11 +1023,11 @@ async def get_evidence_memories(proposal_id: str):
         evidence = []
         for row in rows:
             evidence.append({
-                "id": row[0],
-                "content": row[1],
-                "level": row[2],
-                "node_type": row[3],
-                "source": row[4],
+                "id": str(row[0]),
+                "content": row[1] if row[1] else "",
+                "level": row[2] if row[2] else 1,
+                "node_type": row[3] if row[3] else "Observation",
+                "source": row[4] if row[4] else "unknown",
                 "created_at": str(row[5])[:19] if row[5] else "",
                 "confidence": float(row[6]) if row[6] else 0.0
             })
@@ -1039,7 +1038,7 @@ async def get_evidence_memories(proposal_id: str):
             "evidence": evidence
         }
     except Exception as e:
-        logger.error(f"[EVOLUTION] Failed to get evidence: {e}")
+        logger.error(f"[EVOLUTION] Failed to get evidence: {e}", exc_info=True)
         return {"proposal_id": proposal_id, "evidence": [], "error": str(e)}
     finally:
         session.close()
