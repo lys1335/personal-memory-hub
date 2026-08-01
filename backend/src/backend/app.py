@@ -1005,7 +1005,7 @@ async def get_evidence_memories(proposal_id: str):
         return {"proposal_id": proposal_id, "evidence": []}
     
     # Query memories from DB
-    from backend.src.backend.shared.infrastructure.database.engine import get_session
+    from backend.shared.infrastructure.database.engine import get_session
     from sqlalchemy import text
     
     session = get_session()
