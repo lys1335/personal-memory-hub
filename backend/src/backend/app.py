@@ -866,8 +866,9 @@ async def approve_proposal(
     # Write to DB using FastAPI dependency injection
     try:
         # Use the existing factory functions defined in this file
-        repos = await get_repositories(session)
-        services = await get_services(session, repos)
+        # Note: get_repositories and get_services are NOT async
+        repos = get_repositories(session)
+        services = get_services(session, repos)
         memory_service = services["memory"]
         
         # Extract data from proposal
