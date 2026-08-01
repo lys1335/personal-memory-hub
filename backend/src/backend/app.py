@@ -991,6 +991,60 @@ async def clear_review_proposals():
         return {"cleared": before}
 
 
+@app.get("/api/review/evidence/{proposal_id}")
+async def get_evidence_memories(proposal_id: str):
+    """Get evidence memories for a proposal."""
+    import json
+    with _sandbox_lock:
+        proposal = next((p for p in _sandbox_proposals if p.get("id") == proposal_id), None)
+    
+    if not proposal:
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+    
+    evidence_chain = proposal.get("evidence_chain", [])
+    if not evidence_chain:
+        return {"proposal_id": proposal_id, "evidence": []}
+    
+    # Query memories from DB
+    from backend.src.backend.shared.infrastructure.database.engine import get_session
+    from sqlalchemy import text
+    
+    session = get_session()
+    try:
+        placeholders = ",".join([":id" + str(i) for i in range(len(evidence_chain))])
+        params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
+        sql = text(f"""
+            SELECT id, content, level, node_type, source, created_at, confidence
+            FROM memory_nodes
+            WHERE id IN ({placeholders})
+            ORDER BY created_at DESC
+        """)
+        rows = session.execute(sql, params).fetchall()
+        
+        evidence = []
+        for row in rows:
+            evidence.append({
+                "id": row[0],
+                "content": row[1],
+                "level": row[2],
+                "node_type": row[3],
+                "source": row[4],
+                "created_at": str(row[5])[:19] if row[5] else "",
+                "confidence": float(row[6]) if row[6] else 0.0
+            })
+        
+        return {
+            "proposal_id": proposal_id,
+            "evidence_count": len(evidence),
+            "evidence": evidence
+        }
+    except Exception as e:
+        logger.error(f"[EVOLUTION] Failed to get evidence: {e}")
+        return {"proposal_id": proposal_id, "evidence": [], "error": str(e)}
+    finally:
+        session.close()
+
+
 
 # ------------------------------------------------------------------
 # Log Viewer Endpoint (Dashboard Log Viewer)

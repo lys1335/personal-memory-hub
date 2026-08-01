@@ -32,7 +32,13 @@
                             html += `<div style="margin-top:6px; display:flex; gap:4px;">`;
                             html += `<button onclick="approveProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(76,175,80,0.2); color:#4caf50;">✅ 批准</button>`;
                             html += `<button onclick="rejectProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(244,67,54,0.2); color:#f44336;">❌ 驳回</button>`;
+                            html += `<button onclick="loadEvidence('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(156,39,176,0.2); color:#ce93d8;">📋 加载证据</button>`;
                             html += `</div></div>`;
+                            // Evidence panel (hidden by default)
+                            html += `<div id="evidence-${p.id}" style="display:none; margin-top:6px; padding:8px; background:rgba(156,39,176,0.05); border-radius:4px; font-size:11px;">`;
+                            html += `<div style="color:#ce93d8; font-weight:bold; margin-bottom:4px;">📎 演化证据（L1 事实记录）</div>`;
+                            html += `<div id="evidence-content-${p.id}" style="color:#aaa;">加载中...</div>`;
+                            html += `</div>`;
                         }
                     }
 
@@ -100,13 +106,55 @@
 
             async function clearEvolutionProposals() {
                 try {
-                    const r = await fetch('/api/review/proposals/clear', {method: 'GET'});
+                    const r = await fetch('/api/review/proposals/clear', {method: 'POST'});
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     const data = await r.json();
                     alert('已清空 ' + data.cleared + ' 条建议');
                     loadEvolutionProposals();
                 } catch(e) {
                     alert('清空失败: ' + e.message);
+                }
+            }
+
+            async function loadEvidence(proposalId) {
+                const panel = document.getElementById('evidence-' + proposalId);
+                const content = document.getElementById('evidence-content-' + proposalId);
+                
+                if (panel.style.display === 'none' || panel.style.display === '') {
+                    // Expand
+                    panel.style.display = 'block';
+                    content.innerHTML = '<span style="color:#aaa;">加载中...</span>';
+                    
+                    try {
+                        const r = await fetch('/api/review/evidence/' + proposalId);
+                        if (!r.ok) throw new Error('HTTP ' + r.status);
+                        const data = await r.json();
+                        
+                        if (data.error) {
+                            content.innerHTML = `<span style="color:#f44336;">加载失败: ${escapeHtml(data.error)}</span>`;
+                            return;
+                        }
+                        
+                        if (!data.evidence || data.evidence.length === 0) {
+                            content.innerHTML = '<span style="color:#888;">无证据记录</span>';
+                            return;
+                        }
+                        
+                        let html = `<div style="color:#aaa; margin-bottom:4px;">共 ${data.evidence_count} 条 L1 事实：</div>`;
+                        for (const ev of data.evidence) {
+                            html += `<div style="padding:4px 8px; margin:2px 0; background:rgba(255,255,255,0.05); border-radius:4px;">`;
+                            html += `<span style="color:#ce93d8;">[${ev.level}]</span> `;
+                            html += `<span style="color:#aaa;">${escapeHtml(ev.content || '(空)')}</span> `;
+                            html += `<span style="color:#666; font-size:10px;">(${ev.source} | ${ev.created_at})</span>`;
+                            html += `</div>`;
+                        }
+                        content.innerHTML = html;
+                    } catch(e) {
+                        content.innerHTML = `<span style="color:#f44336;">加载失败: ${escapeHtml(e.message)}</span>`;
+                    }
+                } else {
+                    // Collapse
+                    panel.style.display = 'none';
                 }
             }
 
