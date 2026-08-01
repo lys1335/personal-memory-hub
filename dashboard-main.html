@@ -112,10 +112,10 @@
 
             async function runEvolutionTask(taskId) {
                 try {
-                    const r = await fetch('/api/cron/tasks/' + taskId + '/run-now', {method: 'GET'});
+                    const r = await fetch('/api/cron/tasks/' + taskId + '/run-now', {method: 'POST'});
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     const data = await r.json();
-                    alert('执行结果: ' + (data.message || '已完成') + ' (' + (data.facts||0) + ' facts, ' + (data.proposals||0) + ' proposals)');
+                    alert('执行结果: ' + (data.message || '已完成') + ' (' + (data.metadata?.proposal_count||0) + ' proposals)');
                     loadEvolutionProposals();
                 } catch(e) {
                     alert('执行失败: ' + e.message);
@@ -1386,7 +1386,7 @@
 
         async function runCronNow(taskId) {
             try {
-                const r = await fetch(`/api/cron/tasks/${taskId}/run-now`, {method: 'GET'});
+                const r = await fetch(`/api/cron/tasks/${taskId}/run-now`, {method: 'POST'});
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const data = await r.json();
                 alert(`执行结果: ${data.message || '已完成'}`);
