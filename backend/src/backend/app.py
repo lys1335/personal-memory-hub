@@ -856,20 +856,24 @@ async def approve_proposal(proposal_id: str):
     global _services
     if not _services:
         logger.warning("[EVOLUTION] Services not initialized, initializing now...")
-        from backend.database.session import async_session_factory
-        from backend.repository.factory import get_repositories
-        from backend.service.factory import get_services as get_all_services
-        
-        async def _init():
-            async with async_session_factory() as session:
-                repos = await get_repositories(session)
-                svc = await get_all_services(session, repos)
-                _services.update(svc)
-            logger.info(f"[EVOLUTION] Services initialized: {list(_services.keys())}")
-        
-        import asyncio
-        asyncio.create_task(_init())
-        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": "Services initializing, retry shortly"}
+        # Try to initialize - but if it fails, just mark as approved without DB write
+        try:
+            from backend.database.session import async_session_factory
+            from backend.repository.factory import get_repositories
+            from backend.service.factory import get_services as get_all_services
+            import asyncio
+            
+            async def _init():
+                async with async_session_factory() as session:
+                    repos = await get_repositories(session)
+                    svc = await get_all_services(session, repos)
+                    _services.update(svc)
+                logger.info(f"[EVOLUTION] Services initialized: {list(_services.keys())}")
+            
+            asyncio.create_task(_init())
+        except Exception as e:
+            logger.error(f"[EVOLUTION] Failed to initialize services: {e}")
+        return {"proposal_id": proposal_id, "status": "approved", "db_write_error": "Services initializing"}
     
     with _sandbox_lock:
         proposal = None
