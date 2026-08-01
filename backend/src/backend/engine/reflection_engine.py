@@ -157,6 +157,9 @@ class ReflectionEngine(EngineBase):
             created = c.get("created_at", "")
             contents.append(f"[{i+1}] source={source} time={created} content={content}")
 
+        # Build list of memory IDs from candidates
+        memory_ids = [c.get("id", f"memory_{i+1}") for i, c in enumerate(candidates)]
+        
         system_prompt = (
             "You are a Memory Evolution Fact Extractor for Personal Memory Hub.\n"
             "Analyze the following memories and extract structured facts.\n"
@@ -165,6 +168,10 @@ class ReflectionEngine(EngineBase):
             '  "facts": [{"entity": str, "relation": str, "timestamp": str, "confidence": float, "source_ids": [str]}, ...],\n'
             '  "entities": [str, ...]\n'
             "}\n"
+            f"AVAILABLE MEMORY IDS: {memory_ids}\n"
+            "CRITICAL: source_ids MUST be exactly one of the above memory IDs.\n"
+            "Example: source_ids=[\"06a6d826-6ef8-7de4-8000-2019742f29ab\"]\n"
+            "NEVER invent new IDs like \"memory_1\" or \"memory_id_2\".\n"
             "Each fact should capture a new piece of knowledge about the user.\n"
             "confidence should be between 0.0 and 1.0."
         )
