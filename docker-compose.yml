@@ -48,6 +48,9 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/memory_hub}
       DATABASE_ECHO: ${DATABASE_ECHO:-false}
       VECTOR_DIMENSION: ${VECTOR_DIMENSION:-1536}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      REFLECTION_MODEL: ${REFLECTION_MODEL:-qwen2.5:7b}
+      REFLECTION_TEMPERATURE: ${REFLECTION_TEMPERATURE:-0.3}
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:

@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -498,6 +499,79 @@ def _save_cron_tasks():
 # Load on startup
 _load_cron_tasks()
 
+# ================================================================
+# Background Cron Scheduler
+# ================================================================
+
+async def _cron_scheduler_loop():
+    """Background task that checks cron tasks and triggers expired ones."""
+    import asyncio
+    from datetime import datetime, timezone
+    
+    logger.info("[CRON] Background scheduler started")
+    
+    while True:
+        try:
+            await asyncio.sleep(30)
+            
+            now = datetime.now(timezone.utc)
+            
+            with _cron_lock:
+                tasks_to_run = []
+                for task_id, task in list(_cron_tasks.items()):
+                    if not task.get('enabled', False):
+                        continue
+                    interval = task.get('interval_seconds', 300)
+                    last_run = task.get('last_run')
+                    if last_run:
+                        try:
+                            last_run_dt = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
+                            elapsed = (now - last_run_dt).total_seconds()
+                            if elapsed >= interval:
+                                tasks_to_run.append(task_id)
+                        except (ValueError, AttributeError):
+                            tasks_to_run.append(task_id)
+                    else:
+                        tasks_to_run.append(task_id)
+            
+            for task_id in tasks_to_run:
+                try:
+                    logger.info(f"[CRON] Triggering task {task_id}")
+                    await run_cron_task_now(task_id)
+                except Exception as e:
+                    logger.error(f"[CRON] Error running task {task_id}: {e}", exc_info=True)
+                    
+        except asyncio.CancelledError:
+            logger.info("[CRON] Scheduler loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"[CRON] Scheduler error: {e}", exc_info=True)
+            await asyncio.sleep(60)
+
+
+_cron_scheduler_task = None
+
+
+@app.on_event("startup")
+async def startup_cron_scheduler():
+    global _cron_scheduler_task
+    if _cron_scheduler_task is None or _cron_scheduler_task.done():
+        _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
+    logger.info("[CRON] Scheduler task created")
+
+
+@app.on_event("shutdown")
+async def shutdown_cron_scheduler():
+    global _cron_scheduler_task
+    if _cron_scheduler_task:
+        _cron_scheduler_task.cancel()
+        try:
+            await _cron_scheduler_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("[CRON] Scheduler task cancelled")
+
+
 @app.get("/api/cron/tasks")
 async def list_cron_tasks():
     """List all configured cron/scheduled tasks."""
@@ -598,98 +672,54 @@ async def stop_cron_task(task_id: str):
         return {"task_id": task_id, "status": "stopped"}
 
 @app.post("/api/cron/tasks/{task_id}/run-now")
-async def run_cron_task_now(task_id: str):
-    """Manually trigger a task execution."""
+async def run_cron_task_now(
+    task_id: str,
+    services: dict = Depends(get_services),
+):
+    """Manually trigger a task execution via Service layer."""
     task = _cron_tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
 
     task_type = task.get('type', 'evolution')
     payload = task.get('payload', {})
-
     result = {"task_id": task_id, "type": task_type, "status": "completed"}
 
     if task_type == 'evolution':
         limit = payload.get('limit', 50)
+        workspace_id = UUID(payload.get('workspace_id', "fb77c6ce-1e15-47e9-a8b7-2e707a011071"))
 
-        # Store evolution metadata for dashboard display
-        result["message"] = f"Evolution triggered for {limit} memories"
-        result["scope"] = "daily"
-        result["limit"] = limit
-
-        # Try to run actual evolution pipeline
         try:
-            # Use current event loop instead of asyncio.run() since we're already in an async context
-            import asyncio as _asyncio
-            loop = None
-            try:
-                loop = _asyncio.get_running_loop()
-            except RuntimeError:
-                pass
+            reflection_svc = services["reflection"]
+            exec_result = await reflection_svc.reflect(
+                workspace_id=workspace_id,
+                scope="daily",
+                limit=limit,
+            )
 
-            async def _run_evolution():
-                from backend.engine.reflection_engine import ReflectionEngine
-                from backend.shared.providers.reflection_provider import OllamaReflectionProvider
+            result["message"] = f"Reflection completed: {exec_result.reflections_performed} operations"
+            result["scope"] = exec_result.scope
+            result["new_patterns"] = exec_result.new_patterns
+            result["new_beliefs"] = exec_result.new_beliefs
+            result["evidence_completeness"] = exec_result.evidence_completeness
+            result["duration_ms"] = exec_result.duration_ms
+            result["metadata"] = exec_result.metadata
 
-                # Create engine instances
-                engine = ReflectionEngine()
-                provider = OllamaReflectionProvider()
+            # Store proposals in sandbox (from metadata if available)
+            proposals = exec_result.metadata.get("proposals", [])
+            import uuid as _uuid_mod
+            with _sandbox_lock:
+                for prop in proposals:
+                    prop["id"] = str(_uuid_mod.uuid4())[:8]
+                    prop["status"] = "pending"
+                    prop["task_id"] = task_id
+                    _sandbox_proposals.append(prop)
+                result["sandbox_proposal_count"] = len(proposals)
 
-                # Get candidates from memory_node_repo (simplified)
-                from sqlalchemy import text
+            logger.info(f"[EVOLUTION] ReflectionService completed: {exec_result.reflections_performed} ops, {len(proposals)} proposals")
 
-                from backend.shared.infrastructure.database.engine import get_engine
-
-                engine_obj = get_engine()
-                async with engine_obj.begin() as conn:
-                    rows = await conn.execute(
-                        text("SELECT id, workspace_id, content, node_type, level, status, source, created_at FROM memory_nodes WHERE source != 'test' ORDER BY created_at DESC LIMIT :limit"),
-                        {"limit": limit},
-                    )
-                    candidate_dicts = []
-                    for row in rows:
-                        mapping = dict(row._mapping)
-                        candidate_dicts.append(mapping)
-
-                if not candidate_dicts:
-                    return {"status": "completed", "message": "No candidates found", "facts": 0, "proposals": 0}
-
-                # Run reflection pipeline
-                pipeline_result = await engine.reflect_pipeline(
-                    scope="daily",
-                    candidates=candidate_dicts,
-                    provider=provider,
-                )
-
-                facts = pipeline_result.get("facts", [])
-                proposals = pipeline_result.get("proposals", [])
-                execution_log = pipeline_result.get("execution_log", [])
-
-                # Store proposals in sandbox
-                import uuid as _uuid_mod
-                with _sandbox_lock:
-                    for prop in proposals:
-                        prop_id = str(_uuid_mod.uuid4())[:8]
-                        prop["id"] = prop_id
-                        prop["status"] = "pending"
-                        prop["task_id"] = task_id
-                        prop["executed_at"] = result['executed_at']
-                        _sandbox_proposals.append(prop)
-
-                result["facts"] = len(facts)
-                result["proposals"] = len(proposals)
-                result["execution_log"] = execution_log
-                result["sandbox_proposal_ids"] = [p.get("id") for p in proposals]
-
-                logger.info(f"[EVOLUTION] Pipeline complete: {len(facts)} facts, {len(proposals)} proposals stored in sandbox")
-                return result
-
-            if loop:
-                await _run_evolution()
-            else:
-                _asyncio.run(_run_evolution())
         except Exception as e:
-            logger.error(f"[EVOLUTION] Evolution pipeline error: {e}", exc_info=True)
+            logger.error(f"[EVOLUTION] ReflectionService error: {e}", exc_info=True)
             result["error"] = str(e)
             result["status"] = "failed"
     elif task_type == 'batch_import':
@@ -698,18 +728,20 @@ async def run_cron_task_now(task_id: str):
     else:
         result["message"] = f"Custom task '{task_type}' triggered"
 
-    result['executed_at'] = __import__('datetime').datetime.utcnow().isoformat()
+    from datetime import datetime, timezone
+    result['executed_at'] = datetime.now(timezone.utc).isoformat()
 
     with _cron_lock:
         _cron_tasks[task_id]['last_run'] = result['executed_at']
-        _cron_tasks[task_id]['status'] = 'completed'
+        _cron_tasks[task_id]['status'] = result['status']
         _save_cron_tasks()
 
     return result
 
 
 # ================================================================
-# Sandbox Storage for Evolution Proposals
+# Sandbox
+
 # ================================================================
 
 _sandbox_proposals: list[dict[str, Any]] = []

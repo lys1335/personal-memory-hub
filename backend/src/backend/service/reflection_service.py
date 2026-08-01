@@ -160,6 +160,7 @@ class ReflectionService(BaseService):
                 "candidate_count": len(candidates),
                 "fact_count": len(facts),
                 "proposal_count": len(proposals),
+                "proposals": proposals,  # Add proposals for sandbox storage
                 "entities": engine_result.get("entities", []),
                 "interest_trends": engine_result.get("interest_trends", {}),
                 "execution_log": engine_result.get("execution_log", []),
@@ -409,20 +410,42 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID | None,
         scope: str,
-    ) -> list[Any]:
+    ) -> list[dict[str, Any]]:
         """Acquire the scope of memories to reflect upon.
 
         Reads from Repository (allowed: Service → Repository).
+        Converts ORM objects to dicts for engine processing.
         """
+        from backend.shared.domain.memory_models import MemoryNode
+        
         if scope == "entity" and entity_id:
-            return await self._memory_node_repo.find_by_entity(
+            nodes = await self._memory_node_repo.find_by_entity(
                 entity_id=entity_id,
                 workspace_id=workspace_id,
             )
         else:
-            return await self._memory_node_repo.find_active_by_workspace(
+            nodes = await self._memory_node_repo.find_active_by_workspace(
                 workspace_id=workspace_id,
             )
+        
+        # Convert ORM objects to dicts
+        result = []
+        for node in nodes:
+            if isinstance(node, MemoryNode):
+                result.append({
+                    "id": str(node.id),
+                    "workspace_id": str(node.workspace_id),
+                    "content": node.content,
+                    "level": node.level,
+                    "node_type": node.node_type,
+                    "status": node.status,
+                    "source": node.source,
+                    "created_at": node.created_at.isoformat() if node.created_at else None,
+                })
+            else:
+                result.append(node)
+        
+        return result
 
     def _generate_id(self) -> UUID:
         """Generate a UUID for internal use."""
