@@ -928,11 +928,11 @@ async def approve_proposal(
                     try:
                         source_uuid = uuid_mod.UUID(source_memory_id_str)
                         # Create relationship: new_memory -> derived_from -> source_memory
-                        await memory_service._relationship_repo.create_relationship(
+                        await memory_service._relationship_repo.create_memory_relationship(
                             source_node_id=memory_id,
                             target_node_id=source_uuid,
                             relationship_type="derived_from",
-                            strength=float(confidence),
+                            contribution_weight=float(confidence),
                             workspace_id=PyUUID(DEFAULT_WORKSPACE),
                         )
                         evidence_count += 1
