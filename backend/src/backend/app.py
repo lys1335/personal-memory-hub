@@ -914,22 +914,37 @@ async def approve_proposal(
         )
         
         # Link evidence from proposal's evidence_chain to the new memory
+        # evidence_chain contains source memory IDs - we create derived_from relationships
         memory_id = result.memory_id
+        evidence_count = 0
+        
         if evidence_chain and len(evidence_chain) > 0:
             try:
-                # evidence_chain contains source memory IDs
-                for evidence_id in evidence_chain:
-                    # Try to link evidence - use a simple JSON format
-                    await memory_service._memory_node_repo.link_evidence(
-                        memory_node_id=memory_id,
-                        evidence_id=evidence_id,
-                    )
-                logger.info(f"[EVOLUTION] Linked {len(evidence_chain)} evidence items to memory {memory_id}")
+                from backend.repository.relationship_repository import RelationshipRepository
+                import uuid as uuid_mod
+                
+                # Create derived_from relationships from new memory to source memories
+                for source_memory_id_str in evidence_chain:
+                    try:
+                        source_uuid = uuid_mod.UUID(source_memory_id_str)
+                        # Create relationship: new_memory -> derived_from -> source_memory
+                        await memory_service._relationship_repo.create_relationship(
+                            source_node_id=memory_id,
+                            target_node_id=source_uuid,
+                            relationship_type="derived_from",
+                            strength=float(confidence),
+                            workspace_id=PyUUID(DEFAULT_WORKSPACE),
+                        )
+                        evidence_count += 1
+                    except Exception as e:
+                        logger.warning(f"[EVOLUTION] Failed to link source memory {source_memory_id_str}: {e}")
+                
+                logger.info(f"[EVOLUTION] Linked {evidence_count} source memories to {memory_id}")
             except Exception as e:
-                logger.warning(f"[EVOLUTION] Failed to link evidence: {e}")
+                logger.warning(f"[EVOLUTION] Failed to create relationships: {e}")
         
-        logger.info(f"[EVOLUTION] Written to DB: memory_id={memory_id}, evidence_count={len(evidence_chain) if evidence_chain else 0}")
-        return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(memory_id), "evidence_count": len(evidence_chain) if evidence_chain else 0}
+        logger.info(f"[EVOLUTION] Written to DB: memory_id={memory_id}, evidence_count={evidence_count}")
+        return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(memory_id), "evidence_count": evidence_count}
     except Exception as e:
         logger.error(f"[EVOLUTION] Failed to write to DB: {e}")
         import traceback
