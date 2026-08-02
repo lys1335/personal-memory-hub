@@ -420,7 +420,8 @@ async def test_rest_trigger_reflection_success(rest_adapter, mock_services):
         new_beliefs=1,
         scope="workspace",
     )
-    mock_services["reflection"].reflect = MagicMock(return_value=mock_result)
+    # Use AsyncMock for async method
+    mock_services["reflection"].reflect = AsyncMock(return_value=mock_result)
 
     body = {
         "workspace_id": str(uuid4()),
