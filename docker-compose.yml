@@ -63,6 +63,8 @@ services:
       - ./backend/scripts:/app/scripts
       # Mount logs directory for dashboard log viewer
       - ./logs:/app/logs
+      # Mount dashboard HTML
+      - ./dashboard-main.html:/app/dashboard-main.html
     command: >-
       sh -c "/app/scripts/start.sh"
 

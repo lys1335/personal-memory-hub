@@ -140,27 +140,48 @@ class OllamaReflectionProvider(ReflectionProvider):
     def _parse_json_output(text: str) -> dict[str, Any]:
         """Parse LLM text response into structured JSON.
 
-        Handles cases where LLM wraps JSON in markdown code blocks.
+        Handles cases where LLM wraps JSON in markdown code blocks
+        like ```json { ... } ``` or just ``` { ... } ```.
         """
         text = text.strip()
 
-        # Strip markdown code fences if present
+        # Strip markdown code fences if present (with or without language)
         if text.startswith("```"):
             lines = text.split("\n")
-            lines = lines[1:]  # remove opening fence
+            # Remove opening fence (possibly with language tag like ```json)
+            if lines:
+                lines = lines[1:]
+            # Remove closing fence
             if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]  # remove closing fence
+                lines = lines[:-1]
             text = "\n".join(lines).strip()
 
-        try:
-            result = json.loads(text)
-            if not isinstance(result, dict):
-                logger.warning("LLM output is not a dict: %s", text[:200])
-                return {"error": "invalid_json", "raw": text}
-            return result
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse LLM output as JSON: %s", text[:200])
-            return {"error": "invalid_json", "raw": text}
+        # If still starts with {, try to parse
+        if text.startswith("{"):
+            try:
+                result = json.loads(text)
+                if isinstance(result, dict):
+                    return result
+                else:
+                    logger.warning("LLM output is not a dict: %s", text[:200])
+                    return {"error": "invalid_json", "raw": text}
+            except json.JSONDecodeError as e:
+                logger.warning("Failed to parse LLM output as JSON: %s - Error: %s", text[:200], e)
+                return {"error": "invalid_json", "raw": text, "parsed_error": str(e)}
+
+        # Try to find JSON in the text
+        import re
+        json_match = re.search(r'\{[^{}]*"facts"[^{}]*\}', text, re.DOTALL)
+        if json_match:
+            try:
+                result = json.loads(json_match.group())
+                if isinstance(result, dict):
+                    return result
+            except json.JSONDecodeError:
+                pass
+
+        logger.warning("Failed to parse LLM output as JSON: %s", text[:200])
+        return {"error": "invalid_json", "raw": text}
 
 
 class MockReflectionProvider(ReflectionProvider):

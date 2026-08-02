@@ -11,30 +11,53 @@
             async function loadEvolutionProposals() {
                 const logArea = document.getElementById('evolutionLogArea');
                 try {
-                    const r1 = await fetch('/api/review/proposals');
+                    // First, trigger reflection to generate new proposals
+                    logArea.innerHTML = '<div style="color:#4fc3f7;">🔄 正在运行记忆演化分析...</div>';
+                    try {
+                        const r0 = await fetch(MEM_HUB + '/reflection', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({workspace_id: WORKSPACE_ID, scope: 'daily', limit: 20})
+                        });
+                        if (r0.ok) {
+                            const data0 = await r0.json();
+                            const proposalCount = data0.data?.proposal_count || 0;
+                            logArea.innerHTML = `<div style="color:#4caf50;">✅ 演化分析完成，发现 ${proposalCount} 个提案</div>`;
+                        }
+                    } catch(e) {
+                        console.log('Reflection trigger skipped:', e);
+                    }
+
+                    // Then load existing proposals
+                    await new Promise(r => setTimeout(r, 500)); // Wait for DB to update
+                    const r1 = await fetch('/api/proposals');
                     const data1 = await r1.json();
                     const proposals = data1.proposals || [];
 
                     let html = '';
                     if (proposals.length === 0) {
-                        html = '<div style="color:#666;">暂无待审建议。运行一次演化任务后这里会显示结果。</div>';
+                        html = '<div style="color:#666;">暂无待审建议。请等待下次演化任务。</div>';
                     } else {
+                        html = `<div style="color:#4fc3f7; margin-bottom:8px;">📋 找到 ${proposals.length} 个待审提案</div>`;
                         for (const p of proposals) {
                             const typeColors = {Create:'#4caf50',Strengthen:'#ff9800',Refine:'#2196f3',Split:'#9c27b0',Ignore:'#999'};
                             const color = typeColors[p.type] || '#888';
+                            const statusColors = {pending:'#ffd700',approved:'#4caf50',rejected:'#f44336'};
+                            const statusColor = statusColors[p.status] || '#888';
                             html += `<div style="padding:8px; margin-bottom:6px; background:rgba(255,255,255,0.03); border-radius:6px; border-left:3px solid ${color};">`;
                             html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">`;
                             html += `<span style="font-size:11px; color:${color}; font-weight:bold;">${p.type}</span>`;
-                            html += `<span style="font-size:10px; color:#666;">L${p.target_level || '?'} | confidence: ${p.confidence || '?'}</span></div>`;
+                            html += `<span style="font-size:10px; color:${statusColor};">● ${p.status}</span>`;
+                            html += `<span style="font-size:10px; color:#666;">L${p.target_level || '?'} | ${p.confidence?.toFixed(2) || '?'}</span></div>`;
                             html += `<div style="font-size:12px; color:#ccc; margin-bottom:4px;">${escapeHtml(p.summary || '')}</div>`;
-                            html += `<div style="font-size:10px; color:#666;">entities: ${(p.entities||[]).join(', ') || 'N/A'}</div>`;
                             html += `<div style="font-size:10px; color:#666;">evidence: ${(p.evidence_chain||[]).length} sources</div>`;
                             html += `<div style="margin-top:6px; display:flex; gap:4px;">`;
-                            html += `<button onclick="approveProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(76,175,80,0.2); color:#4caf50;">✅ 批准</button>`;
-                            html += `<button onclick="rejectProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(244,67,54,0.2); color:#f44336;">❌ 驳回</button>`;
+                            if (p.status === 'pending') {
+                                html += `<button onclick="approveProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(76,175,80,0.2); color:#4caf50;">✅ 批准</button>`;
+                                html += `<button onclick="rejectProposal('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(244,67,54,0.2); color:#f44336;">❌ 驳回</button>`;
+                            }
                             html += `<button onclick="loadEvidence('${p.id}')" style="padding:2px 8px; border:none; border-radius:4px; font-size:10px; cursor:pointer; background:rgba(156,39,176,0.2); color:#ce93d8;">📋 加载证据</button>`;
                             html += `</div></div>`;
-                            // Evidence panel (hidden by default)
                             html += `<div id="evidence-${p.id}" style="display:none; margin-top:6px; padding:8px; background:rgba(156,39,176,0.05); border-radius:4px; font-size:11px;">`;
                             html += `<div style="color:#ce93d8; font-weight:bold; margin-bottom:4px;">📎 演化证据（L1 事实记录）</div>`;
                             html += `<div id="evidence-content-${p.id}" style="color:#aaa;">加载中...</div>`;
@@ -42,41 +65,17 @@
                         }
                     }
 
-                    // Load evolution task list
-                    try {
-                        const r2 = await fetch('/api/cron/tasks');
-                        const data2 = await r2.json();
-                        const tasks = data2.tasks || [];
-                        const evolutionTasks = tasks.filter(t => t.type === 'evolution');
-
-                        if (evolutionTasks.length > 0) {
-                            html += '<hr style="border-color:rgba(255,255,255,0.1); margin:12px 0;">';
-                            html += '<div style="font-size:12px; color:#888; margin-bottom:8px;">📋 最近演化执行记录</div>';
-                            for (const t of evolutionTasks) {
-                                const lastRun = t.last_run ? new Date(t.last_run).toLocaleString() : '从未';
-                                html += `<div style="font-size:11px; color:#aaa; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">`;
-                                html += `${escapeHtml(t.name)} — 上次: ${lastRun} — 间隔: ${t.interval_seconds}s`;
-                                html += ` <button onclick="runEvolutionTask('${t.id}')" style="padding:1px 6px; border:none; border-radius:3px; font-size:10px; cursor:pointer; background:rgba(79,195,247,0.2); color:#4fc3f7;">▶ 立即执行</button></div>`;
-                            }
-                        }
-                    } catch(e) {}
-
                     logArea.innerHTML = html;
                 } catch(e) {
-                    logArea.innerHTML = `<div style="color:#f44336;">加载失败: ${escapeHtml(e.message)}</div>`;
+                    logArea.innerHTML = `<div style="color:#f44336;">加载失败: ${e.message}</div>`;
                 }
-            }
-
-            function toggleAutoApprove() {
-                const checkbox = document.getElementById('autoApproveToggle');
-                console.log('[EVOLUTION] Auto-approve ' + (checkbox.checked ? 'enabled' : 'disabled'));
             }
 
             async function approveProposal(id, autoMode = false) {
                 try {
-                    const r = await fetch('/api/review/proposals/' + id + '/approve', {method: 'POST'});
+                    const r = await fetch('/api/proposals/' + id + '/approve', {method: 'POST'});
                     if (!r.ok) throw new Error('HTTP ' + r.status);
-                    
+
                     if (!autoMode) {
                         // Show brief feedback instead of alert
                         const btn = event?.target;
@@ -93,20 +92,44 @@
                 }
             }
 
+            async function approveAllProposals() {
+                if (!confirm('确定要自动批准所有待审提案吗？')) return;
+                const proposals = document.querySelectorAll('#evolutionLogArea > div');
+                for (const p of proposals) {
+                    const id = p.dataset.proposalId;
+                    if (id) {
+                        await approveProposal(id, true);
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+                loadEvolutionProposals();
+            }
+
             async function rejectProposal(id) {
                 try {
-                    const r = await fetch('/api/review/proposals/' + id + '/reject', {method: 'POST'});
+                    const r = await fetch('/api/proposals/' + id + '/reject', {method: 'POST'});
                     if (!r.ok) throw new Error('HTTP ' + r.status);
-                    alert('已驳回');
                     loadEvolutionProposals();
                 } catch(e) {
                     alert('驳回失败: ' + e.message);
                 }
             }
 
+            function toggleAutoApprove() {
+                const checkbox = document.getElementById('autoApproveToggle');
+                localStorage.setItem('autoApprove', checkbox.checked ? '1' : '0');
+            }
+
+            // Load auto-approve setting on page load
+            (function() {
+                const autoApprove = localStorage.getItem('autoApprove') === '1';
+                const checkbox = document.getElementById('autoApproveToggle');
+                if (checkbox) checkbox.checked = autoApprove;
+            })();
+
             async function clearEvolutionProposals() {
                 try {
-                    const r = await fetch('/api/review/proposals/clear', {method: 'POST'});
+                    const r = await fetch('/api/proposals/clear', {method: 'POST'});
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     const data = await r.json();
                     alert('已清空 ' + data.cleared + ' 条建议');
@@ -119,33 +142,33 @@
             async function loadEvidence(proposalId) {
                 const panel = document.getElementById('evidence-' + proposalId);
                 const content = document.getElementById('evidence-content-' + proposalId);
-                
+
                 if (panel.style.display === 'none' || panel.style.display === '') {
                     // Expand
                     panel.style.display = 'block';
                     content.innerHTML = '<span style="color:#aaa;">加载中...</span>';
-                    
+
                     try {
-                        const r = await fetch('/api/review/evidence/' + proposalId);
+                        const r = await fetch('/api/proposals/' + proposalId + '/evidence');
                         if (!r.ok) throw new Error('HTTP ' + r.status);
                         const data = await r.json();
-                        
+
                         if (data.error) {
                             content.innerHTML = `<span style="color:#f44336;">加载失败: ${escapeHtml(data.error)}</span>`;
                             return;
                         }
-                        
+
                         if (!data.evidence || data.evidence.length === 0) {
                             content.innerHTML = '<span style="color:#888;">无证据记录</span>';
                             return;
                         }
-                        
-                        let html = `<div style="color:#aaa; margin-bottom:4px;">共 ${data.evidence_count} 条 L1 事实：</div>`;
+
+                        let html = `<div style="color:#aaa; margin-bottom:4px;">共 ${data.evidence.length} 条 L1 事实：</div>`;
                         for (const ev of data.evidence) {
                             html += `<div style="padding:4px 8px; margin:2px 0; background:rgba(255,255,255,0.05); border-radius:4px;">`;
-                            html += `<span style="color:#ce93d8;">[${ev.level}]</span> `;
+                            html += `<span style="color:#ce93d8;">[L1]</span> `;
                             html += `<span style="color:#aaa;">${escapeHtml(ev.content || '(空)')}</span> `;
-                            html += `<span style="color:#666; font-size:10px;">(${ev.source} | ${ev.created_at})</span>`;
+                            html += `<span style="color:#666; font-size:10px;">(${ev.created_at || ''})</span>`;
                             html += `</div>`;
                         }
                         content.innerHTML = html;
@@ -595,11 +618,11 @@
 
                     <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
                         <button onclick="loadEvolutionProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(79,195,247,0.2); color:#4fc3f7; font-size:12px; cursor:pointer;">🔄 刷新建议</button>
-                        <button onclick="clearEvolutionProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(244,67,54,0.2); color:#f44336; font-size:12px; cursor:pointer;">🗑 清空已处理</button>
-                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#888; cursor:pointer; margin-left:auto;">
-                            <input type="checkbox" id="autoApproveToggle" onchange="toggleAutoApprove()">
-                            自动批准 (仅测试用)
+                        <button onclick="approveAllProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(76,175,80,0.2); color:#4caf50; font-size:12px; cursor:pointer;">✅ 全部批准</button>
+                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:#888; cursor:pointer;">
+                            <input type="checkbox" id="autoApproveToggle" onchange="toggleAutoApprove()"> 自动批准
                         </label>
+                        <button onclick="clearEvolutionProposals()" style="padding:6px 14px; border:none; border-radius:6px; background:rgba(244,67,54,0.2); color:#f44336; font-size:12px; cursor:pointer;">🗑 清空已处理</button>
                     </div>
 
                     <div id="evolutionLogArea" style="flex:1; overflow-y:auto; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; font-family:monospace; font-size:11px; line-height:1.6; color:#aaa;">
@@ -611,7 +634,7 @@
     </div>
 
     <script>
-        const MEM_HUB = 'http://localhost:8000';;
+        const MEM_HUB = 'http://localhost:8000';
         const OLLAMA_BASE = '/api/ollama';
         const WORKSPACE_ID = "fd0223ed-7aa2-491e-8db5-b0de71b75219";
 
@@ -630,20 +653,8 @@
                     document.getElementById('mhLabel').textContent = 'Memory Hub: 已连接';
                 } else throw new Error();
             } catch(e) {
-                try {
-                    const r2 = await fetch(MEM_HUB + '/memories' + '?workspace_id=' + WORKSPACE_ID , {
-                        method: 'GET',
-                        headers: {'Content-Type': 'application/json'},
-                        signal: AbortSignal.timeout(5000)
-                    });
-                    if (r2.ok) {
-                        document.getElementById('mhDot').className = 'dot green';
-                        document.getElementById('mhLabel').textContent = 'Memory Hub: 已连接';
-                    } else throw new Error();
-                } catch(e2) {
-                    document.getElementById('mhDot').className = 'dot red';
-                    document.getElementById('mhLabel').textContent = 'Memory Hub: 断开';
-                }
+                document.getElementById('mhDot').className = 'dot red';
+                document.getElementById('mhLabel').textContent = 'Memory Hub: 断开';
             }
             try {
                 const r = await fetch(OLLAMA_BASE + '/api/tags');
@@ -741,19 +752,20 @@
 
             if (items.length === 0) {
                 addMsg('未找到相关记忆。将直接回答。', 'msg-sys');
-                await callOllama(question, model, null);
+                await callOllama(question, model);
             } else {
-                const ctx = items.map(function(it,i) { 
-                    return '[记忆' + (i+1) + '] ' + it.content; 
-                }).join('\n\n');
-                await callOllama(question, model, ctx);
+                // Context is now built internally in callOllama
+                await callOllama(question, model);
             }
 
             btn.disabled = false;
         }
 
-        async function callOllama(question, model, memoryContext) {
+        async function callOllama(question, model) {
             addMsg('<em>AI 正在思考...</em>', 'msg-sys');
+
+            // Step 1: Build context from memory (Context Builder)
+            const memoryContext = await buildMemoryContext(question);
 
             let prompt;
             if (memoryContext) {
@@ -782,6 +794,102 @@
                 if (last && last.textContent.includes('正在思考')) last.remove();
                 addMsg(`AI回复失败: ${err.message}`, 'msg-sys');
             }
+        }
+
+        // Context Builder: 根据问题构建记忆上下文
+        async function buildMemoryContext(question) {
+            const contextParts = [];
+            
+            // Step 1: 识别问题中的关键词
+            const keywords = extractKeywords(question);
+            if (keywords.length === 0) return null;
+            
+            // Step 2: 查询关联的 Entities
+            const entityContext = await queryEntities(keywords);
+            if (entityContext) contextParts.push(entityContext);
+            
+            // Step 3: 查询关联的 Areas
+            const areaContext = await queryAreas(keywords);
+            if (areaContext) contextParts.push(areaContext);
+            
+            // Step 4: 如果没找到，降级到 Evidence 关键字搜索
+            if (contextParts.length === 0) {
+                const evidenceContext = await queryEvidence(keywords);
+                if (evidenceContext) contextParts.push(evidenceContext);
+            }
+            
+            return contextParts.join('\n\n');
+        }
+        
+        // 提取问题关键词
+        function extractKeywords(text) {
+            // 提取中文关键词
+            const chineseWords = text.match(/[\u4e00-\u9fa5]{2,}/g) || [];
+            // 提取英文关键词
+            const englishWords = text.match(/[a-zA-Z]{3,}/g) || [];
+            // 合并去重
+            const all = [...new Set([...chineseWords, ...englishWords])];
+            return all.slice(0, 5); // 最多5个关键词
+        }
+        
+        // 查询 Entities
+        async function queryEntities(keywords) {
+            try {
+                const responses = await Promise.all(
+                    keywords.map(async (kw) => {
+                        const r = await fetch(`${MEM_HUB}/entities?workspace_id=${WORKSPACE_ID}&keyword=${encodeURIComponent(kw)}`);
+                        return r.json();
+                    })
+                );
+                
+                const entities = responses.flatMap(r => r.data || []);
+                if (entities.length > 0) {
+                    return `【相关实体】\n${entities.map(e => `• ${e.canonical_name}: ${e.description}`).join('\n')}`;
+                }
+            } catch(e) {
+                console.error('Entity query error:', e);
+            }
+            return null;
+        }
+        
+        // 查询 Areas
+        async function queryAreas(keywords) {
+            try {
+                const responses = await Promise.all(
+                    keywords.map(async (kw) => {
+                        const r = await fetch(`${MEM_HUB}/areas?workspace_id=${WORKSPACE_ID}&keyword=${encodeURIComponent(kw)}`);
+                        return r.json();
+                    })
+                );
+                
+                const areas = responses.flatMap(r => r.data || []);
+                if (areas.length > 0) {
+                    return `【相关领域】\n${areas.map(a => `• ${a.name}: ${a.description}`).join('\n')}`;
+                }
+            } catch(e) {
+                console.error('Area query error:', e);
+            }
+            return null;
+        }
+        
+        // 查询 Evidence (降级策略)
+        async function queryEvidence(keywords) {
+            try {
+                const responses = await Promise.all(
+                    keywords.map(async (kw) => {
+                        const r = await fetch(`${MEM_HUB}/evidences?workspace_id=${WORKSPACE_ID}&keyword=${encodeURIComponent(kw)}&limit=5`);
+                        return r.json();
+                    })
+                );
+                
+                const evidences = responses.flatMap(r => r.data || []).slice(0, 10);
+                if (evidences.length > 0) {
+                    return `【原始证据】\n${evidences.map(e => `• [${e.evidence_type}] ${e.content?.substring(0, 100)}...`).join('\n')}`;
+                }
+            } catch(e) {
+                console.error('Evidence query error:', e);
+            }
+            return null;
         }
 
         function escapeHtml(t) {

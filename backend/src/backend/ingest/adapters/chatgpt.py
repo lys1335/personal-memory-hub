@@ -143,8 +143,11 @@ class ChatGPTImportAdapter(BaseImportAdapter):
                     metadata["original_timestamp"] = created_at
 
                 # Create MemoryItem
+                # raw_content stores the original message for evidence preservation
+                # content is the extracted text summary
                 item = MemoryItem(
                     content=content,
+                    raw_content=content,  # Store original for evidence
                     entity_id=None,  # Will be resolved later if needed
                     level=1,  # Observation level
                     source="import",
@@ -335,6 +338,9 @@ class ChatGPTImportAdapter(BaseImportAdapter):
     def _extract_message_content(self, msg: dict[str, Any]) -> str:
         """Extract message content from ChatGPT message object.
 
+        Handles multimodal text by recursively extracting transcription text
+        from parts array.
+
         Args:
             msg: Message dictionary from ChatGPT export.
 
@@ -351,20 +357,9 @@ class ChatGPTImportAdapter(BaseImportAdapter):
             if parts:
                 return "\n".join(str(part) for part in parts)
 
-        # For other content types (multimodal_text, etc.), extract meaningful text
+        # For multimodal_text, recursively extract text from parts
         if isinstance(content, dict):
-            texts = []
-            for key, val in content.items():
-                # Skip metadata/pointer fields
-                if key in ("asset_pointer", "content_type", "metadata"):
-                    continue
-                if isinstance(val, str) and val.strip() and len(val) > 2:
-                    texts.append(val)
-                elif isinstance(val, list):
-                    for item in val:
-                        if isinstance(item, str) and item.strip() and len(item) > 2:
-                            texts.append(item)
-
+            texts = self._extract_multimodal_text(content)
             if texts:
                 return "\n".join(texts)
 
@@ -379,6 +374,50 @@ class ChatGPTImportAdapter(BaseImportAdapter):
 
         # Indicate non-text content instead of returning raw JSON
         return ""
+
+    def _extract_multimodal_text(self, data: dict, depth: int = 0) -> list[str]:
+        """Recursively extract text from multimodal content.
+
+        Traverses the content structure looking for transcription text
+        in parts array and other nested structures.
+
+        Args:
+            data: Content dictionary to traverse.
+            depth: Current recursion depth (max 5).
+
+        Returns:
+            List of extracted text strings.
+        """
+        if depth > 5 or not isinstance(data, dict):
+            return []
+
+        texts = []
+
+        # Skip metadata/pointer fields
+        skip_keys = {"asset_pointer", "content_type", "metadata", "decoding_id",
+                     "direction", "tool_audio_direction", "frames_asset_pointers",
+                     "video_container_asset_pointer", "expiry_datetime"}
+
+        for key, val in data.items():
+            if key in skip_keys:
+                continue
+
+            if key == "parts" and isinstance(val, list):
+                # Recursively extract from each part
+                for part in val:
+                    texts.extend(self._extract_multimodal_text(part, depth + 1))
+            elif key == "text" and isinstance(val, str) and val.strip():
+                texts.append(val.strip())
+            elif isinstance(val, dict):
+                texts.extend(self._extract_multimodal_text(val, depth + 1))
+            elif isinstance(val, list):
+                for item in val:
+                    if isinstance(item, str) and item.strip() and len(item) > 2:
+                        texts.append(item.strip())
+                    elif isinstance(item, dict):
+                        texts.extend(self._extract_multimodal_text(item, depth + 1))
+
+        return texts
 
     # Timestamp Extraction
     # ------------------------------------------------------------------

@@ -485,13 +485,12 @@ class MemoryService(BaseService):
 
         for idx, mem_item in enumerate(result.items):
             try:
-                await self.capture_memory(
+                await self.capture_conversation(
                     workspace_id=workspace_id,
                     entity_id=mem_item.entity_id,
                     content=mem_item.content,
-                    level=mem_item.level,
-                    source=mem_item.source,
-                    metadata={**mem_item.metadata, **metadata},
+                    raw_content=mem_item.raw_content,  # Original content for evidence
+                    tags=mem_item.tags,
                 )
                 success_count += 1
             except Exception as exc:

@@ -205,7 +205,7 @@ class RESTAdapter:
     # Reflection Endpoints
     # ------------------------------------------------------------------
 
-    def handle_trigger_reflection(
+    async def handle_trigger_reflection(
         self,
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
@@ -220,7 +220,7 @@ class RESTAdapter:
         cmd = request.to_internal_dict()
 
         try:
-            result = self._services["reflection"].reflect(**cmd)
+            result = await self._services["reflection"].reflect(**cmd)
         except Exception as exc:
             return self._domain_error_response(request_id, exc)
 
@@ -232,6 +232,7 @@ class RESTAdapter:
                 "new_patterns": result.new_patterns,
                 "new_beliefs": result.new_beliefs,
                 "scope": result.scope,
+                "proposal_count": result.metadata.get("proposal_count", 0),
             },
         )
 

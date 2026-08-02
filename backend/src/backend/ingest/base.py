@@ -63,6 +63,7 @@ class MemoryItem:
     metadata: dict[str, Any] = field(default_factory=dict)
     tags: list[str] = field(default_factory=list)
     created_at: str | None = None
+    raw_content: str | None = None  # Original content for evidence preservation
 
     def validate(self, strict: bool = True) -> list[str]:
         """Return list of validation error messages (empty if valid)."""

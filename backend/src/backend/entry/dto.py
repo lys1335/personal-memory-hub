@@ -278,12 +278,14 @@ class TriggerReflectionRequest:
     workspace_id: str
     entity_id: str | None = None
     scope: str = "entity"
+    limit: int = 50
 
     def to_internal_dict(self) -> dict[str, Any]:
         return {
             "workspace_id": UUID(self.workspace_id),
             "entity_id": UUID(self.entity_id) if self.entity_id else None,
             "scope": self.scope,
+            "limit": self.limit,
         }
 
 

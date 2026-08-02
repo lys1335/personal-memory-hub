@@ -18,8 +18,9 @@ from uuid import UUID
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.entry.dto import ResponseStatus
@@ -33,6 +34,9 @@ from backend.shared.infrastructure.config.settings import get_settings
 from backend.shared.infrastructure.database.engine import get_engine, get_session_factory
 
 logger = logging.getLogger(__name__)
+
+# Auto-approve setting (default: False for safety, change to True for production)
+AUTO_APPROVE_PROPOSALS = os.environ.get('AUTO_APPROVE', 'false').lower() == 'true'
 
 
 async def get_session() -> AsyncSession:
@@ -235,6 +239,307 @@ async def search_memory(body: dict = Body(..., embed=False), services: dict = De
     raise HTTPException(status_code=422, detail=asdict(response))
 
 
+@app.post("/api/reflect", tags=["reflection"])
+async def reflect_memory(body: dict = Body(...), services: dict = Depends(get_services)):
+    """POST /api/reflect - Execute reflection on memories."""
+    adapter = RESTAdapter(services)
+    try:
+        response = adapter.handle_reflect(body)
+    except Exception as exc:
+        logger.error("reflect error: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+    if response.status == ResponseStatus.SUCCESS:
+        return asdict(response)
+    raise HTTPException(status_code=422, detail=asdict(response))
+
+
+@app.get("/api/proposals", tags=["reflection"])
+async def list_proposals(
+    workspace_id: str = Query(None, description="Workspace UUID"),
+    status: str = Query(None, description="Filter by status"),
+    limit: int = Query(50, description="Max proposals"),
+):
+    """List reflection proposals."""
+    from uuid import UUID as UUIDType
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text
+
+    default_ws_id = "fd0223ed-7aa2-491e-8db5-b0de71b75219"
+    target_wid = UUIDType(workspace_id) if workspace_id else UUIDType(default_ws_id)
+
+    engine = get_engine()
+    async with engine.begin() as conn:
+        if status:
+            stmt = text("""
+                SELECT id, entity, summary, evidence_chain, status, confidence, created_at
+                FROM proposals
+                WHERE workspace_id = :workspace_id AND status = :status
+                ORDER BY created_at DESC
+                LIMIT :limit
+            """)
+            result = await conn.execute(stmt, {
+                "workspace_id": str(target_wid),
+                "status": status,
+                "limit": limit,
+            })
+        else:
+            stmt = text("""
+                SELECT id, entity, summary, evidence_chain, status, confidence, created_at
+                FROM proposals
+                WHERE workspace_id = :workspace_id
+                ORDER BY created_at DESC
+                LIMIT :limit
+            """)
+            result = await conn.execute(stmt, {
+                "workspace_id": str(target_wid),
+                "limit": limit,
+            })
+
+        rows = result.fetchall()
+        proposals = []
+        for row in rows:
+            proposals.append({
+                "id": str(row[0]),
+                "entity": row[1],
+                "summary": row[2],
+                "evidence_chain": row[3],
+                "status": row[4],
+                "confidence": row[5],
+                "created_at": str(row[6]) if row[6] else None,
+            })
+        return {"proposals": proposals, "total": len(proposals)}
+
+
+@app.get("/api/proposals/{proposal_id}/evidence", tags=["reflection"])
+async def get_proposal_evidence(proposal_id: str):
+    """Get evidence chain for a proposal."""
+    from uuid import UUID as UUIDType
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text
+
+    try:
+        UUIDType(proposal_id)
+    except ValueError:
+        return {"error": "invalid_proposal_id"}, 400
+
+    engine = get_engine()
+    async with engine.begin() as conn:
+        # Get proposal
+        stmt = text("""
+            SELECT id, entity, summary, evidence_chain, status
+            FROM proposals
+            WHERE id = :id
+        """)
+        result = await conn.execute(stmt, {"id": proposal_id})
+        row = result.fetchone()
+
+        if not row:
+            return {"error": "proposal not found"}, 404
+
+        # Parse evidence_chain
+        evidence_ids = row[3]
+        if isinstance(evidence_ids, str):
+            import json as json_lib
+            evidence_ids = json_lib.loads(evidence_ids)
+
+        # Get evidence details
+        if evidence_ids:
+            placeholders = ",".join([f":e{i}" for i in range(len(evidence_ids))])
+            stmt = text(f"""
+                SELECT id, content, created_at
+                FROM memory_nodes
+                WHERE id IN ({placeholders})
+            """)
+            params = {f"e{i}": str(eid) for i, eid in enumerate(evidence_ids)}
+            evidence_result = await conn.execute(stmt, params)
+            evidence = []
+            for e_row in evidence_result.fetchall():
+                evidence.append({
+                    "id": str(e_row[0]),
+                    "content": e_row[1],
+                    "created_at": str(e_row[2]) if e_row[2] else None,
+                })
+        else:
+            evidence = []
+
+        return {
+            "proposal_id": str(row[0]),
+            "entity": row[1],
+            "summary": row[2],
+            "evidence_chain": evidence_ids,
+            "evidence": evidence,
+            "status": row[4],
+        }
+
+
+@app.post("/api/proposals/{proposal_id}/approve", tags=["reflection"])
+async def approve_proposal(proposal_id: str):
+    """Approve a reflection proposal - creates L2/L3 memory nodes."""
+    from uuid import UUID as UUIDType
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text
+    from backend.shared.infrastructure.uuid import generate_uuid
+
+    try:
+        UUIDType(proposal_id)
+    except ValueError:
+        return {"error": "invalid_proposal_id"}, 400
+
+    default_ws_id = "fd0223ed-7aa2-491e-8db5-b0de71b75219"
+    engine = get_engine()
+
+    async with engine.begin() as conn:
+        # Get proposal
+        stmt = text("""
+            SELECT id, entity, summary, evidence_chain, confidence, status
+            FROM proposals
+            WHERE id = :id
+        """)
+        result = await conn.execute(stmt, {"id": proposal_id})
+        row = result.fetchone()
+
+        if not row:
+            return {"error": "proposal not found"}, 404
+
+        if row[5] != "pending":
+            return {"error": "proposal already processed"}, 400
+
+        # Parse evidence_chain
+        evidence_chain = row[3]
+        if isinstance(evidence_chain, str):
+            import json as json_lib
+            evidence_chain = json_lib.loads(evidence_chain)
+
+        # Create L2/L3 memory node
+        new_node_id = str(generate_uuid())
+        node_content = f"Evolved from L1 evidence: {row[1]}"
+        node_summary = row[2]
+        node_confidence = float(row[4]) if row[4] else 0.8
+        node_importance = node_confidence
+        node_signal_strength = node_confidence
+
+        # Insert L2 memory node with all required fields
+        insert_stmt = text("""
+            INSERT INTO memory_nodes (
+                id, workspace_id, level, node_type, content, summary,
+                confidence, importance, signal_strength, status, source,
+                generated_by, evidence_links, contradict_evidence, _meta,
+                created_at, updated_at
+            ) VALUES (
+                :id, :workspace_id, 2, 'Pattern', :content, :summary,
+                :confidence, :importance, :signal_strength, 'active', 'ai_reflect',
+                'ai_reflect', '[]'::jsonb, '[]'::jsonb, '{}'::jsonb,
+                NOW(), NOW()
+            )
+        """)
+        await conn.execute(insert_stmt, {
+            "id": new_node_id,
+            "workspace_id": default_ws_id,
+            "content": node_content,
+            "summary": node_summary,
+            "confidence": node_confidence,
+            "importance": node_importance,
+            "signal_strength": node_signal_strength,
+        })
+
+        # Update proposal status
+        update_stmt = text("""
+            UPDATE proposals
+            SET status = 'approved', updated_at = NOW()
+            WHERE id = :id
+        """)
+        await conn.execute(update_stmt, {"id": proposal_id})
+
+        return {
+            "success": True,
+            "proposal_id": proposal_id,
+            "new_node_id": new_node_id,
+            "message": f"Created L2 Pattern: {node_summary}",
+        }
+
+
+@app.post("/api/proposals/{proposal_id}/reject", tags=["reflection"])
+async def reject_proposal(proposal_id: str):
+    """Reject a reflection proposal."""
+    from uuid import UUID as UUIDType
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text
+
+    try:
+        UUIDType(proposal_id)
+    except ValueError:
+        return {"error": "invalid_proposal_id"}, 400
+
+    engine = get_engine()
+    async with engine.begin() as conn:
+        stmt = text("""
+            UPDATE proposals
+            SET status = 'rejected', updated_at = NOW()
+            WHERE id = :id
+        """)
+        result = await conn.execute(stmt, {"id": proposal_id})
+
+        if result.rowcount == 0:
+            return {"error": "proposal not found"}, 404
+
+        return {"success": True, "message": "Proposal rejected"}
+
+
+@app.post("/api/proposals/clear", tags=["reflection"])
+async def clear_proposals():
+    """Clear all processed proposals."""
+    from backend.shared.infrastructure.database.engine import get_engine
+    from sqlalchemy import text
+
+    engine = get_engine()
+    async with engine.begin() as conn:
+        stmt = text("DELETE FROM proposals")
+        result = await conn.execute(stmt)
+        return {"success": True, "cleared": result.rowcount}
+    return {"data": data, "total": len(data)}
+
+
+@app.post("/api/proposals/{proposal_id}/approve", tags=["reflection"])
+async def approve_proposal(
+    proposal_id: str,
+    services: dict = Depends(get_services)
+):
+    """POST /api/proposals/{id}/approve - Approve a reflection proposal."""
+    adapter = RESTAdapter(services)
+    try:
+        response = adapter.handle_approve_proposal({"proposal_id": proposal_id})
+    except Exception as exc:
+        logger.error("approve_proposal error: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+    if response.status == ResponseStatus.SUCCESS:
+        # Auto-trigger next proposals if enabled
+        if AUTO_APPROVE_PROPOSALS:
+            logger.info("[EVOLUTION] Auto-approve enabled, triggering next reflection")
+        return asdict(response)
+    raise HTTPException(status_code=422, detail=asdict(response))
+
+
+@app.post("/api/proposals/{proposal_id}/reject", tags=["reflection"])
+async def reject_proposal(
+    proposal_id: str,
+    body: dict = Body(...),
+    services: dict = Depends(get_services)
+):
+    """POST /api/proposals/{id}/reject - Reject a reflection proposal."""
+    adapter = RESTAdapter(services)
+    try:
+        response = adapter.handle_reject_proposal({
+            "proposal_id": proposal_id,
+            "reason": body.get("reason", "")
+        })
+    except Exception as exc:
+        logger.error("reject_proposal error: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+    if response.status == ResponseStatus.SUCCESS:
+        return asdict(response)
+    raise HTTPException(status_code=422, detail=asdict(response))
+
+
 @app.get("/memories/{memory_id}", tags=["memories"])
 async def retrieve_memory(memory_id: str, services: dict = Depends(get_services)):
     """GET /memories/{id} - retrieve a memory by ID."""
@@ -315,7 +620,7 @@ async def trigger_reflection(body: dict = Body(...), services: dict = Depends(ge
     """POST /reflection - trigger reflection."""
     adapter = RESTAdapter(services)
     try:
-        response = adapter.handle_trigger_reflection(body)
+        response = await adapter.handle_trigger_reflection(body)
     except Exception as exc:
         logger.error("trigger_reflection error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
@@ -996,21 +1301,23 @@ async def get_evidence_memories(proposal_id: str):
     """Get evidence memories for a proposal."""
     with _sandbox_lock:
         proposal = next((p for p in _sandbox_proposals if p.get("id") == proposal_id), None)
-    
+
     if not proposal:
         return {"proposal_id": proposal_id, "evidence": [], "error": "Proposal not found in sandbox"}
-    
+
     evidence_chain = proposal.get("evidence_chain", [])
     if not evidence_chain:
         return {"proposal_id": proposal_id, "evidence": []}
-    
+
     # Query memories from DB
     from backend.shared.infrastructure.database.engine import get_engine
     from sqlalchemy import text
-    
+    import json as _json
+
     engine = get_engine()
-    
+
     async with engine.connect() as conn:
+        # Build placeholders for SQL IN clause
         placeholders = ",".join([f":id{i}" for i in range(len(evidence_chain))])
         params = {f"id{i}": eid for i, eid in enumerate(evidence_chain)}
         sql = text(f"""
@@ -1021,19 +1328,89 @@ async def get_evidence_memories(proposal_id: str):
         """)
         rows = await conn.execute(sql, params)
         result_rows = rows.fetchall()
-    
+
+    def _extract_content_text(content):
+        """Extract readable text from multimodal content JSON or Python repr."""
+        if not content:
+            return ""
+
+        # If it's already a plain string, try to parse it
+        if isinstance(content, str):
+            parsed = None
+
+            # First try JSON parse
+            try:
+                parsed = _json.loads(content)
+            except (_json.JSONDecodeError, TypeError):
+                # Try Python ast literal_eval (handles single quotes)
+                try:
+                    import ast
+                    parsed = ast.literal_eval(content)
+                except (ValueError, SyntaxError):
+                    pass
+
+            # If we successfully parsed it
+            if isinstance(parsed, dict) and "parts" in parsed:
+                return _extract_multimodal_text(parsed)
+            if isinstance(parsed, str):
+                return parsed
+            return str(content)
+
+        # If it's a dict (from ORM), extract text directly
+        if isinstance(content, dict):
+            return _extract_multimodal_text(content)
+
+        return str(content)
+
+    def _extract_multimodal_text(data, depth=0):
+        """Recursively extract text from multimodal content structure."""
+        if depth > 5 or not isinstance(data, dict):
+            return ""
+
+        texts = []
+        skip_keys = {"asset_pointer", "content_type", "metadata", "decoding_id",
+                     "direction", "tool_audio_direction", "frames_asset_pointers",
+                     "video_container_asset_pointer", "expiry_datetime"}
+
+        for key, val in data.items():
+            if key in skip_keys:
+                continue
+
+            if key == "parts" and isinstance(val, list):
+                for part in val:
+                    part_text = _extract_multimodal_text(part, depth + 1)
+                    if part_text:
+                        texts.append(part_text)
+            elif key == "text" and isinstance(val, str) and val.strip():
+                texts.append(val.strip())
+            elif isinstance(val, dict):
+                nested = _extract_multimodal_text(val, depth + 1)
+                if nested:
+                    texts.append(nested)
+            elif isinstance(val, list):
+                for item in val:
+                    if isinstance(item, str) and item.strip():
+                        texts.append(item.strip())
+                    elif isinstance(item, dict):
+                        nested = _extract_multimodal_text(item, depth + 1)
+                        if nested:
+                            texts.append(nested)
+
+        return "\n".join(texts)
+
     evidence = []
     for row in result_rows:
+        raw_content = row[1] if row[1] else ""
         evidence.append({
             "id": str(row[0]),
-            "content": row[1] if row[1] else "",
+            "content": _extract_content_text(raw_content),
             "level": row[2] if row[2] else 1,
             "node_type": row[3] if row[3] else "Observation",
             "source": row[4] if row[4] else "unknown",
             "created_at": str(row[5])[:19] if row[5] else "",
             "confidence": float(row[6]) if row[6] else 0.0
         })
-    
+
     return {
         "proposal_id": proposal_id,
         "evidence_count": len(evidence),
@@ -1096,6 +1473,61 @@ async def get_logs(
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read logs: {str(e)}")
+
+
+
+@app.get("/dashboard")
+async def serve_dashboard():
+    """Serve the main dashboard HTML file."""
+    dashboard_path = Path("/app/dashboard-main.html")
+    if dashboard_path.exists():
+        with open(dashboard_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    raise HTTPException(status_code=404, detail="Dashboard not found")
+
+
+@app.get("/dashboard-main.html")
+async def serve_dashboard_html():
+    """Serve the dashboard HTML file."""
+    dashboard_path = Path("/app/dashboard-main.html")
+    if dashboard_path.exists():
+        with open(dashboard_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    raise HTTPException(status_code=404, detail="Dashboard not found")
+
+
+@app.api_route("/api/ollama/{path:path}", methods=["GET", "POST"])
+async def proxy_ollama(request: Request, path: str):
+    """Proxy requests to local Ollama server."""
+    import httpx
+    from backend.shared.infrastructure.config.settings import get_settings
+    _settings = get_settings()
+    ollama_url = _settings.OLLAMA_BASE_URL.rstrip('/')
+    target_url = f"{ollama_url}/{path}"
+    
+    # Forward headers
+    headers = {k: v for k, v in request.headers.items()
+               if k.lower() not in ('host', 'content-length')}
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # Read body for POST
+        body = None
+        if request.method == "POST":
+            body = await request.body()
+        
+        resp = await client.request(
+            method=request.method,
+            url=target_url,
+            headers=headers,
+            content=body,
+        )
+        
+        return Response(
+            content=resp.content,
+            status_code=resp.status_code,
+            headers=dict(resp.headers)
+        )
+
 
 if __name__ == "__main__":
     import uvicorn

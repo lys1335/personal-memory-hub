@@ -153,30 +153,18 @@ class ReflectionEngine(EngineBase):
         contents = []
         for i, c in enumerate(candidates):
             content = c.get("content", "")
-            source = c.get("source", "unknown")
-            created = c.get("created_at", "")
-            contents.append(f"[{i+1}] source={source} time={created} content={content}")
+            # Truncate very long content to avoid token limit
+            content = content[:500] if len(content) > 500 else content
+            contents.append(f"[{i+1}] {content}")
 
         # Build list of memory IDs from candidates
         memory_ids = [c.get("id", f"memory_{i+1}") for i, c in enumerate(candidates)]
-        
+
+        # Simple, concise prompt
         system_prompt = (
-            "You are a Memory Evolution Fact Extractor for Personal Memory Hub.\n"
-            "Analyze the following memories and extract structured facts with specific values.\n"
-            "Output ONLY valid JSON with this structure:\n"
-            "{\n"
-            '  "facts": [{"entity": str, "relation": str, "value": str, "timestamp": str, "confidence": float, "source_ids": [str]}, ...],\n'
-            '  "entities": [str, ...]\n'
-            "}\n"
-            f"AVAILABLE MEMORY IDS: {memory_ids}\n"
-            "CRITICAL: source_ids MUST be exactly one of the above memory IDs.\n"
-            "Example: source_ids=[\"06a6d826-6ef8-7de4-8000-2019742f29ab\"]\n"
-            "NEVER invent new IDs like \"memory_1\" or \"memory_id_2\".\n"
-            "Each fact should capture a new piece of knowledge about the user.\n"
-            "The 'value' field MUST contain the actual fact value, not just repeat the entity name.\n"
-            "Example: entity='user's birthday', value='1984-11-01' (NOT 'user's birthday')\n"
-            "Example: entity='user's hometown', value='Tokyo, Japan' (NOT 'user's hometown')\n"
-            "confidence should be between 0.0 and 1.0."
+            "Extract structured facts from memories. Output ONLY JSON.\n"
+            'Format: {"facts":[{"entity":"name","value":"value","source_ids":["id"],"confidence":0.9}],"entities":[]}\n'
+            f"\nIDs: {memory_ids}\n\nMemories:\n" + "\n".join(contents)
         )
 
         try:
@@ -322,6 +310,9 @@ class ReflectionEngine(EngineBase):
                 "evidence_chain": evidence_chain,
                 "confidence": round(avg_confidence, 3),
                 "summary": summary_text,
+                # 添加更多元数据用于后续生成 L2/L3 内容
+                "fact_values": fact_values,
+                "source_facts": entity_facts,
             })
 
         return proposals

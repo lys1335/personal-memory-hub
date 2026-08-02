@@ -1,53 +1,66 @@
-# Personal Memory Hub Launch Script v3.0 - Simple and reliable
+# Personal Memory Hub Launch Script v4.1 - Fixed error handling
 
-$ErrorActionPreference = "Stop"
 $base = Split-Path $MyInvocation.MyCommand.Path -Parent
 
-echo "=== Starting Personal Memory Hub ==="
+Write-Host "=== Starting Personal Memory Hub v4.1 ===" -ForegroundColor Cyan
+Write-Host ""
 
 # Check Docker is running
-Try { 
-    docker info | Out-Null 
-    echo "[OK] Docker available" 
-} Catch { 
-    echo "[WARN] Docker not responding (check Desktop)" 
-}
-
-# Start Database container (absolute path to compose file)
-echo "[DB] Database: starting container..."
-# docker compose -f "$base/docker-compose.yml" up -d db --no-recreate 2>$null
 try {
-    docker compose -f "$base/docker-compose.yml" up -d db --no-recreate 2>&1 | Out-Null
+    docker info | Out-Null
+    Write-Host "[OK] Docker available" -ForegroundColor Green
 } catch {
+    Write-Host "[WARN] Docker not responding (check Desktop)" -ForegroundColor Yellow
 }
-Start-Sleep -Seconds 3
 
-# Start API server in a new console window
-echo "[API] API: starting uvicorn in separate window..."
-Start-Process powershell -NoNewWindow -ArgumentList "-ExecutionPolicy Bypass", "-File", "$base\backend\start-uvicorn.ps1"
+# Start Docker containers using docker-compose
+Write-Host "[DB] Starting database container..." -ForegroundColor Cyan
+docker compose -f "$base\docker-compose.yml" up -d db --no-recreate
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[WARN] Database container may already be running" -ForegroundColor Yellow
+}
 
-# Wait for API to start
+Write-Host "[APP] Starting application container..." -ForegroundColor Cyan
+docker compose -f "$base\docker-compose.yml" up -d app --no-recreate
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[WARN] Application container may already be running" -ForegroundColor Yellow
+}
+
+# Wait for services to start
+Write-Host ""
+Write-Host "[WAIT] Waiting for services to start..." -ForegroundColor Cyan
 Start-Sleep -Seconds 5
 
-# Start Dashboard proxy with port auto-detect
-echo "[DASH] Starting dashboard proxy..."
-$dashPort = 5000
-while ((Test-NetConnection -ComputerName localhost -Port $dashPort -InformationLevel Quiet) -eq $true) {
-    $dashPort++
-    if ($dashPort -gt 6000) { $dashPort = 5001; break }
+# Check if services are ready
+Write-Host "[CHECK] Verifying services..." -ForegroundColor Cyan
+$apiReady = $false
+for ($i = 0; $i -lt 10; $i++) {
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:8000/health" -TimeoutSec 2 -UseBasicParsing
+        if ($response.StatusCode -eq 200) {
+            $apiReady = $true
+            break
+        }
+    } catch {}
+    Start-Sleep -Seconds 2
 }
 
-Start-Process python -ArgumentList "$base\dashboard_server.py", "--port", $dashPort, "--no-browser" -WindowStyle Normal
+if ($apiReady) {
+    Write-Host "[OK] API server is ready at http://localhost:8000" -ForegroundColor Green
+} else {
+    Write-Host "[WARN] API server not responding, check Docker logs" -ForegroundColor Yellow
+}
 
 # Open browser
-echo "[BROW] Opening browser at http://localhost:$dashPort..."
-Start-Process "http://localhost:$dashPort"
+Write-Host ""
+Write-Host "[BROW] Opening browser at http://localhost:8000/dashboard..." -ForegroundColor Cyan
+Start-Process "http://localhost:8000/dashboard"
 
-echo ""
-echo "=== ALL SERVICES LAUNCHED ==="
-echo "API: new PowerShell window (keep open)"
-echo "Dashboard: Python console (keep open)"
-echo "Browser: http://localhost:$dashPort"
-echo ""
-echo "Press Enter to exit this launcher (services continue running)"
-Read-Line
+Write-Host ""
+Write-Host "=== ALL SERVICES LAUNCHED ===" -ForegroundColor Green
+Write-Host "Dashboard: http://localhost:8000/dashboard"
+Write-Host "API:       http://localhost:8000/api/proposals"
+Write-Host "Health:    http://localhost:8000/health"
+Write-Host ""
+Write-Host "Press Enter to exit this launcher (services continue running)"
+Read-Host
