@@ -5,11 +5,9 @@ Proposal ORM model.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
-from uuid import UUID
 
-from sqlalchemy import String, Text, Double, DateTime, Column, Integer
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import Column, DateTime, Double, Integer, String, Text
+
 from backend.shared.infrastructure.database.engine import Base
 
 

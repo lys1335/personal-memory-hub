@@ -411,7 +411,7 @@ def test_rest_create_entity_success(rest_adapter, mock_services):
 
 
 @pytest.mark.unit
-def test_rest_trigger_reflection_success(rest_adapter, mock_services):
+async def test_rest_trigger_reflection_success(rest_adapter, mock_services):
     """Verify REST adapter triggers reflection successfully."""
     mock_result = ReflectionExecutionResult(
         status=ReflectionStatus.COMPLETED,
@@ -427,7 +427,7 @@ def test_rest_trigger_reflection_success(rest_adapter, mock_services):
         "scope": "workspace",
     }
 
-    result = rest_adapter.handle_trigger_reflection(body)
+    result = await rest_adapter.handle_trigger_reflection(body)
 
     assert result.status == ResponseStatus.SUCCESS
     assert result.data["status"] == "completed"

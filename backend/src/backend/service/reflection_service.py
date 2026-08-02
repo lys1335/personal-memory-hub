@@ -26,8 +26,6 @@ import time
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import select
-
 from backend.service.base import BaseService
 from backend.service.dto import (
     ReflectionExecutionResult,
@@ -40,7 +38,6 @@ if TYPE_CHECKING:
     from backend.repository.memory_node_repository import MemoryNodeRepository
     from backend.repository.relationship_repository import RelationshipRepository
     from backend.shared.providers.reflection_provider import ReflectionProvider
-    from backend.shared.domain.memory_models import MemoryRelationship
 
 logger = logging.getLogger(__name__)
 
@@ -200,8 +197,9 @@ class ReflectionService(BaseService):
         proposal_id: UUID,
     ) -> ReflectionExecutionResult:
         """Approve a reflection proposal and create L2/L3 memory."""
-        from backend.shared.infrastructure.database.engine import get_engine
         from sqlalchemy import text
+
+        from backend.shared.infrastructure.database.engine import get_engine
 
         engine = get_engine()
         async with engine.begin() as conn:
@@ -285,8 +283,9 @@ class ReflectionService(BaseService):
         reason: str = "",
     ) -> ReflectionExecutionResult:
         """Reject a reflection proposal."""
-        from backend.shared.infrastructure.database.engine import get_engine
         from sqlalchemy import text
+
+        from backend.shared.infrastructure.database.engine import get_engine
 
         engine = get_engine()
         async with engine.begin() as conn:
@@ -507,6 +506,7 @@ class ReflectionService(BaseService):
         not by the Engine directly.
         """
         import os
+
         from backend.engine.reflection_engine import ReflectionEngine
         from backend.shared.providers.reflection_provider import OllamaReflectionProvider
 
@@ -530,9 +530,11 @@ class ReflectionService(BaseService):
     ) -> None:
         """Save proposals to database for review."""
         import json as json_lib
+
+        from sqlalchemy import text
+
         from backend.shared.infrastructure.database.engine import get_engine
         from backend.shared.infrastructure.uuid import generate_uuid
-        from sqlalchemy import text
 
         if not proposals:
             return
@@ -589,9 +591,10 @@ class ReflectionService(BaseService):
         Per Memory Lifecycle design: Evidence-based, not time-based.
         We process L1 facts that are NOT yet referenced by higher-level memories.
         """
-        from backend.shared.domain.memory_models import MemoryNode, MemoryRelationship
-        from backend.shared.infrastructure.database.engine import get_engine
         from sqlalchemy import text
+
+        from backend.shared.domain.memory_models import MemoryNode
+        from backend.shared.infrastructure.database.engine import get_engine
 
         if scope in ("daily", "weekly", "monthly"):
             # Get all active L1 facts (no time restriction - evidence-based)

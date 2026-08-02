@@ -9,8 +9,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, update, text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from backend.shared.domain.proposal_model import Proposal
 
@@ -23,7 +22,7 @@ class ProposalRepository:
     Per D4.2d Repository pattern: all DB access goes through here.
     """
 
-    def __init__(self, session_factory):
+    def __init__(self, session_factory):  # type: ignore[no-untyped-def]
         """Initialize with SQLAlchemy async session factory."""
         self._session_factory = session_factory
 
@@ -130,7 +129,7 @@ class ProposalRepository:
                 "status": status,
             })
             await session.commit()
-            return result.rowcount > 0
+            return bool(result.rowcount > 0)
 
     async def clear_processed(self, workspace_id: UUID) -> int:
         """Clear processed (approved/rejected) proposals."""
@@ -144,4 +143,4 @@ class ProposalRepository:
                 "workspace_id": str(workspace_id),
             })
             await session.commit()
-            return result.rowcount
+            return int(result.rowcount)

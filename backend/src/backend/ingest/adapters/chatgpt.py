@@ -375,7 +375,7 @@ class ChatGPTImportAdapter(BaseImportAdapter):
         # Indicate non-text content instead of returning raw JSON
         return ""
 
-    def _extract_multimodal_text(self, data: dict, depth: int = 0) -> list[str]:
+    def _extract_multimodal_text(self, data: dict[str, Any], depth: int = 0) -> list[str]:
         """Recursively extract text from multimodal content.
 
         Traverses the content structure looking for transcription text
