@@ -6,6 +6,8 @@
 
 import json
 import sys
+import uuid as uuid_module
+import time
 import psycopg2
 from pathlib import Path
 from datetime import datetime
@@ -23,7 +25,17 @@ DATABASE_CONFIG = {
 WORKSPACE_ID = "fd0223ed-7aa2-491e-8db5-b0de71b75219"
 
 
-def clear_database():
+def uuid7() -> str:
+    """生成 UUIDv7 (时间排序的 UUID)"""
+    ts_ms = int(time.time() * 1000)
+    bits = 0
+    bits |= (ts_ms & 0xFFFFFFFFFFFF) << 80
+    bits |= 0x7 << 76
+    rand = int.from_bytes(os.urandom(8), 'big') & 0x3FFFFFFFFFFFFFFF
+    bits |= rand
+    hex_str = f'{bits:032x}'
+    return f'{hex_str[0:8]}-{hex_str[8:12]}-{hex_str[12:16]}-{hex_str[16:20]}-{hex_str[20:32]}'
+
     """清空所有表数据"""
     conn = psycopg2.connect(**DATABASE_CONFIG)
     cur = conn.cursor()
@@ -94,9 +106,9 @@ def import_chatgpt_json(file_path: str, conn, cur) -> dict:
     imported = 0
     evidence_ids = []
     for i, msg in enumerate(messages):
-        # 创建 evidence
+        # 创建 evidence (使用 UUIDv7)
         evidence_type = 'user_input' if msg['role'] == 'user' else 'assistant_response'
-        evidence_id = f"chatgpt_{conversation_id}_{i}"
+        evidence_id = uuid7()
 
         cur.execute(
             """
@@ -123,13 +135,14 @@ def import_chatgpt_json(file_path: str, conn, cur) -> dict:
     if evidence_ids:
         summary = f"[ChatGPT] {title}"
         content = "\n\n".join(msg['content'] for msg in messages[:10])  # 前 10 条消息作为内容
+        node_id = uuid7()
         cur.execute(
             """
             INSERT INTO memory_nodes (id, workspace_id, level, node_type, content, summary, confidence, importance, signal_strength, created_at)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                f"node_{conversation_id}",
+                node_id,
                 WORKSPACE_ID,
                 1,
                 'Observation',
@@ -150,7 +163,7 @@ def import_chatgpt_json(file_path: str, conn, cur) -> dict:
                     INSERT INTO memory_evidences (memory_node_id, evidence_id)
                     VALUES (%s, %s)
                     """,
-                    (f"node_{conversation_id}", evidence_id)
+                    (node_id, evidence_id)
                 )
             except Exception as e:
                 print(f"  ⚠ 关联证据失败: {e}")
