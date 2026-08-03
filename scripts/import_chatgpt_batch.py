@@ -117,6 +117,7 @@ def import_chatgpt_json(file_path: str, conn, cur) -> dict:
             """
             INSERT INTO evidences (id, workspace_id, source, evidence_type, content, created_at)
             VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
             """,
             (
                 evidence_id,
