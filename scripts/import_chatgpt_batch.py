@@ -28,10 +28,13 @@ def clear_database():
     conn = psycopg2.connect(**DATABASE_CONFIG)
     cur = conn.cursor()
 
-    tables = ['evidences', 'memory_nodes', 'entities', 'areas', 'proposals']
+    tables = ['evidences', 'memory_nodes', 'entities', 'areas', 'proposals', 'memory_evidences']
     for table in tables:
-        cur.execute(f"DELETE FROM {table}")
-        print(f"  ✓ 清空 {table}")
+        try:
+            cur.execute(f"DELETE FROM {table}")
+            print(f"  ✓ 清空 {table}")
+        except Exception as e:
+            print(f"  ⚠ {table}: {e}")
 
     conn.commit()
     cur.close()
@@ -141,13 +144,16 @@ def import_chatgpt_json(file_path: str, conn, cur) -> dict:
 
         # 创建证据关联
         for evidence_id in evidence_ids:
-            cur.execute(
-                """
-                INSERT INTO memory_evidences (memory_node_id, evidence_id)
-                VALUES (%s, %s)
-                """,
-                (f"node_{conversation_id}", evidence_id)
-            )
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO memory_evidences (memory_node_id, evidence_id)
+                    VALUES (%s, %s)
+                    """,
+                    (f"node_{conversation_id}", evidence_id)
+                )
+            except Exception as e:
+                print(f"  ⚠ 关联证据失败: {e}")
 
     conn.commit()
 
@@ -160,7 +166,8 @@ def import_chatgpt_json(file_path: str, conn, cur) -> dict:
 
 
 def main():
-    import_dir = sys.argv[1] if len(sys.argv) > 1 else r'F:\LI_YONGSHUN\AI\ChatGPT_export\hermes_sync'
+    # 使用原始 ChatGPT 导出目录
+    import_dir = sys.argv[1] if len(sys.argv) > 1 else r'F:\LI_YONGSHUN\AI\ChatGPT_export\extracted'
 
     import_path = Path(import_dir)
     json_files = list(import_path.rglob('*.json'))
@@ -207,6 +214,10 @@ def main():
     node_count = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM entities")
     entity_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM areas")
+    area_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM proposals")
+    proposal_count = cur.fetchone()[0]
     cur.close()
     conn.close()
 
@@ -215,6 +226,8 @@ def main():
     print(f"  - Evidences: {evidence_count}")
     print(f"  - Memory Nodes: {node_count}")
     print(f"  - Entities: {entity_count}")
+    print(f"  - Areas: {area_count}")
+    print(f"  - Proposals: {proposal_count}")
 
 
 if __name__ == "__main__":
