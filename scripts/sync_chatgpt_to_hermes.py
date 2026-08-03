@@ -2,7 +2,6 @@
 ChatGPT 数据同步到 Hermes Desktop
 
 将导出的 ChatGPT 对话数据转换为 Hermes Desktop 的记忆格式。
-支持项目分组存储，保持原始目录结构。
 """
 
 import json
@@ -138,7 +137,6 @@ def sync_chatgpt_to_hermes(export_dir: str, output_dir: Optional[str] = None):
         try:
             # 提取项目名（从路径）
             parts = json_file.parts
-            # 尝试找到项目目录名（通常是第二级或第三级）
             project_name = "unknown"
             for i, part in enumerate(parts):
                 if part in ('个人AI平台搭建', 'JP_Furigana_Project', 'extracted'):
