@@ -8,6 +8,7 @@ import json
 import sys
 import uuid as uuid_module
 import time
+import os
 import psycopg2
 from pathlib import Path
 from datetime import datetime
@@ -36,6 +37,8 @@ def uuid7() -> str:
     hex_str = f'{bits:032x}'
     return f'{hex_str[0:8]}-{hex_str[8:12]}-{hex_str[12:16]}-{hex_str[16:20]}-{hex_str[20:32]}'
 
+
+def clear_database():
     """清空所有表数据"""
     conn = psycopg2.connect(**DATABASE_CONFIG)
     cur = conn.cursor()
