@@ -705,12 +705,15 @@ class ReflectionService(BaseService):
                 if evolution_result.candidates:
                     reflection_candidates = []
                     for c in evolution_result.candidates:
+                        # Use evidence_chain IDs as candidate IDs for proper source tracking
+                        evidence_chain = c.get('evidence_chain', [])
+                        candidate_id = evidence_chain[0] if evidence_chain else f'entity_{i}'
                         reflection_candidates.append({
-                            'id': c.get('entity', f'entity_{i}'),
+                            'id': candidate_id,
                             'content': c.get('content', ''),
                             'evidence_source': 'evolution',
                             'source_level': c.get('source_level', 2),
-                            'evidence_chain': c.get('evidence_chain', []),
+                            'evidence_chain': evidence_chain,
                             'confidence': c.get('confidence', 0.9),
                         })
                 else:
