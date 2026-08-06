@@ -164,11 +164,11 @@ class TestProjectionUpdaterComponent:
             {"entity": "tool_x", "value": "功能B", "confidence": 0.65},
         ]
 
-        result = engine._generate_proposals(facts, {})
+        result = engine._generate_proposals(facts, {}, candidates=None)
 
         assert len(result) == 1
         assert result[0]["type"] == "Create"
-        assert result[0]["target_level"] == 1  # L1 Observation
+        assert result[0]["target_level"] == 2  # L2 Pattern (source_level=1 + 1)
         assert result[0]["entity"] == "tool_x"
 
     def test_generate_proposals_mixed(self, engine):
