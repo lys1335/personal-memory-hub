@@ -365,23 +365,43 @@ async def get_proposal_evidence(proposal_id: str):
             import json as json_lib
             evidence_ids = json_lib.loads(evidence_ids)
 
-        # Get evidence details from evidences table (evidence_chain stores evidence IDs)
+        # Get evidence details - query both evidences and memory_nodes tables
+        # evidence_chain may contain IDs from either table
         if evidence_ids:
-            placeholders = ",".join([f":e{i}" for i in range(len(evidence_ids))])
-            stmt = text(f"""
-                SELECT id, content, created_at
-                FROM evidences
-                WHERE id IN ({placeholders})
-            """)
-            params = {f"e{i}": str(eid) for i, eid in enumerate(evidence_ids)}
-            evidence_result = await conn.execute(stmt, params)
             evidence = []
-            for e_row in evidence_result.fetchall():
-                evidence.append({
-                    "id": str(e_row[0]),
-                    "content": e_row[1],
-                    "created_at": str(e_row[2]) if e_row[2] else None,
-                })
+            for eid in evidence_ids:
+                eid_str = str(eid)
+                # Try to find in evidences table first
+                stmt_evidences = text("""
+                    SELECT 'evidence' as source, id, content, created_at
+                    FROM evidences
+                    WHERE id = :id
+                """)
+                result_e = await conn.execute(stmt_evidences, {"id": eid_str})
+                row_e = result_e.fetchone()
+                if row_e:
+                    evidence.append({
+                        "id": str(row_e[1]),
+                        "content": row_e[2],
+                        "created_at": str(row_e[3]) if row_e[3] else None,
+                        "source": "evidence",
+                    })
+                    continue
+                # Then try memory_nodes table
+                stmt_nodes = text("""
+                    SELECT 'memory' as source, id, content, created_at
+                    FROM memory_nodes
+                    WHERE id = :id
+                """)
+                result_n = await conn.execute(stmt_nodes, {"id": eid_str})
+                row_n = result_n.fetchone()
+                if row_n:
+                    evidence.append({
+                        "id": str(row_n[1]),
+                        "content": row_n[2],
+                        "created_at": str(row_n[3]) if row_n[3] else None,
+                        "source": "memory",
+                    })
         else:
             evidence = []
 
