@@ -695,6 +695,55 @@ class ReflectionService(BaseService):
         }
 
     async def _save_candidates(
+        self,
+        candidates: list[dict[str, Any]],
+        workspace_id: UUID,
+    ) -> None:
+        """Save evolved candidates to database."""
+        import json as json_lib
+
+        from sqlalchemy import text
+
+        from backend.shared.infrastructure.database.engine import get_engine
+        from backend.shared.infrastructure.uuid import generate_uuid
+
+        if not candidates:
+            return
+
+        engine = get_engine()
+        async with engine.begin() as conn:
+            for candidate in candidates:
+                await conn.execute(text("""
+                    INSERT INTO candidates (
+                        id, workspace_id, entity_id, area_id, content,
+                        candidate_type, evidence_source, evidence_id,
+                        evidence_chain, evidence_count, evidence_strength,
+                        status, source_level, generated_by, created_at, updated_at
+                    ) VALUES (
+                        :id, :workspace_id, :entity_id, :area_id, :content,
+                        :candidate_type, :evidence_source, :evidence_id,
+                        :evidence_chain, :evidence_count, :evidence_strength,
+                        :status, :source_level, :generated_by, NOW(), NOW()
+                    )
+                """), {
+                    "id": candidate.get("id", generate_uuid()),
+                    "workspace_id": str(workspace_id),
+                    "entity_id": candidate.get("entity_id"),
+                    "area_id": candidate.get("area_id"),
+                    "content": candidate.get("content", ""),
+                    "candidate_type": candidate.get("node_type", "pattern"),
+                    "evidence_source": candidate.get("evidence_source", "reflection"),
+                    "evidence_id": candidate.get("evidence_id"),
+                    "evidence_chain": json_lib.dumps(candidate.get("evidence_chain", [])),
+                    "evidence_count": candidate.get("evidence_count", 0),
+                    "evidence_strength": candidate.get("evidence_strength", 0.0),
+                    "status": "candidate",
+                    "source_level": candidate.get("level", 2),
+                    "generated_by": "ai_reflect",
+                })
+
+        logger.info(f"Saved {len(candidates)} candidates to database")
+
     async def _save_proposals(
         self,
         proposals: list[dict[str, Any]],
