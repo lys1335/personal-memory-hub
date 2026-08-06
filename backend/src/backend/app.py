@@ -373,7 +373,7 @@ async def get_proposal_evidence(proposal_id: str):
                 FROM evidences
                 WHERE id IN ({placeholders})
             """)
-            params = {f":e{i}": str(eid) for i, eid in enumerate(evidence_ids)}
+            params = {f"e{i}": str(eid) for i, eid in enumerate(evidence_ids)}
             evidence_result = await conn.execute(stmt, params)
             evidence = []
             for e_row in evidence_result.fetchall():
