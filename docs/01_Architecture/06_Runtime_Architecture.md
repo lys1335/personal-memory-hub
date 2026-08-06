@@ -130,19 +130,20 @@ graph TB
 > **Phase B 重新定义**：Engine 代表**领域能力（Domain Capability）**，不是 Agent、不是 Service、不是 Repository。
 > Engine 必须是：无状态、可复用、能力导向。Composite Engine 可组合 Atomic Engine。
 
-Runtime 由 8 个核心 Engine 构成：
+Runtime 由 9 个核心 Engine 构成：
 
 | # | Engine | 所属层 | 职责 |
 |---|--------|--------|------|
 | 1 | Ingestion Engine | Offline | 接收 Conversation，输出 Observation |
-| 2 | Reflection Engine | Offline | 接收 Observation，输出 Pattern / Belief |
-| 3 | Activation Engine | Online | 接收 Belief + Context，输出 State |
-| 4 | Retrieval Engine | Online | 接收 Query，输出相关记忆 |
-| 5 | Context Builder | Online | 接收检索结果 + State，输出 Prompt Context |
-| 6 | Scheduler | Offline | 事件驱动 + Cron 驱动的任务调度 |
-| 7 | EntityEngine | Domain | 身份管理（Resolution / Merge / Alias / Canonical Name） |
-| 8 | RelationshipEngine | Domain | 图关系管理（Entity 间关系维护） |
-| 9 | TaskRuntime | Infrastructure | 通用任务调度与执行基础设施 |
+| 2 | EvidenceEvolution Engine | Offline | 接收 Evidence/Observation，输出 Candidate（Information Extraction）（原 Light Reflect） |
+| 3 | Reflection Engine | Offline | 接收 Candidate，输出 Proposal（Reasoning）（原 Heavy Reflect） |
+| 4 | Activation Engine | Online | 接收 Belief + Context，输出 State |
+| 5 | Retrieval Engine | Online | 接收 Query，输出相关记忆 |
+| 6 | Context Builder | Online | 接收检索结果 + State，输出 Prompt Context |
+| 7 | Scheduler | Offline | 事件驱动 + Cron 驱动的任务调度 |
+| 8 | EntityEngine | Domain | 身份管理（Resolution / Merge / Alias / Canonical Name） |
+| 9 | RelationshipEngine | Domain | 图关系管理（Entity 间关系维护） |
+| 10 | TaskRuntime | Infrastructure | 通用任务调度与执行基础设施 |
 
 ### 3.2 Ingestion Engine
 
@@ -173,32 +174,71 @@ Runtime 由 8 个核心 Engine 构成：
 * 执行结果进入 Ingestion Queue，由 Scheduler 调度处理。
 * 不阻塞用户交互。
 
-### 3.3 Reflection Engine
+### 3.3 EvidenceEvolution Engine
 
-**职责**：执行 Reflection Workflow（参见 05 第 11 章）。
+**职责**：执行 Evidence → Candidate 演化（Information Extraction）。
 
-**输入**：Observation Pool（来自 Reflect Queue）。
+**输入**：Evidence / Observation（L1）或 MemoryNode（L2+）。
+
+**输出**：Candidate（写入 candidates 表）。
+
+**内部阶段**：
+
+1. **Entity Extraction** — 从 Evidence 中提取实体（LLM）
+2. **Pattern Discovery** — 语义聚类，发现模式（Rule）
+3. **Evidence Aggregation** — 按实体聚合证据（Rule）
+4. **Evidence Chain Construction** — 构建证据链（Rule）
+5. **Confidence Estimation** — 估算置信度（Rule）
+
+**约束**：
+
+- 不创建 Proposal
+- 不创建 MemoryNode
+- 不修改长期记忆
+- 只负责 Information Extraction，不负责 Reasoning
+
+---
+
+### 3.4 Reflection Engine
+
+**职责**：执行 Candidate → Proposal 推理（Reasoning）。
+
+**输入**：Candidate（来自 EvidenceEvolution Engine）。
 
 **输出**：
 
 | 输出项 | 说明 |
 |--------|------|
-| Pattern | 写入 `memory_nodes` 表（level = L2） |
-| Belief | 写入 `memory_nodes` 表（level = L3） |
+| Proposal | 写入 `proposals` 表（status = 'pending'） |
 
 **内部阶段**：
 
-1. **Candidate Discovery** — 语义聚类，生成候选 Pattern（LLM）
-2. **Evidence Verification** — 验证候选 Pattern 的证据链（Rule）
-3. **Pattern Confirmation** — 确认的 Pattern 进入 Belief Evaluation 队列
-4. **Belief Evaluation** — 基于 Confirmed Pattern 评估 Belief（LLM + Rule）
-5. **Belief Confirmation** — 确认的 Belief 写入持久化存储
+1. **Interest Analysis** — 分析实体兴趣趋势（Rule）
+2. **Proposal Generation** — 生成演化提案（Rule）
+3. **Proposal Validation** — 验证提案符合域不变量（Rule）
 
 **约束**：
 
-* 禁止 Observation → Belief 的直接跳跃。
-* 必须经过：Candidate → Pattern → Belief 的完整链路。
-* Light Reflect 产生的 Pattern 候选必须标记 `status = 'candidate'`，不进入 vector_documents。
+- 不直接访问 Evidence
+- 不直接创建 MemoryNode
+- 不直接修改数据库长期记忆
+- 只负责 Reasoning，不负责 Extraction
+
+> **AR-009 新增：Reflection Pipeline 两阶段架构**
+>
+> Reflection 不再是单一引擎完成所有工作。而是分为两个阶段：
+>
+> ```
+> Evidence → EvidenceEvolution Engine → Candidate → Reflection Engine → Proposal → Approval → MemoryNode
+> ```
+>
+> - **EvidenceEvolution Engine**：Information Extraction（LLM + Rule）
+> - **Reflection Engine**：Reasoning（Rule）
+> - **Approval**：Memory Commit（Service 层方法）
+>
+> **关键区分**：
+> - EvidenceEvolution = "是什么"（提取事实）
+> - Reflection = "怎么办"（推理决策）
 
 ### 3.4 Activation Engine
 
@@ -624,12 +664,23 @@ Belief
 * Pattern 是 Evidence Aggregation 的关键中间层。
 * 完整的推导链支持 Explainable Memory。
 
-### 8.3 Light Reflect vs Heavy Reflect
+|### 8.3 Pipeline 两阶段架构|
 
-| 级别 | 职责 | 触发 | 输出 |
-|------|------|------|------|
-| Light Reflect | Candidate Discovery | Evidence Driven + Debounce | 候选 Pattern |
-| Heavy Reflect | Belief Evaluation | Evidence Driven | 更新的 Belief |
+> **AR-009 明确**：Reflection Pipeline 分为两个阶段。
+
+| 阶段 | 引擎 | 职责 | 触发 | 输出 |
+|------|------|------|------|------|
+| Stage 1 | EvidenceEvolution Engine | Information Extraction | Evidence Driven + Debounce | Candidate |
+| Stage 2 | Reflection Engine | Reasoning | Candidate Driven | Proposal |
+
+**旧术语废弃**：
+
+| 旧术语 | 新术语 | 说明 |
+|--------|--------|------|
+| Light Reflect | EvidenceEvolution Engine | Evidence → Candidate |
+| Heavy Reflect | Reflection Engine | Candidate → Proposal |
+| Pattern | MemoryNode (L2) | 通过 Approval 创建 |
+| Belief | MemoryNode (L3) | 通过 Approval 创建 |
 
 ---
 
@@ -863,11 +914,21 @@ State Refresh (运行时)
 
 > **AR-008 澄清：Persistence Boundary**
 >
-> Pattern (L2) 和 Belief (L3) 的写入由 **Reflection Engine 直接通过 Repository 持久化**，不经过 Task Runtime。
+> Pattern (L2) 和 Belief (L3) 的写入由 **Approval（Service 方法）** 直接通过 Repository 持久化，不经过 Task Runtime。
 >
-> Task Runtime 仅处理下游异步触发：Reflection Engine 完成持久化后，发出 `BeliefUpdated` Domain Event，Task Runtime 接收后异步调度 `ACTIVATION_TASK` 触发 State 刷新。
+> **Pipeline 三阶段持久化**：
 >
-> **规则**：Reflection Engine 的自身输出 = 直接持久化；下游动作 = Task Runtime 异步调度。
+> ```
+> EvidenceEvolution Engine → Candidate (直接持久化)
+> Reflection Engine        → Proposal (直接持久化)
+> Approval (Service)       → MemoryNode (直接持久化)
+> ```
+>
+> Task Runtime 仅处理下游异步触发：Reflection Engine 完成持久化后，发出 `ProposalCreated` Domain Event，Task Runtime 接收后异步调度 `ACTIVATION_TASK` 触发 State 刷新。
+>
+> **规则**：
+> - Pipeline 各阶段输出 = 直接持久化
+> - 下游异步触发 = Task Runtime
 
 ### 11.3 完整时序图
 
@@ -895,26 +956,31 @@ sequenceDiagram
     L-->>O: Response
     O-->>U: Reply
 
-    U->>F: Conversation
-    F->>I: Ingest
-    I->>Q: Write Observation
-    Q->>RE: Trigger Reflection
-    RE->>RE: Candidate Discovery
-    RE->>RE: Evidence Verification
-    RE->>Q: Write Pattern/Belief
-    Q->>A: Trigger Activation
-```
+    |    U->>F: Conversation
+        F->>I: Ingest
+        I->>Q: Write Observation
+        Q->>EE: Trigger EvidenceEvolution
+        EE->>Q: Write Candidate
+        Q->>RE: Trigger Reflection
+        RE->>RE: Generate Proposal
+        RE->>Q: Write Proposal
+        Q->>AP: Trigger Approval
+        AP->>Q: Write MemoryNode
+        Q->>A: Trigger Activation
+    ```
 
 ---
 
 ## 12. 版本路线图
 
-### 12.1 MVP（V1）
+|### 12.1 MVP（V1）|
 
 | 组件 | 状态 |
 |------|------|
 | Ingestion Engine | ✅ 实现 |
-| Reflection Engine | ✅ 实现（Light + Heavy） |
+| EvidenceEvolution Engine | 📝 规划中（从 ReflectionEngine 拆分） |
+| Reflection Engine | ✅ 实现（Proposal 生成） |
+| Approval | ✅ 实现（Service 方法） |
 | Activation Engine | ✅ 实现 |
 | Retrieval Engine | ✅ 实现（Vector + Graph） |
 | Context Builder | ✅ 实现（四层结构） |
@@ -925,7 +991,7 @@ sequenceDiagram
 | Archive Queue | ❌ 未实现 |
 | Maintenance Queue | ❌ 未实现 |
 | Cron 任务 | ❌ 不配置 |
-|| tasks 表 | ✅ 实现（统一任务表，含 Priority + Task Registry） |
+| tasks 表 | ✅ 实现（统一任务表，含 Priority + Task Registry） |
 
 ### 12.2 V2
 
@@ -993,12 +1059,14 @@ sequenceDiagram
 
 ---
 
-## 附录 A：Engine 接口概要
+|### 附录 A：Engine 接口概要|
 
 | Engine | 输入 | 输出 |
 |--------|------|------|
 | Ingestion | Conversation | Observation + Entity + Relationship + Reflect Task |
-| Reflection | Observation Pool | Pattern + Belief |
+| EvidenceEvolution | Evidence / MemoryNode | Candidate |
+| Reflection | Candidate | Proposal |
+| Approval | Proposal | MemoryNode + Relationship |
 | Activation | Belief + Context | State |
 | Retrieval | Query | Related Memories |
 | Context Builder | Retrieval Results + States | Prompt Context |
@@ -1006,12 +1074,13 @@ sequenceDiagram
 
 ---
 
-## 附录 B：文档变更记录
+|### 附录 B：文档变更记录|
 
 | 版本 | 日期 | 变更说明 | 状态 |
 |------|------|----------|------|
 | 1.1 | 2026-06-26 | Phase B 修订：(1) 第 3.1 章 Engine 重新定义为 Domain Capability（无状态/可复用/能力导向） (2) 补充 Composite Engine 可组合 Atomic Engine 模式 | ✅ 已确认 |
 | 1.2 | 2026-07-03 | Phase C Stage 2 修订：(1) §11.2 新增 AR-008 持久化边界澄清（Reflection Engine 直接持久化 vs Task Runtime 下游触发） | ✅ 已确认 |
+| 1.3 | 2026-08-05 | Phase D 修订：(1) 新增 EvidenceEvolution Engine（Information Extraction） (2) Reflection Engine 职责收窄为 Reasoning (3) 新增 AR-009 Reflection Pipeline 两阶段架构 | 📝 Draft |
 
 ---
 

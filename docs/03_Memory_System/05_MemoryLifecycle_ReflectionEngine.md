@@ -496,52 +496,64 @@ Signal_Strength = Content_Richness × Novelty × Cross_Entity_Breadth
 
 ### 10.1 两级 Reflect
 
-**决策**：Reflect 分为两级，职责严格划分。
+|### 10.1 两阶段 Reflect 架构|
 
-| 级别 | 职责 | 触发条件 | 输出 |
-|------|------|----------|------|
-| Light Reflect | Observation → Pattern | Evidence Driven + Debounce | 候选 Pattern |
-| Heavy Reflect | Pattern → Belief | Evidence Driven | 更新的 Belief |
+**决策**：Reflect 分为两个阶段，职责严格划分。
 
-### 10.2 Light Reflect
+| 阶段 | 引擎 | 职责 | 触发条件 | 输出 |
+|------|------|------|----------|------|
+| Stage 1 | EvidenceEvolution Engine | Information Extraction | Evidence Driven + Debounce | Candidate |
+| Stage 2 | Reflection Engine | Reasoning | Candidate Driven | Proposal |
 
-**职责**：
+**旧术语废弃**：
 
-* 从新进入 Queue 的 Observation 中发现潜在 Pattern。
-* 不形成最终认知，只产生候选。
-* 候选 Pattern 进入 Pending 状态，等待 Heavy Reflect 确认。
+| 旧术语 | 新术语 | 说明 |
+|--------|--------|------|
+| Light Reflect | EvidenceEvolution Engine | Evidence → Candidate |
+| Heavy Reflect | Reflection Engine | Candidate → Proposal |
 
-**处理内容**：
-
-* 语义聚类：将相似的 Observation 分组。
-* 频率统计：统计每组 Observation 的出现次数。
-* 生成候选 Pattern：每组生成一个 Pattern 候选。
-
-**约束**：
-
-* Light Reflect 产生的 Pattern 候选必须标记 `status = 'candidate'`。
-* 候选 Pattern 不进入 vector_documents。
-* 候选 Pattern 不用于 Context Builder。
-
-### 10.3 Heavy Reflect
+### 10.2 EvidenceEvolution Engine（原 Light Reflect）
 
 **职责**：
 
-* 从已确认的 Pattern 中发现 Belief。
-* 更新现有 Belief 的置信度。
-* 触发 State Activation（参见 12）。
+* 从新进入 Queue 的 Evidence 中提取结构化信息。
+* 发现 Entity、Pattern、Relationship。
+* 构建 Evidence Chain。
+* 估算置信度。
+* 输出 Candidate（不形成最终认知，只产生候选）。
 
 **处理内容**：
 
-* 证据验证：检查每个 Pattern 的证据链是否完整。
-* 置信度计算：基于 support_count 和 cross_entity_breadth 计算 confidence。
-* 矛盾检测：查找与现有 Belief 矛盾的 Observation。
-* State 评估：检查当前上下文是否激活了相关 Belief。
+* Entity Extraction：识别实体和属性（LLM）
+* Pattern Discovery：语义聚类（Rule）
+* Evidence Aggregation：按实体聚合（Rule）
+* Confidence Estimation：置信度计算（Rule）
 
 **约束**：
 
-* Heavy Reflect 产生的 Belief 必须通过证据验证。
-* 无证据的 Belief 不允许创建或更新。
+* EvidenceEvolution Engine 产生的 Candidate 必须标记 `status = 'candidate'`。
+* Candidate 不进入 vector_documents。
+* Candidate 不用于 Context Builder。
+
+### 10.3 Reflection Engine（原 Heavy Reflect）
+
+**职责**：
+
+* 对 Candidate 进行推理分析。
+* 判断是否需要创建/强化/拆分/拒绝。
+* 输出 Proposal（建议）。
+
+**处理内容**：
+
+* Interest Analysis：分析实体兴趣趋势（Rule）
+* Proposal Generation：生成演化提案（Rule）
+* Proposal Validation：验证提案符合域不变量（Rule）
+
+**约束**：
+
+* Reflection Engine 不直接创建 MemoryNode。
+* Reflection Engine 不直接分析 Evidence。
+* 所有决策输出为 Proposal，需经 Approval 才能成为 Memory。
 
 ---
 
@@ -742,40 +754,62 @@ Belief: "用户倾向先 POC 后投入开发"
 
 **运行时机**：Validation 阶段。
 
-### 14.4 Reflection Engine
+### 14.4 EvidenceEvolution Engine
 
-**职责**：执行 Reflect Workflow（参见 11）。
+**职责**：执行 Evidence → Candidate 演化（Information Extraction）。
 
-**输入**：Observation Pool / Confirmed Pattern。
+**输入**：Evidence / MemoryNode。
 
-**输出**：Confirmed Pattern / Confirmed Belief。
+**输出**：Candidate（写入 candidates 表）。
 
-**运行模式**：Light Reflect（事件驱动）+ Heavy Reflect（定时兜底）。
+**运行模式**：事件驱动（Evidence Created）+ 定时兜底。
 
-**持久化边界（AR-008 澄清）**：
+**持久化边界**：
 
-Reflection Engine 的**自身输出**（Pattern、Belief）通过 Repository **直接持久化**，不经过 Task Runtime。
+EvidenceEvolution Engine 的**自身输出**（Candidate）通过 Repository **直接持久化**。
+
+```
+EvidenceEvolution Engine
+  ↓ 直接写入
+Repository（CandidateRepo）
+  ↓ 存入
+candidates (Reflection Working Object)
+```
+
+**旧名称映射**：
+
+| 旧名称 | 新名称 |
+|--------|--------|
+| Light Reflect | EvidenceEvolution Engine |
+| Candidate Discovery | Entity Extraction + Pattern Discovery |
+
+### 14.5 Reflection Engine
+
+**职责**：执行 Candidate → Proposal 推理。
+
+**输入**：Candidate（来自 EvidenceEvolution Engine）。
+
+**输出**：Proposal（写入 proposals 表）。
+
+**运行模式**：事件驱动（Candidate Created）+ 定时兜底。
+
+**持久化边界**：
+
+Reflection Engine 的**自身输出**（Proposal）通过 Repository **直接持久化**，不经过 Task Runtime。
 
 ```
 Reflection Engine
   ↓ 直接写入
-Repository（MemoryNodeRepo）
+Repository（ProposalRepo）
   ↓ 存入
-memory_nodes (L2 Pattern / L3 Belief)
+proposals (pending status)
 ```
 
-**Task Runtime 的边界**：
-
-Reflection Engine 完成持久化后，如需触发下游动作（如 State 刷新），通过 **Domain Event**（`BeliefUpdated`）交由 Task Runtime 异步调度：
-
-```
-Reflection Engine → 直接持久化 Pattern/Belief
-                    ↓ 发出 Domain Event
-                    ↓
-Task Runtime → 异步触发 ACTIVATION_TASK → Activation Engine → State 刷新
-```
-
-> **关键区分**：Reflection 自身输出 = 直接持久化；下游异步触发 = Task Runtime。
+> **关键区分**：
+> - EvidenceEvolution Engine 输出 Candidate → 直接持久化
+> - Reflection Engine 输出 Proposal → 直接持久化
+> - Approval（Service 方法）输出 MemoryNode → 直接持久化
+> - 下游异步触发 → Task Runtime
 
 ### 14.5 Activation Engine
 

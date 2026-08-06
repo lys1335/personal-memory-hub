@@ -203,9 +203,13 @@ D4.2a — EntityEngine architecture: Purpose, Responsibilities, Public Contract,
 
 D4.2c — RelationshipEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules, Domain Invariants (Valid Endpoint, Relationship Type, Semantic Integrity, Structural Integrity, Canonical Representation, Domain Consistency), Internal Composition (Identity, Validation, Semantic, Lifecycle, Normalization, Invariant Capabilities), Extension Points, Testing Strategy, Documentation Review, Canonical Relationship Model.
 
-### D4.2d_ReflectionEngine_Architecture.md
+|### D4.2d_ReflectionEngine_Architecture.md|
 
-D4.2d — ReflectionEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules (Open-Ended Knowledge Evolution Model), Domain Invariants (Evidence Requirement, Semantic Coherence, Evolution Monotonicity, Traceability Preservation, Idempotency, Model Independence), Internal Composition (7 Capabilities), Extension Points, Testing Strategy, Documentation Review, Freeze Decision.
+D4.2d — ReflectionEngine architecture (V1.0 - Legacy). **ARCHIVED**: Scope narrowed in V1.1, see D4.2d_ReflectionEngine_Architecture_v1.1.md.
+
+### D4.2d_ReflectionEngine_Architecture_v1.1.md
+
+D4.2d V1.1 — ReflectionEngine architecture (Updated): Purpose, Responsibilities, Public Contract (narrowed to Reasoning only), Domain Rules (No Extraction, source_level Propagation), Domain Invariants (Evidence Requirement, No Extraction), Multi-Level Evolution. **UPDATED**: 2026-08-05 Evidence Evolution Split.
 
 ### D4.2e_SearchEngine_Architecture.md
 
@@ -214,6 +218,14 @@ D4.2e — SearchEngine architecture: Purpose, Responsibilities, Public Contract,
 ### D4.2f_ProjectionEngine_Architecture.md
 
 D4.2f — ProjectionEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules (Projection Preservation, Aggregate Safety, Determinism, Independence), Domain Invariants (9 invariants), Internal Composition (ProjectionValidator, ProjectionPolicyResolver, ProjectionBuilder, ProjectionVerifier), Extension Points, Testing Strategy, Documentation Review, Builder Monopoly Principle.
+
+### D4.2g_EvidenceEvolutionEngine_Architecture.md
+
+D4.2g — EvidenceEvolutionEngine architecture: Purpose, Responsibilities, Public Contract, Domain Rules (Evidence Foundation, Information Extraction, Level Propagation, Entity Association, Confidence Propagation), Domain Invariants (Evidence Completeness, Traceability, Level Consistency, No Reasoning), LLM Interaction, Service Integration, Multi-Level Evolution, Implementation Notes. **NEW**: Added 2026-08-05 as part of Evidence Evolution Split ADR.
+
+### ADR-EvidenceEvolution-Split.md
+
+ADR — Evidence Evolution Split: Decision to split EvidenceEvolution from ReflectionEngine. **NEW**: Added 2026-08-05.
 
 ### D4.3_Engine_Testing_Architecture.md
 
