@@ -17,6 +17,7 @@ MVP Evolution additions:
 - Integrates ReflectionProvider abstraction (D4.2d §2.7)
 - Delegates to ReflectionEngine for all LLM-based reasoning
 - Sandbox-first: evolution results stored in memory, not production DB
+- Batch processing: LLM calls are batched to avoid timeouts
 """
 
 from __future__ import annotations
@@ -34,6 +35,9 @@ from backend.service.dto import (
     ReflectionStatus,
 )
 from backend.service.exceptions import ValidationError
+
+# Batch processing configuration for LLM calls
+BATCH_SIZE = int(os.environ.get('REFLECTION_BATCH_SIZE', '10'))
 
 if TYPE_CHECKING:
     from backend.repository.candidate_repository import CandidateRepository
