@@ -253,9 +253,13 @@ class ReflectionService(BaseService):
             # Approach 2: Aggregate evidence content for meaningful L2 node
             evidence_contents = []
             if evidence_chain:
-                # Query L1 memories from evidence_chain
+                # Query original evidences from evidences table (not memory_nodes)
                 evidence_query = await conn.execute(
-                    text("SELECT content FROM memory_nodes WHERE id = ANY(:ids) AND level = 1"),
+                    text("""
+                        SELECT e.content
+                        FROM evidences e
+                        WHERE e.id = ANY(:ids)
+                    """),
                     {"ids": evidence_chain[:10]}  # Limit to 10 evidences
                 )
                 evidence_rows = evidence_query.fetchall()
