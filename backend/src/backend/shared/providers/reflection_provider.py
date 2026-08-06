@@ -141,7 +141,8 @@ class OllamaReflectionProvider(ReflectionProvider):
         """Parse LLM text response into structured JSON.
 
         Handles cases where LLM wraps JSON in markdown code blocks
-        like ```json { ... } ``` or just ``` { ... } ```.
+        like ```json { ... } ``` or just ``` { ... } ```,
+        and also handles truncated/incomplete JSON by finding valid substrings.
         """
         text = text.strip()
 
@@ -167,7 +168,8 @@ class OllamaReflectionProvider(ReflectionProvider):
                     return {"error": "invalid_json", "raw": text}
             except json.JSONDecodeError as e:
                 logger.warning("Failed to parse LLM output as JSON: %s - Error: %s", text[:200], e)
-                return {"error": "invalid_json", "raw": text, "parsed_error": str(e)}
+                # Try to recover truncated JSON by finding valid substring
+                return ReflectionProvider._recover_truncated_json(text)
 
         # Try to find JSON in the text
         import re
@@ -182,6 +184,52 @@ class OllamaReflectionProvider(ReflectionProvider):
 
         logger.warning("Failed to parse LLM output as JSON: %s", text[:200])
         return {"error": "invalid_json", "raw": text}
+
+    @staticmethod
+    def _recover_truncated_json(text: str) -> dict[str, Any]:
+        """Attempt to recover valid JSON from truncated LLM output.
+
+        This handles cases where the model returns incomplete JSON
+        due to token limits, especially with long Chinese text.
+        """
+        try:
+            import re
+            # Find the last complete JSON object by looking for balanced braces
+            depth = 0
+            for i, char in enumerate(text):
+                if char == '{':
+                    depth += 1
+                elif char == '}':
+                    depth -= 1
+                    if depth == 0:
+                        # Found a complete JSON object
+                        candidate = text[:i+1]
+                        try:
+                            result = json.loads(candidate)
+                            if isinstance(result, dict):
+                                return result
+                        except json.JSONDecodeError:
+                            pass
+            # If no complete object found, try to find facts array
+            facts_match = re.search(r'"facts"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+            if facts_match:
+                # Try to reconstruct minimal valid JSON
+                facts_content = facts_match.group(1)
+                # Clean up incomplete fact objects
+                facts_content = re.sub(r',\s*}', '}', facts_content)
+                facts_content = re.sub(r'\[\s*,', '[', facts_content)
+                facts_content = re.sub(r',\s*\]', ']', facts_content)
+                # Try parsing with minimal structure
+                minimal_json = f'{{"facts": [{facts_content}], "entities": []}}'
+                try:
+                    result = json.loads(minimal_json)
+                    return result
+                except json.JSONDecodeError:
+                    pass
+        except Exception as e:
+            logger.error("JSON recovery failed: %s", e)
+
+        return {"error": "invalid_json", "raw": text[:200]}
 
 
 class MockReflectionProvider(ReflectionProvider):
