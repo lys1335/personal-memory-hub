@@ -35,8 +35,8 @@ from backend.shared.infrastructure.database.engine import get_engine, get_sessio
 
 logger = logging.getLogger(__name__)
 
-# Auto-approve setting (default: False for safety, change to True for production)
-AUTO_APPROVE_PROPOSALS = os.environ.get('AUTO_APPROVE', 'false').lower() == 'true'
+# Auto-approve setting (default: True for production)
+AUTO_APPROVE_PROPOSALS = os.environ.get('AUTO_APPROVE', 'true').lower() == 'true'
 
 
 async def get_session() -> AsyncSession:
@@ -813,7 +813,7 @@ _DEFAULT_EVOLUTION_TASK = {
     "enabled": True,
     "payload": {
         "workspace_id": "fd0223ed-7aa2-491e-8db5-b0de71b75219",
-        "limit": int(os.environ.get("CRON_EVOLUTION_LIMIT", "50"))
+        "limit": int(os.environ.get("CRON_EVOLUTION_LIMIT", "200"))
     }
 }
 
@@ -1044,7 +1044,7 @@ async def run_cron_task_now(
     result = {"task_id": task_id, "type": task_type, "status": "completed"}
 
     if task_type == 'evolution':
-        limit = payload.get('limit', 50)
+        limit = payload.get('limit', 200)
         workspace_id = UUID(payload.get('workspace_id', "fb77c6ce-1e15-47e9-a8b7-2e707a011071"))
 
         try:
@@ -1186,11 +1186,14 @@ async def approve_proposal(
         proposal_type = proposal.get("type", "Refine")
         evidence_chain = proposal.get("evidence_chain", [])
         
-        # Determine memory level based on proposal type
+        # Determine memory level based on proposal type or target_level
         level = 1  # Default to Observation
-        if proposal_type == "Refine":
+        target_level = proposal.get("target_level")
+        if target_level and target_level >= 2:
+            level = target_level
+        elif proposal_type == "Refine":
             level = 2
-        elif proposal_type == "Merge":
+        elif proposal_type in ("Merge", "Strengthen", "Create"):
             level = 3
         
         # Prepare metadata
