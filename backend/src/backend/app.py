@@ -37,6 +37,10 @@ logger = logging.getLogger(__name__)
 
 # Auto-approve setting (default: True for production)
 AUTO_APPROVE_PROPOSALS = os.environ.get('AUTO_APPROVE', 'true').lower() == 'true'
+# Auto-approve threshold (default: 0.95)
+AUTO_APPROVE_THRESHOLD = float(os.environ.get('AUTO_APPROVE_THRESHOLD', '0.95'))
+# Max memory level to auto-approve (default: 3, set 0 to disable)
+AUTO_APPROVE_MAX_LEVEL = int(os.environ.get('AUTO_APPROVE_MAX_LEVEL', '3'))
 
 
 async def get_session() -> AsyncSession:

@@ -21,7 +21,9 @@ MVP Evolution additions:
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import time
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -292,8 +294,70 @@ class ReflectionService(BaseService):
             status=ReflectionStatus.COMPLETED,
             reflections_performed=1,
             scope=f"approve:{proposal_id}",
-            metadata={"new_node_id": str(new_node_id), "level": level},
+            metadata={
+                "new_node_id": str(new_node_id),
+                "level": level,
+                "auto_approved_next": auto_approved_next,
+            },
         )
+
+    async def _auto_approve_by_threshold(
+        self,
+        conn,
+        workspace_id: UUID,
+        target_level: int,
+        min_confidence: float,
+    ) -> int:
+        """Auto-approve proposals that meet confidence threshold.
+
+        Returns: number of auto-approved proposals.
+        """
+        threshold = float(os.environ.get('AUTO_APPROVE_THRESHOLD', '0.95'))
+        max_level = int(os.environ.get('AUTO_APPROVE_MAX_LEVEL', '3'))
+
+        if min_confidence < threshold:
+            logger.info(
+                f"Auto-approve skipped: confidence {min_confidence} < threshold {threshold}"
+            )
+            return 0
+
+        if target_level > max_level:
+            logger.info(f"Auto-approve skipped: level {target_level} > max {max_level}")
+            return 0
+
+        # Find pending proposals for next level
+        result = await conn.execute(text("""
+            SELECT id, confidence FROM proposals
+            WHERE workspace_id = :workspace_id
+              AND target_level = :target_level
+              AND status = 'pending'
+              AND confidence >= :threshold
+            ORDER BY confidence DESC
+        """), {
+            "workspace_id": str(workspace_id),
+            "target_level": target_level,
+            "threshold": threshold,
+        })
+        rows = result.fetchall()
+
+        if not rows:
+            logger.info(f"No pending proposals for L{target_level} meeting threshold {threshold}")
+            return 0
+
+        approved_count = 0
+        for row in rows:
+            proposal_id = row[0]
+            try:
+                await self.approve_proposal(
+                    workspace_id=workspace_id,
+                    proposal_id=proposal_id,
+                )
+                approved_count += 1
+                logger.info(f"Auto-approved L{target_level} proposal {proposal_id} (confidence={row[1]})")
+            except Exception as e:
+                logger.error(f"Auto-approve failed for {proposal_id}: {e}")
+
+        return approved_count
 
     async def reject_proposal(
         self,
