@@ -783,8 +783,9 @@ class ReflectionService(BaseService):
 
         engine = get_engine()
         async with engine.begin() as conn:
-            # Cache for entity lookups to avoid repeated queries
+            # Caches for entity and area lookups
             entity_cache: dict[str, str] = {}
+            area_cache: dict[str, str] = {}
 
             for candidate in candidates:
                 # verified_at is UUID type in database (not timestamp)
@@ -816,6 +817,45 @@ class ReflectionService(BaseService):
 
                 entity_id = entity_cache.get(entity_name, str(uuid_lib.uuid4()))
 
+                # Get or create area
+                area_id = candidate.get("area_id")
+                if area_id:
+                    # Check if area exists
+                    area_result = await conn.execute(
+                        text("SELECT id FROM areas WHERE id = :id LIMIT 1"),
+                        {"id": area_id},
+                    )
+                    if not area_result.fetchone():
+                        area_id = None  # Invalidate invalid area_id
+
+                if not area_id:
+                    # Use a default area or create one
+                    area_id = area_cache.get("default")
+                    if not area_id:
+                        # Try to find any existing area for this workspace
+                        default_area_result = await conn.execute(
+                            text("SELECT id FROM areas WHERE workspace_id = :wid LIMIT 1"),
+                            {"wid": str(workspace_id)},
+                        )
+                        default_area_row = default_area_result.fetchone()
+                        if default_area_row:
+                            area_id = str(default_area_row[0])
+                            area_cache["default"] = area_id
+                        else:
+                            # Create default area
+                            new_area_id = str(uuid_lib.uuid4())
+                            await conn.execute(
+                                text("""
+                                    INSERT INTO areas (id, workspace_id, name, created_at, updated_at)
+                                    VALUES (:id, :workspace_id, 'Default', NOW(), NOW())
+                                """),
+                                {"id": new_area_id, "workspace_id": str(workspace_id)},
+                            )
+                            area_id = new_area_id
+                            area_cache["default"] = area_id
+                else:
+                    area_cache["default"] = area_id  # Cache for reuse
+
                 await conn.execute(text("""
                     INSERT INTO candidates (
                         id, workspace_id, entity_id, area_id, content,
@@ -834,7 +874,7 @@ class ReflectionService(BaseService):
                     "id": str(uuid_lib.uuid4()),
                     "workspace_id": str(workspace_id),
                     "entity_id": entity_id,
-                    "area_id": candidate.get("area_id") or str(uuid_lib.uuid4()),
+                    "area_id": area_id,
                     "content": candidate.get("content", ""),
                     "candidate_type": candidate.get("node_type", "pattern"),
                     "evidence_source": candidate.get("evidence_source", "reflection"),
