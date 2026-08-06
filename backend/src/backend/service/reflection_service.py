@@ -231,11 +231,18 @@ class ReflectionService(BaseService):
             # Get entity_id from proposal (set during candidate creation)
             entity_id = prop.get("entity_id")
 
-            # Get evidence_chain from proposal (JSON array of evidence IDs)
-            evidence_chain = prop.get("evidence_chain", [])
-            if isinstance(evidence_chain, str):
+            # Get evidence_chain from proposal (JSONB column, may be string or list)
+            evidence_chain_raw = prop.get("evidence_chain", [])
+            if isinstance(evidence_chain_raw, str):
                 import json as _json
-                evidence_chain = _json.loads(evidence_chain)
+                try:
+                    evidence_chain = _json.loads(evidence_chain_raw)
+                except (json.JSONDecodeError, TypeError):
+                    evidence_chain = []
+            elif isinstance(evidence_chain_raw, list):
+                evidence_chain = evidence_chain_raw
+            else:
+                evidence_chain = []
 
             await conn.execute(text("""
                 INSERT INTO memory_nodes (
