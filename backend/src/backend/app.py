@@ -154,12 +154,6 @@ async def lifespan(app: FastAPI):
     root_logger.addHandler(fh)
     root_logger.setLevel(logging.DEBUG)
 
-    # Start cron scheduler as background task
-    global _cron_scheduler_task
-    if _cron_scheduler_task is None or _cron_scheduler_task.done():
-        _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
-        logger.info("[CRON] Scheduler task created")
-
     # Startup
     settings = get_settings()
     logger.info(f"Starting {settings.NAME} v0.1.0")
@@ -167,6 +161,12 @@ async def lifespan(app: FastAPI):
 
     engine = get_engine()
     logger.info("Database engine initialized successfully")
+
+    # Start cron scheduler as background task (after engine is ready)
+    global _cron_scheduler_task
+    if _cron_scheduler_task is None or _cron_scheduler_task.done():
+        _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
+        logger.info("[CRON] Scheduler task created")
 
     yield
 
