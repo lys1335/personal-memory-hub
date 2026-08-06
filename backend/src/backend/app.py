@@ -152,6 +152,13 @@ async def lifespan(app: FastAPI):
     root_logger = logging.getLogger()
     root_logger.addHandler(fh)
     root_logger.setLevel(logging.DEBUG)
+
+    # Start cron scheduler as background task
+    global _cron_scheduler_task
+    if _cron_scheduler_task is None or _cron_scheduler_task.done():
+        _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
+        logger.info("[CRON] Scheduler task created")
+
     # Startup
     settings = get_settings()
     logger.info(f"Starting {settings.NAME} v0.1.0")
@@ -164,6 +171,13 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down Personal Memory Hub")
+    if _cron_scheduler_task:
+        _cron_scheduler_task.cancel()
+        try:
+            await _cron_scheduler_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("[CRON] Scheduler task cancelled")
     await engine.dispose()
 
 
@@ -916,22 +930,11 @@ _services_init_event: any = None  # Will be set during startup
 
 @app.on_event("startup")
 async def startup_cron_scheduler():
-    global _cron_scheduler_task
-    # Start the cron scheduler
-    if _cron_scheduler_task is None or _cron_scheduler_task.done():
-        _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
-        logger.info("[CRON] Scheduler task created")
+    pass  # Scheduler is now started in lifespan
 
 @app.on_event("shutdown")
 async def shutdown_cron_scheduler():
-    global _cron_scheduler_task
-    if _cron_scheduler_task:
-        _cron_scheduler_task.cancel()
-        try:
-            await _cron_scheduler_task
-        except asyncio.CancelledError:
-            pass
-        logger.info("[CRON] Scheduler task cancelled")
+    pass  # Scheduler is now stopped in lifespan
 
 
 @app.get("/api/cron/tasks")
