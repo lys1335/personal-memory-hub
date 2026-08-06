@@ -137,6 +137,9 @@ def get_services(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown events."""
+    import asyncio
+    global _cron_scheduler_task
+
     # Configure file logging - write to shared volume for dashboard to read
     log_dir = os.environ.get('LOG_DIR', '/app/logs')
     log_file = os.path.join(log_dir, 'memory_hub.log')
@@ -175,7 +178,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down Personal Memory Hub")
-    global _cron_scheduler_task
     if _cron_scheduler_task:
         _cron_scheduler_task.cancel()
         try:
