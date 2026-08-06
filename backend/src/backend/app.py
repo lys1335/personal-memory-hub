@@ -4,6 +4,7 @@ This module provides the main FastAPI application for the Personal Memory Hub.
 Per D5_Entry_Layer_Architecture, this is the primary Entry Adapter for HTTP requests.
 """
 
+import asyncio
 import json
 import logging
 import os
