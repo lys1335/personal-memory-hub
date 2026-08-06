@@ -783,10 +783,38 @@ class ReflectionService(BaseService):
 
         engine = get_engine()
         async with engine.begin() as conn:
+            # Cache for entity lookups to avoid repeated queries
+            entity_cache: dict[str, str] = {}
+
             for candidate in candidates:
                 # verified_at is UUID type in database (not timestamp)
                 # Generate a fresh UUID for each candidate
                 candidate_verified_at = str(uuid_lib.uuid4())
+
+                # Get or create entity by canonical_name
+                entity_name = candidate.get("entity", "unknown")
+                if entity_name not in entity_cache:
+                    # Try to find existing entity
+                    entity_result = await conn.execute(
+                        text("SELECT id FROM entities WHERE workspace_id = :wid AND canonical_name = :name LIMIT 1"),
+                        {"wid": str(workspace_id), "name": entity_name},
+                    )
+                    entity_row = entity_result.fetchone()
+                    if entity_row:
+                        entity_cache[entity_name] = str(entity_row[0])
+                    else:
+                        # Create new entity
+                        new_entity_id = str(uuid_lib.uuid4())
+                        await conn.execute(
+                            text("""
+                                INSERT INTO entities (id, workspace_id, canonical_name, entity_type, created_at, updated_at)
+                                VALUES (:id, :workspace_id, :name, 'Concept', NOW(), NOW())
+                            """),
+                            {"id": new_entity_id, "workspace_id": str(workspace_id), "name": entity_name},
+                        )
+                        entity_cache[entity_name] = new_entity_id
+
+                entity_id = entity_cache.get(entity_name, str(uuid_lib.uuid4()))
 
                 await conn.execute(text("""
                     INSERT INTO candidates (
@@ -805,7 +833,7 @@ class ReflectionService(BaseService):
                 """), {
                     "id": str(uuid_lib.uuid4()),
                     "workspace_id": str(workspace_id),
-                    "entity_id": candidate.get("entity_id") or str(uuid_lib.uuid4()),
+                    "entity_id": entity_id,
                     "area_id": candidate.get("area_id") or str(uuid_lib.uuid4()),
                     "content": candidate.get("content", ""),
                     "candidate_type": candidate.get("node_type", "pattern"),
