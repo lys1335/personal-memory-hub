@@ -631,6 +631,7 @@ class ReflectionService(BaseService):
         before ReflectionEngine processes them.
         """
         import json as json_lib
+        from datetime import datetime
 
         from sqlalchemy import text
 
@@ -641,6 +642,7 @@ class ReflectionService(BaseService):
             return
 
         engine = get_engine()
+        now = datetime.utcnow()
         async with engine.begin() as conn:
             for candidate in candidates:
                 # Serialize evidence_chain to JSON string for PostgreSQL
@@ -655,12 +657,14 @@ class ReflectionService(BaseService):
                         id, workspace_id, entity_id, area_id, content,
                         candidate_type, evidence_source, evidence_id,
                         evidence_chain, evidence_count, evidence_strength,
-                        source_level, status, created_at, updated_at
+                        source_level, status, verified_at, ingested_by,
+                        ingestion_timestamp, created_at, updated_at
                     ) VALUES (
                         :id, :workspace_id, :entity_id, :area_id, :content,
                         :candidate_type, :evidence_source, :evidence_id,
                         :evidence_chain, :evidence_count, :evidence_strength,
-                        :source_level, 'candidate', NOW(), NOW()
+                        :source_level, 'candidate', :verified_at, :ingested_by,
+                        :ingestion_timestamp, :created_at, :updated_at
                     )
                 """), {
                     "id": str(generate_uuid()),
@@ -675,6 +679,11 @@ class ReflectionService(BaseService):
                     "evidence_count": candidate.get("evidence_count", 0),
                     "evidence_strength": candidate.get("evidence_strength", candidate.get("confidence", 0.5)),
                     "source_level": candidate.get("source_level", 1),
+                    "verified_at": now,  # Required NOT NULL field
+                    "ingested_by": "evidence_evolution",  # Required NOT NULL field
+                    "ingestion_timestamp": now,  # Required NOT NULL field
+                    "created_at": now,
+                    "updated_at": now,
                 })
 
             logger.info(f"Saved {len(candidates)} candidates to database")
