@@ -873,19 +873,49 @@ _initialize_default_tasks()
 # Background Cron Scheduler
 # ================================================================
 
+_cron_lock = threading.Lock()
+_cron_tasks: dict = {}  # task_id -> task config
+_CRON_DATA_FILE = os.environ.get('LOG_DIR', '/app/logs') + '/cron_tasks.json'
+_sandbox_proposals: list = []
+_sandbox_lock = threading.Lock()
+_SANDBOX_DATA_FILE = os.environ.get('LOG_DIR', '/app/logs') + '/sandbox_proposals.json'
+
+
+def _load_cron_tasks():
+    """Load cron tasks from disk."""
+    global _cron_tasks
+    try:
+        with open(_CRON_DATA_FILE, 'r', encoding='utf-8') as f:
+            _cron_tasks = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        _cron_tasks = {}
+
+
+def _save_cron_tasks():
+    """Persist cron tasks to disk."""
+    with _cron_lock:
+        os.makedirs(os.path.dirname(_CRON_DATA_FILE), exist_ok=True)
+        with open(_CRON_DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(_cron_tasks, f, ensure_ascii=False, indent=2)
+
+
+# Load existing tasks
+_load_cron_tasks()
+
+
 async def _cron_scheduler_loop():
     """Background task that checks cron tasks and triggers expired ones."""
     import asyncio
     from datetime import datetime, timezone
-    
+
     logger.info("[CRON] Background scheduler started")
-    
+
     while True:
         try:
             await asyncio.sleep(30)
-            
+
             now = datetime.now(timezone.utc)
-            
+
             with _cron_lock:
                 tasks_to_run = []
                 for task_id, task in list(_cron_tasks.items()):
@@ -903,14 +933,14 @@ async def _cron_scheduler_loop():
                             tasks_to_run.append(task_id)
                     else:
                         tasks_to_run.append(task_id)
-            
+
             for task_id in tasks_to_run:
                 try:
                     logger.info(f"[CRON] Triggering task {task_id}")
                     await run_cron_task_now(task_id)
                 except Exception as e:
                     logger.error(f"[CRON] Error running task {task_id}: {e}", exc_info=True)
-                    
+
         except asyncio.CancelledError:
             logger.info("[CRON] Scheduler loop cancelled")
             break
@@ -928,14 +958,6 @@ DEFAULT_WORKSPACE = "fd0223ed-7aa2-491e-8db5-b0de71b75219"
 _services: dict = {}
 _services_ready: bool = False
 _services_init_event: any = None  # Will be set during startup
-
-@app.on_event("startup")
-async def startup_cron_scheduler():
-    pass  # Scheduler is now started in lifespan
-
-@app.on_event("shutdown")
-async def shutdown_cron_scheduler():
-    pass  # Scheduler is now stopped in lifespan
 
 
 @app.get("/api/cron/tasks")
