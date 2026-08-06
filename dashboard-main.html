@@ -634,7 +634,8 @@
     </div>
 
     <script>
-        const MEM_HUB = 'http://localhost:8000';
+        // Auto-detect base URL from current page location
+        const MEM_HUB = window.location.origin;
         const OLLAMA_BASE = '/api/ollama';
         const WORKSPACE_ID = "fd0223ed-7aa2-491e-8db5-b0de71b75219";
 
