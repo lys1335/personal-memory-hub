@@ -229,7 +229,7 @@ class ReflectionService(BaseService):
                 WHERE id = :id
             """), {"id": str(proposal_id)})
 
-            # Create L2/L3 memory node
+            # Create L2/L3 memory node with aggregated content from evidence
             new_node_id = self._generate_id()
             level = prop["target_level"]
             node_type = "Pattern" if level == 2 else "Belief" if level == 3 else "Observation"
@@ -250,6 +250,34 @@ class ReflectionService(BaseService):
             else:
                 evidence_chain = []
 
+            # Approach 2: Aggregate evidence content for meaningful L2 node
+            evidence_contents = []
+            if evidence_chain:
+                # Query L1 memories from evidence_chain
+                evidence_query = await conn.execute(
+                    text("SELECT content FROM memory_nodes WHERE id = ANY(:ids) AND level = 1"),
+                    {"ids": evidence_chain[:10]}  # Limit to 10 evidences
+                )
+                evidence_rows = evidence_query.fetchall()
+                for row in evidence_rows:
+                    if row and row[0]:
+                        evidence_contents.append(row[0])
+
+            # Generate meaningful content and summary from evidence
+            entity_name = prop.get("entity", "unknown")
+            if evidence_contents:
+                # Aggregate evidence content for summary
+                # Use first 3 evidence contents to build a description
+                sample_evidences = evidence_contents[:3]
+                # Build summary from evidence
+                summary = f"{entity_name}: {'; '.join(sample_evidences)}"
+                # Build content - extract key information from evidence
+                content = summary
+            else:
+                # Fallback if no evidence content found
+                content = f"Evolved from L{level-1} evidence: {entity_name}"
+                summary = f"{entity_name}: {entity_name}"
+
             await conn.execute(text("""
                 INSERT INTO memory_nodes (
                     id, workspace_id, entity_id, level, node_type, content, summary,
@@ -266,8 +294,8 @@ class ReflectionService(BaseService):
                 "entity_id": str(entity_id) if entity_id else None,
                 "level": level,
                 "node_type": node_type,
-                "content": prop.get("content", f"Evolved from L{level-1} evidence: {prop.get('entity', 'unknown')}"),
-                "summary": prop.get("summary", ""),
+                "content": content,
+                "summary": summary,
                 "confidence": prop["confidence"],
                 "importance": prop["confidence"],
                 "signal_strength": prop["confidence"],

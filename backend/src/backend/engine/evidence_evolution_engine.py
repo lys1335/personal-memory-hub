@@ -300,8 +300,14 @@ class EvidenceEvolutionEngine(EngineBase):
         Per D4.2g §3.3:
         Each candidate represents a structured piece of information
         ready for ReflectionEngine processing.
+
+        Enhancement: Store full evidence content for later summarization
+        (Approach 2: post-processing aggregation).
         """
         candidates = []
+
+        # Build evidence map for quick lookup
+        evidence_map = {e.get("id"): e for e in evidence if e.get("id")}
 
         # Group facts by entity
         entity_facts: dict[str, list[dict[str, Any]]] = {}
@@ -315,28 +321,36 @@ class EvidenceEvolutionEngine(EngineBase):
         for entity, entity_facts_list in entity_facts.items():
             # Get source evidence IDs
             source_ids = []
+            source_evidences = []  # Store full evidence for later use
             for f in entity_facts_list:
                 source_ids.extend(f.get("source_ids", []))
             source_ids = list(set(source_ids))
+
+            # Collect full evidence content for summarization
+            for eid in source_ids[:10]:  # Limit to 10 evidences
+                if eid in evidence_map:
+                    source_evidences.append(evidence_map[eid])
 
             # Calculate aggregate confidence
             avg_confidence = sum(
                 f.get("confidence", 0.5) for f in entity_facts_list
             ) / len(entity_facts_list)
 
-            # Build candidate content
+            # Build candidate content - store evidence for later processing
             values = [f.get("value", "") for f in entity_facts_list if f.get("value")]
-            content = f"{entity}: {', '.join(values[:3])}" if values else entity
 
             candidate = {
                 "entity": entity,
-                "content": content,
+                "content": f"{entity}: {', '.join(values[:3])}" if values else entity,
                 "evidence_chain": source_ids[:10],  # Limit chain length
                 "evidence_count": len(source_ids),
                 "confidence": round(avg_confidence, 3),
-                "source_level": 1,  # Default for Evidence input
+                "source_level": 1,
                 "candidate_type": "pattern",
                 "status": "candidate",
+                # NEW: Store full evidence content for post-processing
+                "_raw_evidence": source_evidences,
+                "_fact_values": values,
             }
 
             candidates.append(candidate)
