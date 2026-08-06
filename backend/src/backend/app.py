@@ -832,7 +832,7 @@ _load_cron_tasks()
 _DEFAULT_EVOLUTION_TASK = {
     "name": "记忆演化",
     "type": "evolution",
-    "interval_seconds": int(os.environ.get("CRON_EVOLUTION_INTERVAL", "3600")),
+    "interval_seconds": int(os.environ.get("CRON_EVOLUTION_INTERVAL", "600")),  # Changed from 3600 to 600 for testing
     "enabled": True,
     "payload": {
         "workspace_id": "fd0223ed-7aa2-491e-8db5-b0de71b75219",
