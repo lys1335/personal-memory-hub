@@ -583,13 +583,13 @@ class ReflectionService(BaseService):
     # Internal Helpers
     # ------------------------------------------------------------------
 
-    async def _run_engine_pipeline(
+async def _run_engine_pipeline(
         self,
         scope: str,
         candidates: list[dict[str, Any]],
         workspace_id: UUID,
     ) -> dict[str, Any]:
-        """Run the two-stage pipeline: EvidenceEvolution → Reflection.
+        """Run the two-stage pipeline with batch processing.
 
         Per D4.2g and D4.2d_v1.1:
         Stage 1: EvidenceEvolutionEngine (Information Extraction)
@@ -614,38 +614,87 @@ class ReflectionService(BaseService):
 
         execution_log = []
 
-        # Stage 1: Evidence Evolution (Information Extraction)
-        evidence_engine = EvidenceEvolutionEngine()
-        evolution_result = await evidence_engine.evolve(
-            evidence=candidates,
-            provider=provider,
-        )
-        execution_log.append(f"EvidenceEvolution: {len(evolution_result.candidates)} candidates created")
-        execution_log.extend(evolution_result.execution_log)
-
-        # Save evolved candidates to database (if any)
-        if evolution_result.candidates:
-            await self._save_candidates(evolution_result.candidates, workspace_id)
-            execution_log.append(f"Saved {len(evolution_result.candidates)} candidates to database")
-
-        # Stage 2: Reflection (Reasoning)
-        # Use evolved candidates if available, otherwise fallback to original
-        reflection_candidates = (
-            evolution_result.candidates if evolution_result.candidates else candidates
-        )
-        reflection_engine = ReflectionEngine()
-        result = await reflection_engine.reflect_pipeline(
-            scope=scope,
-            candidates=reflection_candidates,
-            provider=provider,
+        # Batch processing: split candidates into smaller chunks for LLM
+        # This avoids timeouts and improves JSON parsing success rate
+        batch_count = (len(candidates) + BATCH_SIZE - 1) // BATCH_SIZE
+        logger.info(
+            "[EVOLUTION] Processing %d candidates in %d batches (batch_size=%d)",
+            len(candidates), batch_count, BATCH_SIZE,
         )
 
-        # Merge execution logs
-        result["execution_log"] = execution_log + result.get("execution_log", [])
-        result["evolved_candidates"] = evolution_result.candidates
+        all_facts = []
+        all_entities = []
+        all_proposals = []
+        all_evolved_candidates = []
 
-        return result
+        for i in range(0, len(candidates), BATCH_SIZE):
+            batch = candidates[i:i + BATCH_SIZE]
+            batch_num = i // BATCH_SIZE + 1
+            logger.info(
+                "[EVOLUTION] Processing batch %d/%d (%d candidates)",
+                batch_num, batch_count, len(batch),
+            )
 
+            try:
+                # Stage 1: Evidence Evolution (Information Extraction)
+                evidence_engine = EvidenceEvolutionEngine()
+                evolution_result = await evidence_engine.evolve(
+                    evidence=batch,
+                    provider=provider,
+                )
+                execution_log.append(
+                    f"Batch {batch_num}: EvidenceEvolution: {len(evolution_result.candidates)} candidates"
+                )
+                execution_log.extend(evolution_result.execution_log)
+
+                # Save evolved candidates to database (if any)
+                if evolution_result.candidates:
+                    await self._save_candidates(evolution_result.candidates, workspace_id)
+                    execution_log.append(f"Batch {batch_num}: Saved {len(evolution_result.candidates)} candidates")
+                    all_evolved_candidates.extend(evolution_result.candidates)
+
+                # Stage 2: Reflection (Reasoning)
+                # Use evolved candidates if available, otherwise fallback to original
+                reflection_candidates = (
+                    evolution_result.candidates if evolution_result.candidates else batch
+                )
+                reflection_engine = ReflectionEngine()
+                result = await reflection_engine.reflect_pipeline(
+                    scope=scope,
+                    candidates=reflection_candidates,
+                    provider=provider,
+                )
+
+                all_facts.extend(result.get("facts", []))
+                all_entities.extend(result.get("entities", []))
+                all_proposals.extend(result.get("proposals", []))
+                execution_log.extend(result.get("execution_log", []))
+
+                logger.info(
+                    "[EVOLUTION] Batch %d/%d completed: facts=%d proposals=%d",
+                    batch_num, batch_count,
+                    len(result.get("facts", [])),
+                    len(result.get("proposals", [])),
+                )
+
+            except Exception as e:
+                logger.error(
+                    "[EVOLUTION] Batch %d/%d failed: %s",
+                    batch_num, batch_count, str(e),
+                    exc_info=True,
+                )
+                execution_log.append(f"Batch {batch_num} failed: {str(e)}")
+
+        return {
+            "facts": all_facts,
+            "entities": all_entities,
+            "proposals": all_proposals,
+            "execution_log": execution_log,
+            "evolved_candidates": all_evolved_candidates,
+            "batch_count": batch_count,
+        }
+
+    async def _save_candidates(
     async def _save_proposals(
         self,
         proposals: list[dict[str, Any]],
