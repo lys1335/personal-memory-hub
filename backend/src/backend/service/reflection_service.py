@@ -731,7 +731,11 @@ class ReflectionService(BaseService):
         candidates: list[dict[str, Any]],
         workspace_id: UUID,
     ) -> None:
-        """Save evolved candidates to database."""
+        """Save evolved candidates to database.
+
+        Note: verified_at is UUID type in DB (see schema), not timestamp.
+        The documentation says TIMESTAMPTZ but actual DB uses UUID.
+        """
         import json as json_lib
         import uuid as uuid_lib
 
@@ -745,16 +749,9 @@ class ReflectionService(BaseService):
         engine = get_engine()
         async with engine.begin() as conn:
             for candidate in candidates:
-                # Ensure verified_at is a valid UUID string
-                verified_at = candidate.get("verified_at")
-                if verified_at is None:
-                    verified_at = str(uuid_lib.uuid4())
-                else:
-                    # Ensure it's a valid UUID string
-                    try:
-                        verified_at = str(uuid_lib.UUID(verified_at))
-                    except (ValueError, AttributeError):
-                        verified_at = str(uuid_lib.uuid4())
+                # verified_at is UUID type in database (not timestamp)
+                # Generate a fresh UUID for each candidate
+                candidate_verified_at = str(uuid_lib.uuid4())
 
                 await conn.execute(text("""
                     INSERT INTO candidates (
@@ -771,20 +768,20 @@ class ReflectionService(BaseService):
                         :verified_at, :source_level, NOW(), NOW()
                     )
                 """), {
-                    "id": candidate.get("id", str(uuid_lib.uuid4())),
+                    "id": str(uuid_lib.uuid4()),
                     "workspace_id": str(workspace_id),
-                    "entity_id": candidate.get("entity_id"),
-                    "area_id": candidate.get("area_id"),
+                    "entity_id": candidate.get("entity_id") or str(uuid_lib.uuid4()),
+                    "area_id": candidate.get("area_id") or str(uuid_lib.uuid4()),
                     "content": candidate.get("content", ""),
                     "candidate_type": candidate.get("node_type", "pattern"),
                     "evidence_source": candidate.get("evidence_source", "reflection"),
-                    "evidence_id": candidate.get("evidence_id"),
+                    "evidence_id": candidate.get("evidence_id") or str(uuid_lib.uuid4()),
                     "evidence_chain": json_lib.dumps(candidate.get("evidence_chain", ["dummy"])),
                     "evidence_count": candidate.get("evidence_count", 1),
                     "evidence_strength": candidate.get("evidence_strength", 0.9),
                     "status": "candidate",
                     "ingested_by": "ai_reflect",
-                    "verified_at": verified_at,
+                    "verified_at": candidate_verified_at,
                     "source_level": candidate.get("level", 2),
                 })
 
