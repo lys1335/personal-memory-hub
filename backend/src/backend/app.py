@@ -169,7 +169,6 @@ async def lifespan(app: FastAPI):
     if _cron_scheduler_task is None or _cron_scheduler_task.done():
         _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
         logger.info("[CRON] Scheduler task created")
-        # Also store in app.state for access
         app.state.cron_scheduler_task = _cron_scheduler_task
 
     yield
