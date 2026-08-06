@@ -655,9 +655,20 @@ class ReflectionService(BaseService):
 
                 # Stage 2: Reflection (Reasoning)
                 # Use evolved candidates if available, otherwise fallback to original
-                reflection_candidates = (
-                    evolution_result.candidates if evolution_result.candidates else batch
-                )
+                # Convert EvidenceEvolutionEngine output format to ReflectionEngine input format
+                if evolution_result.candidates:
+                    reflection_candidates = []
+                    for c in evolution_result.candidates:
+                        reflection_candidates.append({
+                            'id': c.get('entity', f'entity_{i}'),
+                            'content': c.get('content', ''),
+                            'evidence_source': 'evolution',
+                            'source_level': c.get('source_level', 2),
+                            'evidence_chain': c.get('evidence_chain', []),
+                            'confidence': c.get('confidence', 0.9),
+                        })
+                else:
+                    reflection_candidates = batch
                 reflection_engine = ReflectionEngine()
                 result = await reflection_engine.reflect_pipeline(
                     scope=scope,
