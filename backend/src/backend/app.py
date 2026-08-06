@@ -1062,7 +1062,6 @@ async def stop_cron_task(task_id: str):
 @app.post("/api/cron/tasks/{task_id}/run-now")
 async def run_cron_task_now(
     task_id: str,
-    services: dict = Depends(get_services),
 ):
     """Manually trigger a task execution via Service layer."""
     task = _cron_tasks.get(task_id)
@@ -1075,10 +1074,12 @@ async def run_cron_task_now(
 
     if task_type == 'evolution':
         limit = payload.get('limit', 200)
-        workspace_id = UUID(payload.get('workspace_id', "fb77c6ce-1e15-47e9-a8b7-2e707a011071"))
+        workspace_id = UUID(payload.get('workspace_id', DEFAULT_WORKSPACE))
 
         try:
-            reflection_svc = services["reflection"]
+            # Initialize services directly (not via Depends)
+            from backend.service.reflection_service import ReflectionService
+            reflection_svc = ReflectionService()
             exec_result = await reflection_svc.reflect(
                 workspace_id=workspace_id,
                 scope="daily",
@@ -1113,18 +1114,18 @@ async def run_cron_task_now(
             result["error"] = str(e)
             result["status"] = "failed"
     elif task_type == 'batch_import':
-        logger.info(f"[CRON] Running batch import task '{task['name']}'")
-        result["message"] = "Batch import triggered"
+        # Handle batch import task if needed
+        result["message"] = "Batch import not yet implemented"
     else:
-        result["message"] = f"Custom task '{task_type}' triggered"
+        result["message"] = f"Unknown task type: {task_type}"
 
-    from datetime import datetime, timezone
-    result['executed_at'] = datetime.now(timezone.utc).isoformat()
-
+    # Update task status
     with _cron_lock:
-        _cron_tasks[task_id]['last_run'] = result['executed_at']
-        _cron_tasks[task_id]['status'] = result['status']
-        _save_cron_tasks()
+        if task_id in _cron_tasks:
+            from datetime import datetime, timezone
+            _cron_tasks[task_id]["last_run"] = datetime.now(timezone.utc).isoformat()
+            _cron_tasks[task_id]["status"] = result["status"]
+            _save_cron_tasks()
 
     return result
 
