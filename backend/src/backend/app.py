@@ -1077,9 +1077,24 @@ async def run_cron_task_now(
         workspace_id = UUID(payload.get('workspace_id', DEFAULT_WORKSPACE))
 
         try:
-            # Initialize services directly (not via Depends)
+            # Initialize services directly with required repos
             from backend.service.reflection_service import ReflectionService
-            reflection_svc = ReflectionService()
+            from backend.repository.memory_node_repository import MemoryNodeRepository
+            from backend.repository.candidate_repository import CandidateRepository
+            from backend.repository.relationship_repository import RelationshipRepository
+            from backend.shared.infrastructure.database.engine import get_engine
+
+            engine = get_engine()
+            memory_node_repo = MemoryNodeRepository(engine)
+            candidate_repo = CandidateRepository(engine)
+            relationship_repo = RelationshipRepository(engine)
+
+            reflection_svc = ReflectionService(
+                memory_node_repo=memory_node_repo,
+                candidate_repo=candidate_repo,
+                relationship_repo=relationship_repo,
+            )
+
             exec_result = await reflection_svc.reflect(
                 workspace_id=workspace_id,
                 scope="daily",
