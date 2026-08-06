@@ -898,7 +898,7 @@ class ReflectionService(BaseService):
         from backend.shared.domain.memory_models import MemoryNode
         from backend.shared.infrastructure.database.engine import get_engine
 
-        if scope in ("daily", "weekly", "monthly"):
+        if scope in ("daily", "weekly", "monthly", "workspace"):
             # Check if there are candidates in the candidates table
             engine = get_engine()
             async with engine.begin() as conn:
