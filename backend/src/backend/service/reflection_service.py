@@ -583,7 +583,7 @@ class ReflectionService(BaseService):
     # Internal Helpers
     # ------------------------------------------------------------------
 
-async def _run_engine_pipeline(
+    async def _run_engine_pipeline(
         self,
         scope: str,
         candidates: list[dict[str, Any]],
@@ -695,10 +695,9 @@ async def _run_engine_pipeline(
         }
 
     async def _save_candidates(
+    async def _save_proposals(
         self,
-        candidates: list[dict[str, Any]],
-        workspace_id: UUID,
-    ) -> None:
+        proposals: list[dict[str, Any]],
         workspace_id: UUID,
     ) -> None:
         """Save proposals to database for review."""
