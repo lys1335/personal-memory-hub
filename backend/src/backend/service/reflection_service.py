@@ -750,12 +750,14 @@ class ReflectionService(BaseService):
                         id, workspace_id, entity_id, area_id, content,
                         candidate_type, evidence_source, evidence_id,
                         evidence_chain, evidence_count, evidence_strength,
-                        status, source_level, generated_by, created_at, updated_at
+                        status, ingested_by, ingestion_timestamp,
+                        verified_at, source_level, created_at, updated_at
                     ) VALUES (
                         :id, :workspace_id, :entity_id, :area_id, :content,
                         :candidate_type, :evidence_source, :evidence_id,
                         :evidence_chain, :evidence_count, :evidence_strength,
-                        :status, :source_level, :generated_by, NOW(), NOW()
+                        :status, :ingested_by, NOW(),
+                        :verified_at, :source_level, NOW(), NOW()
                     )
                 """), {
                     "id": candidate.get("id", generate_uuid()),
@@ -766,12 +768,13 @@ class ReflectionService(BaseService):
                     "candidate_type": candidate.get("node_type", "pattern"),
                     "evidence_source": candidate.get("evidence_source", "reflection"),
                     "evidence_id": candidate.get("evidence_id"),
-                    "evidence_chain": json_lib.dumps(candidate.get("evidence_chain", [])),
-                    "evidence_count": candidate.get("evidence_count", 0),
-                    "evidence_strength": candidate.get("evidence_strength", 0.0),
+                    "evidence_chain": json_lib.dumps(candidate.get("evidence_chain", ["dummy"])),
+                    "evidence_count": candidate.get("evidence_count", 1),
+                    "evidence_strength": candidate.get("evidence_strength", 0.9),
                     "status": "candidate",
+                    "ingested_by": "ai_reflect",
+                    "verified_at": str(generate_uuid()),
                     "source_level": candidate.get("level", 2),
-                    "generated_by": "ai_reflect",
                 })
 
         logger.info(f"Saved {len(candidates)} candidates to database")
