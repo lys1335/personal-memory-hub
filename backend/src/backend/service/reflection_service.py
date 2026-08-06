@@ -695,9 +695,10 @@ async def _run_engine_pipeline(
         }
 
     async def _save_candidates(
-    async def _save_proposals(
         self,
-        proposals: list[dict[str, Any]],
+        candidates: list[dict[str, Any]],
+        workspace_id: UUID,
+    ) -> None:
         workspace_id: UUID,
     ) -> None:
         """Save proposals to database for review."""
