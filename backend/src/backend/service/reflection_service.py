@@ -733,11 +733,11 @@ class ReflectionService(BaseService):
     ) -> None:
         """Save evolved candidates to database."""
         import json as json_lib
+        import uuid as uuid_lib
 
         from sqlalchemy import text
 
         from backend.shared.infrastructure.database.engine import get_engine
-        from backend.shared.infrastructure.uuid import generate_uuid
 
         if not candidates:
             return
@@ -745,6 +745,17 @@ class ReflectionService(BaseService):
         engine = get_engine()
         async with engine.begin() as conn:
             for candidate in candidates:
+                # Ensure verified_at is a valid UUID string
+                verified_at = candidate.get("verified_at")
+                if verified_at is None:
+                    verified_at = str(uuid_lib.uuid4())
+                else:
+                    # Ensure it's a valid UUID string
+                    try:
+                        verified_at = str(uuid_lib.UUID(verified_at))
+                    except (ValueError, AttributeError):
+                        verified_at = str(uuid_lib.uuid4())
+
                 await conn.execute(text("""
                     INSERT INTO candidates (
                         id, workspace_id, entity_id, area_id, content,
@@ -760,7 +771,7 @@ class ReflectionService(BaseService):
                         :verified_at, :source_level, NOW(), NOW()
                     )
                 """), {
-                    "id": candidate.get("id", generate_uuid()),
+                    "id": candidate.get("id", str(uuid_lib.uuid4())),
                     "workspace_id": str(workspace_id),
                     "entity_id": candidate.get("entity_id"),
                     "area_id": candidate.get("area_id"),
@@ -773,7 +784,7 @@ class ReflectionService(BaseService):
                     "evidence_strength": candidate.get("evidence_strength", 0.9),
                     "status": "candidate",
                     "ingested_by": "ai_reflect",
-                    "verified_at": str(generate_uuid()),
+                    "verified_at": verified_at,
                     "source_level": candidate.get("level", 2),
                 })
 
