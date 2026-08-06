@@ -265,7 +265,7 @@ class ReflectionService(BaseService):
                 "confidence": prop["confidence"],
                 "importance": prop["confidence"],
                 "signal_strength": prop["confidence"],
-                "evidence_links": evidence_chain,
+                "evidence_links": json.dumps(evidence_chain) if evidence_chain else "[]",
             })
 
             # Create relationships (derived_from)
