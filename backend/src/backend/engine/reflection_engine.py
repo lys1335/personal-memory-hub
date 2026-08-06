@@ -100,11 +100,11 @@ class ReflectionEngine(EngineBase):
             }
 
         # Step 2: Analyze interest trends (InterestAnalyzerComponent)
-        interest_trends = self._analyze_interest(facts)
+        interest_trends = self._analyze_interest(facts, candidates)
         self._log_domain_rule("interest_analysis", context={"trends": interest_trends})
 
         # Step 3: Generate projection proposals (ProjectionUpdaterComponent)
-        proposals = self._generate_proposals(facts, interest_trends)
+        proposals = self._generate_proposals(facts, interest_trends, candidates)
         self._log_domain_rule("projection_update", context={"proposal_count": len(proposals)})
 
         # Step 4: Validate all proposals (ReflectionValidator)
@@ -182,7 +182,7 @@ class ReflectionEngine(EngineBase):
     # ------------------------------------------------------------------
 
     def _analyze_interest(
-        self, facts: list[dict[str, Any]]
+        self, facts: list[dict[str, Any]], candidates: list[dict[str, Any]] | None = None
     ) -> dict[str, Any]:
         """Analyze interest trends based on extracted facts.
 
@@ -234,12 +234,23 @@ class ReflectionEngine(EngineBase):
         self,
         facts: list[dict[str, Any]],
         interest_trends: dict[str, Any],
+        candidates: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
         """Generate Memory Pyramid update proposals.
 
         Pure rule-based algorithm. Proposal types per 10_4 §7.2:
         Create / Strengthen / Refine / Split / Ignore
+
+        source_level is now extracted from candidates, not from facts.
         """
+        # Build candidate lookup for source_level extraction
+        candidate_by_id: dict[str, dict[str, Any]] = {}
+        if candidates:
+            for c in candidates:
+                cid = c.get("id")
+                if cid:
+                    candidate_by_id[cid] = c
+
         proposals: list[dict[str, Any]] = []
 
         if not facts:
@@ -267,18 +278,31 @@ class ReflectionEngine(EngineBase):
             ) / len(entity_facts)
 
             # Decision logic per 10_4 §7.2 Semantic Evolution
-            if avg_confidence >= 0.8 and len(entity_facts) >= 3:
+            # Multi-level: L1→L2, L2→L3, L3→L4, etc.
+            # source_level now comes from candidate, not from fact
+            source_level = 1  # Default for L1 Evidence
+            if candidates and entity_facts:
+                # Try to get source_level from the first candidate
+                first_fact = entity_facts[0]
+                source_id = first_fact.get("source_ids", [None])[0]
+                if source_id and source_id in candidate_by_id:
+                    candidate = candidate_by_id[source_id]
+                    source_level = candidate.get("level", candidate.get("source_level", 1))
+
+            max_level = 5  # L5 is the maximum abstraction level
+
+            if avg_confidence >= 0.8 and len(entity_facts) >= 3 and source_level < max_level:
                 proposal_type = "Strengthen"
-                target_level = 2  # Pattern (L2)
-            elif avg_confidence >= 0.6 and len(entity_facts) >= 2:
+                target_level = source_level + 1  # L1→L2, L2→L3, etc.
+            elif avg_confidence >= 0.6 and len(entity_facts) >= 2 and source_level < max_level:
                 proposal_type = "Create"
-                target_level = 1  # Observation/Topic (L1)
+                target_level = source_level + 1  # L1→L2, L2→L3, etc.
             elif avg_confidence >= 0.9:
                 proposal_type = "Refine"
-                target_level = 2
+                target_level = source_level  # Refine at same level
             else:
                 proposal_type = "Split"
-                target_level = 1
+                target_level = source_level  # Keep at same level for splitting
 
             # Build evidence chain from source_ids
             # Filter out invalid placeholders (must be valid UUIDs)
