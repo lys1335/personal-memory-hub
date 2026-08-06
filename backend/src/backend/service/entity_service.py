@@ -524,4 +524,4 @@ class EntityService(BaseService):
             return generate_uuid()
         except ImportError:
             import uuid
-            return uuid.uuid4()
+            return generate_uuid()

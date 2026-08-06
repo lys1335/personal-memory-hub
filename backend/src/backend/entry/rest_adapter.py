@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from uuid import uuid4
+from backend.shared.infrastructure.uuid import generate_uuid
 
 from backend.entry.dto import (
     BaseResponse,
@@ -76,7 +76,7 @@ class RESTAdapter:
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
         """Handle POST /memories - capture a new memory."""
-        request_id = str(uuid4())
+        request_id = str(generate_uuid())
 
         # Step 2: Contract Validation
         errors = self._validator.validate_capture_memory_request(body)
@@ -116,7 +116,7 @@ class RESTAdapter:
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
         """Handle POST /memories/search - search memories."""
-        request_id = str(uuid4())
+        request_id = str(generate_uuid())
 
         errors = self._validator.validate_search_request(body)
         if errors:
@@ -145,7 +145,7 @@ class RESTAdapter:
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
         """Handle GET /memories/{id} - retrieve a memory by ID."""
-        request_id = str(uuid4())
+        request_id = str(generate_uuid())
 
         errors = self._validator.validate_retrieve_request(body)
         if errors:
@@ -180,7 +180,7 @@ class RESTAdapter:
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
         """Handle POST /entities - create a new entity."""
-        request_id = str(uuid4())
+        request_id = str(generate_uuid())
 
         errors = self._validator.validate_create_entity_request(body)
         if errors:
@@ -210,7 +210,7 @@ class RESTAdapter:
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
         """Handle POST /reflection - trigger reflection."""
-        request_id = str(uuid4())
+        request_id = str(generate_uuid())
 
         errors = self._validator.validate_reflection_request(body)
         if errors:
@@ -245,7 +245,7 @@ class RESTAdapter:
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
         """Handle POST /tasks - submit a new task."""
-        request_id = str(uuid4())
+        request_id = str(generate_uuid())
 
         errors = self._validator.validate_submit_task_request(body)
         if errors:
@@ -278,7 +278,7 @@ class RESTAdapter:
         body: dict[str, Any],
     ) -> BaseResponse[dict[str, Any]]:
         """Handle POST /memories/import - import memories from external source."""
-        request_id = str(uuid4())
+        request_id = str(generate_uuid())
 
         errors = self._validator.validate_import_request(body)
         if errors:

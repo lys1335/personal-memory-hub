@@ -990,7 +990,7 @@ def _initialize_default_tasks():
     
     if not has_evolution:
         # Create default evolution task
-        task_id = str(_uuid.uuid4())[:8]
+        task_id = str(generate_uuid())[:8]
         _cron_tasks[task_id] = {
             "id": task_id,
             "name": _DEFAULT_EVOLUTION_TASK["name"],
@@ -1130,7 +1130,7 @@ async def create_cron_task(body: dict = Body(embed=False)):
     enabled = body.get('enabled', True)
     payload = body.get('payload', {})
 
-    task_id = str(_uuid.uuid4())[:8]
+    task_id = str(generate_uuid())[:8]
 
     task = {
         "id": task_id,
@@ -1258,7 +1258,7 @@ async def run_cron_task_now(
             import uuid as _uuid_mod
             with _sandbox_lock:
                 for prop in proposals:
-                    prop["id"] = str(_uuid_mod.uuid4())[:8]
+                    prop["id"] = str(generate_uuid())[:8]
                     prop["status"] = "pending"
                     prop["task_id"] = task_id
                     prop["created_at"] = __import__('datetime').datetime.utcnow().isoformat()
@@ -1436,7 +1436,7 @@ async def approve_proposal(
                         source_uuid = uuid_mod.UUID(source_memory_id_str)
                         # Create MemoryRelationship object
                         rel = MemoryRelationship(
-                            id=uuid_mod.uuid4(),
+                            id=generate_uuid(),
                             workspace_id=PyUUID(DEFAULT_WORKSPACE),
                             source_node_id=memory_id,
                             target_node_id=source_uuid,

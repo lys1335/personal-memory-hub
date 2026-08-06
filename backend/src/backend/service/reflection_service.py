@@ -790,7 +790,7 @@ class ReflectionService(BaseService):
             for candidate in candidates:
                 # verified_at is UUID type in database (not timestamp)
                 # Generate a fresh UUID for each candidate
-                candidate_verified_at = str(uuid_lib.uuid4())
+                candidate_verified_at = str(generate_uuid())
 
                 # Get or create entity by canonical_name
                 entity_name = candidate.get("entity", "unknown")
@@ -805,7 +805,7 @@ class ReflectionService(BaseService):
                         entity_cache[entity_name] = str(entity_row[0])
                     else:
                         # Create new entity
-                        new_entity_id = str(uuid_lib.uuid4())
+                        new_entity_id = str(generate_uuid())
                         await conn.execute(
                             text("""
                                 INSERT INTO entities (id, workspace_id, canonical_name, entity_type, created_at, updated_at)
@@ -815,7 +815,7 @@ class ReflectionService(BaseService):
                         )
                         entity_cache[entity_name] = new_entity_id
 
-                entity_id = entity_cache.get(entity_name, str(uuid_lib.uuid4()))
+                entity_id = entity_cache.get(entity_name, str(generate_uuid()))
 
                 # Get or create area
                 area_id = candidate.get("area_id")
@@ -843,7 +843,7 @@ class ReflectionService(BaseService):
                             area_cache["default"] = area_id
                         else:
                             # Create default area
-                            new_area_id = str(uuid_lib.uuid4())
+                            new_area_id = str(generate_uuid())
                             await conn.execute(
                                 text("""
                                     INSERT INTO areas (id, workspace_id, name, created_at, updated_at)
@@ -871,14 +871,14 @@ class ReflectionService(BaseService):
                         :verified_at, :source_level, NOW(), NOW()
                     )
                 """), {
-                    "id": str(uuid_lib.uuid4()),
+                    "id": str(generate_uuid()),
                     "workspace_id": str(workspace_id),
                     "entity_id": entity_id,
                     "area_id": area_id,
                     "content": candidate.get("content", ""),
                     "candidate_type": candidate.get("node_type", "pattern"),
                     "evidence_source": candidate.get("evidence_source", "reflection"),
-                    "evidence_id": candidate.get("evidence_id") or str(uuid_lib.uuid4()),
+                    "evidence_id": candidate.get("evidence_id") or str(generate_uuid()),
                     "evidence_chain": json_lib.dumps(candidate.get("evidence_chain", ["dummy"])),
                     "evidence_count": candidate.get("evidence_count", 1),
                     "evidence_strength": candidate.get("evidence_strength", 0.9),
@@ -1091,4 +1091,4 @@ class ReflectionService(BaseService):
             return generate_uuid()
         except ImportError:
             import uuid
-            return uuid.uuid4()
+            return generate_uuid()

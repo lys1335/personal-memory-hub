@@ -73,8 +73,8 @@ class TaskService(BaseService):
 
     def _generate_id(self) -> UUID:
         """Generate a unique ID."""
-        from uuid import uuid4
-        return uuid4()
+        from backend.shared.infrastructure.uuid import generate_uuid
+        return generate_uuid()
 
     # ------------------------------------------------------------------
     # Task Submission
