@@ -275,12 +275,12 @@ class ReflectionService(BaseService):
                 sample_evidences = evidence_contents[:3]
                 # Build summary from evidence
                 summary = f"{entity_name}: {'; '.join(sample_evidences)}"
-                # Build content - extract key information from evidence
+                # Build content - use same as summary for now
                 content = summary
             else:
                 # Fallback if no evidence content found
-                content = f"Evolved from L{level-1} evidence: {entity_name}"
-                summary = f"{entity_name}: {entity_name}"
+                content = f"{entity_name}"
+                summary = f"{entity_name}"
 
             await conn.execute(text("""
                 INSERT INTO memory_nodes (
