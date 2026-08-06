@@ -505,13 +505,20 @@ class ReflectionService(BaseService):
         scope: str,
         candidates: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Run the ReflectionEngine pipeline with Provider abstraction.
+        """Run the two-stage pipeline: EvidenceEvolution → Reflection.
 
-        Per D4.2d §2.7: LLM invocation is managed by Service layer,
-        not by the Engine directly.
+        Per D4.2g and D4.2d_v1.1:
+        Stage 1: EvidenceEvolutionEngine (Information Extraction)
+        Stage 2: ReflectionEngine (Reasoning)
+
+        Returns dict with:
+        - candidates: list of evolved candidates
+        - proposals: list of proposals
+        - execution_log: processing log
         """
         import os
 
+        from backend.engine.evidence_evolution_engine import EvidenceEvolutionEngine
         from backend.engine.reflection_engine import ReflectionEngine
         from backend.shared.providers.reflection_provider import OllamaReflectionProvider
 
@@ -520,12 +527,33 @@ class ReflectionService(BaseService):
             base_url=os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434"),
             model=os.environ.get("REFLECTION_MODEL", "reflection-engine"),
         )
-        engine = ReflectionEngine()
-        result = await engine.reflect_pipeline(
-            scope=scope,
-            candidates=candidates,
+
+        execution_log = []
+
+        # Stage 1: Evidence Evolution (Information Extraction)
+        # TODO (D4.2g): Once EvidenceEvolutionEngine is fully implemented,
+        # call evolve() here and save candidates to database.
+        # For now, use candidates as-is (backward compatibility).
+        evidence_engine = EvidenceEvolutionEngine()
+        evolution_result = await evidence_engine.evolve(
+            evidence=candidates,
             provider=provider,
         )
+        execution_log.append(f"EvidenceEvolution: {len(evolution_result.candidates)} candidates processed")
+
+        # Stage 2: Reflection (Reasoning)
+        # Use original candidates for reflection (fallback until EvidenceEvolution is complete)
+        reflection_candidates = evolution_result.candidates if evolution_result.candidates else candidates
+        reflection_engine = ReflectionEngine()
+        result = await reflection_engine.reflect_pipeline(
+            scope=scope,
+            candidates=reflection_candidates,
+            provider=provider,
+        )
+
+        # Merge execution logs
+        result["execution_log"] = execution_log + result.get("execution_log", [])
+
         return result
 
     async def _save_proposals(
