@@ -162,9 +162,14 @@ class ReflectionEngine(EngineBase):
 
         # Simple, concise prompt
         system_prompt = (
-            "Extract structured facts from memories. Output ONLY JSON.\n"
-            'Format: {"facts":[{"entity":"name","value":"value","source_ids":["id"],"confidence":0.9}],"entities":[]}\n'
-            f"\nIDs: {memory_ids}\n\nMemories:\n" + "\n".join(contents)
+            "你是一个信息提取专家。请从以下记忆中提取结构化事实。\n"
+            "要求：\n"
+            "1. 只输出有效的JSON，不要有任何解释或Markdown\n"
+            "2. JSON必须以{开头，以}结尾\n"
+            "3. 不要包含```json```或```标记\n\n"
+            "输出格式：\n"
+            '{"facts":[{"entity":"实体名","value":"值","source_ids":["id"],"confidence":0.9}],"entities":[]}\n\n'
+            f"IDs: {memory_ids}\n\nMemories:\n" + "\n".join(contents)
         )
 
         try:
