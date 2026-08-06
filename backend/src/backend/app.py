@@ -1109,21 +1109,25 @@ async def run_cron_task_now(
             from backend.shared.infrastructure.database.engine import get_engine
 
             engine = get_engine()
-            memory_node_repo = MemoryNodeRepository(engine)
-            candidate_repo = CandidateRepository(engine)
-            relationship_repo = RelationshipRepository(engine)
+            # Create a session factory and session for the repositories
+            from sqlalchemy.ext.asyncio import async_sessionmaker
+            SessionFactory = async_sessionmaker(engine, expire_on_commit=False)
+            async with SessionFactory() as session:
+                memory_node_repo = MemoryNodeRepository(session)
+                candidate_repo = CandidateRepository(session)
+                relationship_repo = RelationshipRepository(session)
 
-            reflection_svc = ReflectionService(
-                memory_node_repo=memory_node_repo,
-                candidate_repo=candidate_repo,
-                relationship_repo=relationship_repo,
-            )
+                reflection_svc = ReflectionService(
+                    memory_node_repo=memory_node_repo,
+                    candidate_repo=candidate_repo,
+                    relationship_repo=relationship_repo,
+                )
 
-            exec_result = await reflection_svc.reflect(
-                workspace_id=workspace_id,
-                scope="daily",
-                limit=limit,
-            )
+                exec_result = await reflection_svc.reflect(
+                    workspace_id=workspace_id,
+                    scope="daily",
+                    limit=limit,
+                )
 
             result["message"] = f"Reflection completed: {exec_result.reflections_performed} operations"
             result["scope"] = exec_result.scope
