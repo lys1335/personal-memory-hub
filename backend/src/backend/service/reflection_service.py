@@ -117,6 +117,7 @@ class ReflectionService(BaseService):
             workspace_id=workspace_id,
             entity_id=entity_id,
             scope=scope,
+            limit=limit,
         )
 
         if not candidates:
@@ -225,19 +226,23 @@ class ReflectionService(BaseService):
             level = prop["target_level"]
             node_type = "Pattern" if level == 2 else "Belief" if level == 3 else "Observation"
 
+            # Get entity_id from proposal (set during candidate creation)
+            entity_id = prop.get("entity_id")
+
             await conn.execute(text("""
                 INSERT INTO memory_nodes (
-                    id, workspace_id, level, node_type, content, summary,
+                    id, workspace_id, entity_id, level, node_type, content, summary,
                     confidence, importance, signal_strength, status, source, generated_by,
                     evidence_links, contradict_evidence, _meta, created_at, updated_at
                 ) VALUES (
-                    :id, :workspace_id, :level, :node_type, :content, :summary,
+                    :id, :workspace_id, :entity_id, :level, :node_type, :content, :summary,
                     :confidence, :importance, :signal_strength, 'active', 'ai_reflect', 'ai_reflect',
                     :evidence_links, '[]', '{}', NOW(), NOW()
                 )
             """), {
                 "id": str(new_node_id),
                 "workspace_id": str(workspace_id),
+                "entity_id": str(entity_id) if entity_id else None,
                 "level": level,
                 "node_type": node_type,
                 "content": prop["content"],
@@ -549,6 +554,9 @@ class ReflectionService(BaseService):
                 else:
                     evidence_chain_json = str(evidence_chain)
 
+                # Determine source_level from candidate nodes
+                source_level = prop.get("source_level", 1)
+
                 await conn.execute(text("""
                     INSERT INTO proposals (
                         id, workspace_id, type, source_level, target_level,
@@ -563,8 +571,8 @@ class ReflectionService(BaseService):
                     "id": str(generate_uuid()),
                     "workspace_id": str(workspace_id),
                     "type": prop.get("type", "Ignore"),
-                    "source_level": 1,
-                    "target_level": prop.get("target_level", 2),
+                    "source_level": source_level,
+                    "target_level": prop.get("target_level", source_level + 1),
                     "entity": prop.get("entity", "unknown"),
                     "evidence_chain": evidence_chain_json,
                     "confidence": prop.get("confidence", 0.5),
@@ -597,48 +605,90 @@ class ReflectionService(BaseService):
         from backend.shared.infrastructure.database.engine import get_engine
 
         if scope in ("daily", "weekly", "monthly"):
-            # Get all active L1 facts (no time restriction - evidence-based)
-            nodes = await self._memory_node_repo.find_active_by_workspace(
-                workspace_id=workspace_id,
-                limit=limit * 3,  # Fetch more to allow filtering by evidence
-            )
-
-            # Find L2/L3 nodes that already have relationships (derived_from)
+            # Check if there are candidates in the candidates table
             engine = get_engine()
             async with engine.begin() as conn:
                 result = await conn.execute(text("""
-                    SELECT DISTINCT target_node_id
-                    FROM memory_relationships
+                    SELECT id, entity_id, area_id, content, candidate_type,
+                           evidence_source, evidence_id, evidence_chain,
+                           evidence_count, evidence_strength, status,
+                           COALESCE(source_level, 1) as source_level
+                    FROM candidates
                     WHERE workspace_id = :workspace_id
-                    AND relationship_type = 'derived_from'
-                """), {"workspace_id": str(workspace_id)})
-                evolved_target_ids = set(str(r[0]) for r in result.fetchall())
+                    AND status IN ('candidate', 'pending')
+                    ORDER BY created_at ASC
+                    LIMIT :limit
+                """), {"workspace_id": str(workspace_id), "limit": limit})
 
-            # Find L1 nodes that are NOT referenced by any L2/L3
-            # These are "orphan" facts that need evidence chain
-            unprocessed_ids: set[str] = set()
-            filtered_nodes: list[MemoryNode] = []
+                rows = result.fetchall()
+                if rows:
+                    # Return candidates as dicts with source_level
+                    result = []
+                    for row in rows:
+                        result.append({
+                            "id": str(row[0]),
+                            "entity_id": str(row[1]) if row[1] else None,
+                            "area_id": str(row[2]) if row[2] else None,
+                            "content": row[3],
+                            "node_type": row[4],  # candidate_type
+                            "evidence_source": row[5],
+                            "evidence_id": str(row[6]) if row[6] else None,
+                            "evidence_chain": row[7],
+                            "evidence_count": row[8],
+                            "evidence_strength": row[9],
+                            "status": row[10],
+                            "level": row[11] if row[11] else 1,  # source_level
+                        })
+                    logger.info(
+                        f"[EVOLUTION] Scope acquired: {len(result)} candidates"
+                    )
+                    return result
 
+            # No candidates - create from memory_nodes based on level
+            # L2 candidates from level=2 nodes for L2→L3 evolution
+            # L3+ candidates from level>=3 nodes for cascading evolution
+            # L1 candidates from unprocessed L1 nodes (generated_by is None or 'import')
+            nodes = await self._memory_node_repo.find_active_by_workspace(
+                workspace_id=workspace_id,
+                limit=limit * 3,
+            )
+
+            # Filter nodes for candidate creation
+            filtered_nodes = []
             for node in nodes:
-                if isinstance(node, MemoryNode) and node.level == 1:
-                    node_id = str(node.id)
-                    # Skip if already evolved (generated_by = 'ai_reflect')
-                    if getattr(node, 'generated_by', None) == 'ai_reflect':
-                        continue
-                    # Skip if already referenced by higher-level memory
-                    if node_id in evolved_target_ids:
-                        continue
-                    filtered_nodes.append(node)
-                    unprocessed_ids.add(node_id)
+                if isinstance(node, MemoryNode):
+                    if node.level == 1:
+                        # L1 nodes: only create candidates if not yet evolved
+                        if getattr(node, 'generated_by', None) != 'ai_reflect':
+                            filtered_nodes.append(node)
+                    else:
+                        # L2+ nodes: always create candidates for further evolution
+                        filtered_nodes.append(node)
+
                     if len(filtered_nodes) >= limit:
                         break
 
-            nodes = filtered_nodes
-
+            # Convert to candidates format with proper source_level
+            result = []
+            for node in filtered_nodes:
+                result.append({
+                    "id": str(node.id),
+                    "entity_id": str(node.entity_id) if getattr(node, 'entity_id', None) else None,
+                    "area_id": str(getattr(node, 'area_id', None)) if hasattr(node, 'area_id') and node.area_id else None,
+                    "content": node.content,
+                    "node_type": node.node_type,
+                    "evidence_source": getattr(node, 'source', None),
+                    "evidence_id": None,
+                    "evidence_chain": getattr(node, 'evidence_links', []) or [],
+                    "evidence_count": len(getattr(node, 'evidence_links', []) or []) if getattr(node, 'evidence_links', []) else 0,
+                    "evidence_strength": getattr(node, 'confidence', 0.5) or 0.5,
+                    "status": "pending",
+                    "level": node.level,  # source_level: 1 for L1→L2, 2 for L2→L3, etc.
+                })
             logger.info(
-                f"[EVOLUTION] Scope acquired: {len(nodes)} unprocessed L1 facts "
-                f"(skipped {len(evolved_target_ids)} already evolved)"
+                f"[EVOLUTION] Scope acquired: {len(result)} candidates from memory_nodes"
             )
+            return result
         else:
             # Entity scope: get all memories for this entity
             if entity_id:
