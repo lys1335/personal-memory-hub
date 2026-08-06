@@ -166,8 +166,6 @@ async def lifespan(app: FastAPI):
     logger.info("Database engine initialized successfully")
 
     # Start cron scheduler as background task (after engine is ready)
-    import asyncio
-    global _cron_scheduler_task
     if _cron_scheduler_task is None or _cron_scheduler_task.done():
         _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
         logger.info("[CRON] Scheduler task created")
