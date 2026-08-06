@@ -131,8 +131,8 @@ class ReflectionService(BaseService):
         # Limit candidates
         candidates = candidates[:limit]
 
-        # Step 2: Delegate to ReflectionEngine
-        engine_result = await self._run_engine_pipeline(scope, candidates)
+        # Step 2: Delegate to two-stage pipeline
+        engine_result = await self._run_engine_pipeline(scope, candidates, workspace_id)
 
         # Step 3: Save proposals to database
         await self._save_proposals(engine_result.get("proposals", []), workspace_id)
@@ -141,6 +141,7 @@ class ReflectionService(BaseService):
         duration_ms = (time.monotonic() - start_time) * 1000
         proposals = engine_result.get("proposals", [])
         facts = engine_result.get("facts", [])
+        evolved_candidates = engine_result.get("evolved_candidates", [])
 
         new_patterns = sum(
             1 for p in proposals if p.get("type") == "Create" and p.get("target_level") >= 2
@@ -162,6 +163,7 @@ class ReflectionService(BaseService):
             duration_ms=duration_ms,
             metadata={
                 "candidate_count": len(candidates),
+                "evolved_candidate_count": len(evolved_candidates),
                 "fact_count": len(facts),
                 "proposal_count": len(proposals),
                 "proposals": proposals,  # Add proposals for sandbox storage
@@ -504,6 +506,7 @@ class ReflectionService(BaseService):
         self,
         scope: str,
         candidates: list[dict[str, Any]],
+        workspace_id: UUID,
     ) -> dict[str, Any]:
         """Run the two-stage pipeline: EvidenceEvolution → Reflection.
 
@@ -512,8 +515,8 @@ class ReflectionService(BaseService):
         Stage 2: ReflectionEngine (Reasoning)
 
         Returns dict with:
-        - candidates: list of evolved candidates
-        - proposals: list of proposals
+        - evolved_candidates: list of candidates from Stage 1
+        - proposals: list of proposals from Stage 2
         - execution_log: processing log
         """
         import os
@@ -531,19 +534,24 @@ class ReflectionService(BaseService):
         execution_log = []
 
         # Stage 1: Evidence Evolution (Information Extraction)
-        # TODO (D4.2g): Once EvidenceEvolutionEngine is fully implemented,
-        # call evolve() here and save candidates to database.
-        # For now, use candidates as-is (backward compatibility).
         evidence_engine = EvidenceEvolutionEngine()
         evolution_result = await evidence_engine.evolve(
             evidence=candidates,
             provider=provider,
         )
-        execution_log.append(f"EvidenceEvolution: {len(evolution_result.candidates)} candidates processed")
+        execution_log.append(f"EvidenceEvolution: {len(evolution_result.candidates)} candidates created")
+        execution_log.extend(evolution_result.execution_log)
+
+        # Save evolved candidates to database (if any)
+        if evolution_result.candidates:
+            await self._save_candidates(evolution_result.candidates, workspace_id)
+            execution_log.append(f"Saved {len(evolution_result.candidates)} candidates to database")
 
         # Stage 2: Reflection (Reasoning)
-        # Use original candidates for reflection (fallback until EvidenceEvolution is complete)
-        reflection_candidates = evolution_result.candidates if evolution_result.candidates else candidates
+        # Use evolved candidates if available, otherwise fallback to original
+        reflection_candidates = (
+            evolution_result.candidates if evolution_result.candidates else candidates
+        )
         reflection_engine = ReflectionEngine()
         result = await reflection_engine.reflect_pipeline(
             scope=scope,
@@ -553,6 +561,7 @@ class ReflectionService(BaseService):
 
         # Merge execution logs
         result["execution_log"] = execution_log + result.get("execution_log", [])
+        result["evolved_candidates"] = evolution_result.candidates
 
         return result
 
@@ -609,6 +618,66 @@ class ReflectionService(BaseService):
                 })
 
             logger.info(f"Saved {len(proposals)} proposals for review")
+
+    async def _save_candidates(
+        self,
+        candidates: list[dict[str, Any]],
+        workspace_id: UUID,
+    ) -> None:
+        """Save evolved candidates to database.
+
+        Per D4.2g §8 Service Integration:
+        EvidenceEvolutionEngine outputs candidates that must be persisted
+        before ReflectionEngine processes them.
+        """
+        import json as json_lib
+
+        from sqlalchemy import text
+
+        from backend.shared.infrastructure.database.engine import get_engine
+        from backend.shared.infrastructure.uuid import generate_uuid
+
+        if not candidates:
+            return
+
+        engine = get_engine()
+        async with engine.begin() as conn:
+            for candidate in candidates:
+                # Serialize evidence_chain to JSON string for PostgreSQL
+                evidence_chain = candidate.get("evidence_chain", [])
+                if isinstance(evidence_chain, str):
+                    evidence_chain_json = evidence_chain
+                else:
+                    evidence_chain_json = json_lib.dumps(evidence_chain)
+
+                await conn.execute(text("""
+                    INSERT INTO candidates (
+                        id, workspace_id, entity_id, area_id, content,
+                        candidate_type, evidence_source, evidence_id,
+                        evidence_chain, evidence_count, evidence_strength,
+                        source_level, status, created_at, updated_at
+                    ) VALUES (
+                        :id, :workspace_id, :entity_id, :area_id, :content,
+                        :candidate_type, :evidence_source, :evidence_id,
+                        :evidence_chain, :evidence_count, :evidence_strength,
+                        :source_level, 'candidate', NOW(), NOW()
+                    )
+                """), {
+                    "id": str(generate_uuid()),
+                    "workspace_id": str(workspace_id),
+                    "entity_id": candidate.get("entity_id"),
+                    "area_id": candidate.get("area_id"),
+                    "content": candidate.get("content", ""),
+                    "candidate_type": candidate.get("candidate_type", "pattern"),
+                    "evidence_source": "evidence_evolution",
+                    "evidence_id": candidate.get("evidence_id"),
+                    "evidence_chain": evidence_chain_json,
+                    "evidence_count": candidate.get("evidence_count", 0),
+                    "evidence_strength": candidate.get("evidence_strength", candidate.get("confidence", 0.5)),
+                    "source_level": candidate.get("source_level", 1),
+                })
+
+            logger.info(f"Saved {len(candidates)} candidates to database")
 
     async def _acquire_scope(
         self,
