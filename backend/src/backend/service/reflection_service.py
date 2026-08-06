@@ -647,6 +647,20 @@ class ReflectionService(BaseService):
                 )
                 execution_log.extend(evolution_result.execution_log)
 
+                # Log detailed info for debugging
+                if evolution_result.candidates:
+                    logger.info(
+                        "[EVOLUTION] Batch %d: EvidenceEvolution generated %d candidates",
+                        batch_num, len(evolution_result.candidates),
+                    )
+                    # Show first candidate
+                    first_candidate = evolution_result.candidates[0]
+                    logger.info(
+                        "[EVOLUTION] First candidate keys: %s, content: %s",
+                        list(first_candidate.keys()),
+                        first_candidate.get('content', '')[:100],
+                    )
+
                 # Save evolved candidates to database (if any)
                 if evolution_result.candidates:
                     await self._save_candidates(evolution_result.candidates, workspace_id)
@@ -681,12 +695,19 @@ class ReflectionService(BaseService):
                 all_proposals.extend(result.get("proposals", []))
                 execution_log.extend(result.get("execution_log", []))
 
+                # Log detailed info for debugging
+                facts_count = len(result.get("facts", []))
+                proposals_count = len(result.get("proposals", []))
                 logger.info(
                     "[EVOLUTION] Batch %d/%d completed: facts=%d proposals=%d",
                     batch_num, batch_count,
-                    len(result.get("facts", [])),
-                    len(result.get("proposals", [])),
+                    facts_count, proposals_count,
                 )
+                if facts_count > 0:
+                    logger.info(
+                        "[EVOLUTION] First fact: %s",
+                        result["facts"][0] if result.get("facts") else "N/A",
+                    )
 
             except Exception as e:
                 logger.error(
