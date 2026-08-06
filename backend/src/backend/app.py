@@ -655,6 +655,122 @@ async def create_entity(body: dict = Body(...), services: dict = Depends(get_ser
 
 
 # ------------------------------------------------------------------
+# GET Endpoints for Dashboard Search (Entity, Area, Evidence)
+# ------------------------------------------------------------------
+
+@app.get("/entities", tags=["entities"])
+async def list_entities(
+    workspace_id: str = Query(None, description="Workspace UUID"),
+    keyword: str = Query(None, description="Search keyword")
+):
+    """GET /entities - Search entities by keyword."""
+    from sqlalchemy import text
+    from uuid import UUID
+    
+    engine = get_engine()
+    default_ws_id = "fb77c6ce-1e15-47e9-a8b7-2e707a011071"
+    target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
+    
+    async with engine.connect() as conn:
+        if keyword:
+            sql = """
+                SELECT id, canonical_name, entity_type, created_at
+                FROM entities
+                WHERE workspace_id = :wid
+                AND (canonical_name ILIKE :kw OR description ILIKE :kw)
+                ORDER BY created_at DESC
+                LIMIT 50
+            """
+            result = await conn.execute(text(sql), {"wid": target_wid, "kw": f"%{keyword}%"})
+        else:
+            sql = """
+                SELECT id, canonical_name, entity_type, created_at
+                FROM entities
+                WHERE workspace_id = :wid
+                ORDER BY created_at DESC
+                LIMIT 50
+            """
+            result = await conn.execute(text(sql), {"wid": target_wid})
+        rows = result.fetchall()
+        return {"data": [{"id": str(r[0]), "name": r[1], "type": r[2], "created_at": str(r[3])} for r in rows], "total": len(rows)}
+
+
+@app.get("/areas", tags=["entities"])
+async def list_areas(
+    workspace_id: str = Query(None, description="Workspace UUID"),
+    keyword: str = Query(None, description="Search keyword")
+):
+    """GET /areas - Search areas by keyword."""
+    from sqlalchemy import text
+    from uuid import UUID
+    
+    engine = get_engine()
+    default_ws_id = "fb77c6ce-1e15-47e9-a8b7-2e707a011071"
+    target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
+    
+    async with engine.connect() as conn:
+        if keyword:
+            sql = """
+                SELECT id, name, description, created_at
+                FROM areas
+                WHERE workspace_id = :wid
+                AND (name ILIKE :kw OR description ILIKE :kw)
+                ORDER BY created_at DESC
+                LIMIT 50
+            """
+            result = await conn.execute(text(sql), {"wid": target_wid, "kw": f"%{keyword}%"})
+        else:
+            sql = """
+                SELECT id, name, description, created_at
+                FROM areas
+                WHERE workspace_id = :wid
+                ORDER BY created_at DESC
+                LIMIT 50
+            """
+            result = await conn.execute(text(sql), {"wid": target_wid})
+        rows = result.fetchall()
+        return {"data": [{"id": str(r[0]), "name": r[1], "description": r[2], "created_at": str(r[3])} for r in rows], "total": len(rows)}
+
+
+@app.get("/evidences", tags=["memories"])
+async def list_evidences(
+    workspace_id: str = Query(None, description="Workspace UUID"),
+    keyword: str = Query(None, description="Search keyword"),
+    limit: int = Query(5, description="Max number of evidences to return")
+):
+    """GET /evidences - Search evidences by keyword."""
+    from sqlalchemy import text
+    from uuid import UUID
+    
+    engine = get_engine()
+    default_ws_id = "fb77c6ce-1e15-47e9-a8b7-2e707a011071"
+    target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
+    
+    async with engine.connect() as conn:
+        if keyword:
+            sql = """
+                SELECT id, content, source, created_at
+                FROM evidences
+                WHERE workspace_id = :wid
+                AND content ILIKE :kw
+                ORDER BY created_at DESC
+                LIMIT :limit
+            """
+            result = await conn.execute(text(sql), {"wid": target_wid, "kw": f"%{keyword}%", "limit": limit})
+        else:
+            sql = """
+                SELECT id, content, source, created_at
+                FROM evidences
+                WHERE workspace_id = :wid
+                ORDER BY created_at DESC
+                LIMIT :limit
+            """
+            result = await conn.execute(text(sql), {"wid": target_wid, "limit": limit})
+        rows = result.fetchall()
+        return {"data": [{"id": str(r[0]), "content": r[1][:200] if r[1] else "", "source": r[2], "created_at": str(r[3])} for r in rows], "total": len(rows)}
+
+
+# ------------------------------------------------------------------
 # Reflection Endpoints
 # ------------------------------------------------------------------
 
