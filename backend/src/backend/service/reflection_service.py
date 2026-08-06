@@ -231,6 +231,12 @@ class ReflectionService(BaseService):
             # Get entity_id from proposal (set during candidate creation)
             entity_id = prop.get("entity_id")
 
+            # Get evidence_chain from proposal (JSON array of evidence IDs)
+            evidence_chain = prop.get("evidence_chain", [])
+            if isinstance(evidence_chain, str):
+                import json as _json
+                evidence_chain = _json.loads(evidence_chain)
+
             await conn.execute(text("""
                 INSERT INTO memory_nodes (
                     id, workspace_id, entity_id, level, node_type, content, summary,
@@ -247,16 +253,16 @@ class ReflectionService(BaseService):
                 "entity_id": str(entity_id) if entity_id else None,
                 "level": level,
                 "node_type": node_type,
-                "content": prop["content"],
-                "summary": prop["summary"],
+                "content": prop.get("content", f"Evolved from L{level-1} evidence: {prop.get('entity', 'unknown')}"),
+                "summary": prop.get("summary", ""),
                 "confidence": prop["confidence"],
                 "importance": prop["confidence"],
                 "signal_strength": prop["confidence"],
-                "evidence_links": prop["evidence_chain"],
+                "evidence_links": evidence_chain,
             })
 
             # Create relationships (derived_from)
-            for evidence_id in prop["evidence_chain"]:
+            for evidence_id in evidence_chain:
                 await conn.execute(text("""
                     INSERT INTO memory_relationships (
                         id, workspace_id, source_node_id, target_node_id,
