@@ -365,15 +365,15 @@ async def get_proposal_evidence(proposal_id: str):
             import json as json_lib
             evidence_ids = json_lib.loads(evidence_ids)
 
-        # Get evidence details
+        # Get evidence details from evidences table (evidence_chain stores evidence IDs)
         if evidence_ids:
             placeholders = ",".join([f":e{i}" for i in range(len(evidence_ids))])
             stmt = text(f"""
                 SELECT id, content, created_at
-                FROM memory_nodes
+                FROM evidences
                 WHERE id IN ({placeholders})
             """)
-            params = {f"e{i}": str(eid) for i, eid in enumerate(evidence_ids)}
+            params = {f":e{i}": str(eid) for i, eid in enumerate(evidence_ids)}
             evidence_result = await conn.execute(stmt, params)
             evidence = []
             for e_row in evidence_result.fetchall():
