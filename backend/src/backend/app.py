@@ -163,23 +163,27 @@ async def lifespan(app: FastAPI):
     logger.info("Database engine initialized successfully")
 
     # Start cron scheduler as background task (after engine is ready)
-    import asyncio as _asyncio
+    import asyncio
     global _cron_scheduler_task
     if _cron_scheduler_task is None or _cron_scheduler_task.done():
-        _cron_scheduler_task = _asyncio.create_task(_cron_scheduler_loop())
+        _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
         logger.info("[CRON] Scheduler task created")
+        # Also store in app.state for access
+        app.state.cron_scheduler_task = _cron_scheduler_task
 
     yield
 
     # Shutdown
     logger.info("Shutting down Personal Memory Hub")
+    global _cron_scheduler_task
     if _cron_scheduler_task:
         _cron_scheduler_task.cancel()
         try:
             await _cron_scheduler_task
-        except _asyncio.CancelledError:
+        except asyncio.CancelledError:
             pass
         logger.info("[CRON] Scheduler task cancelled")
+        _cron_scheduler_task = None
     await engine.dispose()
 
 
