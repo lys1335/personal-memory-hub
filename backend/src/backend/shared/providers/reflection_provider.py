@@ -169,7 +169,7 @@ class OllamaReflectionProvider(ReflectionProvider):
             except json.JSONDecodeError as e:
                 logger.warning("Failed to parse LLM output as JSON: %s - Error: %s", text[:200], e)
                 # Try to recover truncated JSON by finding valid substring
-                    return cast(dict[str, Any], result)  # type: ignore[no-any-return]
+                return cast(dict[str, Any], result)  # type: ignore[no-any-return]
 
         # Try to find JSON in the text
         import re
