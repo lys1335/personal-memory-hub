@@ -630,12 +630,12 @@ async def test_reflection_service_no_candidates(
 
     # Mock get_engine to avoid real DB connection in tests
     # Note: get_engine is imported inside the method, so we patch the infrastructure module
-    
+
     # Create a proper async context manager for engine.begin()
     class MockQueryResult:
         def fetchall(self):
             return []
-    
+
     class MockAsyncContextManager:
         async def __aenter__(self):
             return self
@@ -643,11 +643,11 @@ async def test_reflection_service_no_candidates(
             pass
         async def execute(self, *args, **kwargs):
             return MockQueryResult()
-    
+
     mock_conn = MockAsyncContextManager()
     mock_engine = Mock()
     mock_engine.begin.return_value = mock_conn
-    
+
     with patch('backend.shared.infrastructure.database.engine.get_engine', return_value=mock_engine):
         result = await service.reflect(
             workspace_id=uuid4(),

@@ -82,7 +82,7 @@ class TestFactExtractorComponent:
         )
 
         assert result == []
-        assert any("failed" in l.lower() for l in log)
+        assert any("failed" in log_item.lower() for log_item in log)
 
 
 class TestInterestAnalyzerComponent:

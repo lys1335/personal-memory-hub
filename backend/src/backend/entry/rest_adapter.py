@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from backend.shared.infrastructure.uuid import generate_uuid
 
 from backend.entry.dto import (
     BaseResponse,
@@ -37,6 +36,7 @@ from backend.service.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from backend.shared.infrastructure.uuid import generate_uuid
 
 logger = logging.getLogger(__name__)
 

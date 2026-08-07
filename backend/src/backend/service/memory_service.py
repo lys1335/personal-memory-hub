@@ -959,7 +959,6 @@ class MemoryService(BaseService):
             from backend.shared.infrastructure.uuid import generate_uuid
             return generate_uuid()
         except ImportError:
-            import uuid
             return generate_uuid()
 
     async def _create_evidence(

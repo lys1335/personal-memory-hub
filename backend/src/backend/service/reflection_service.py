@@ -29,12 +29,15 @@ import time
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from sqlalchemy import text
+
 from backend.service.base import BaseService
 from backend.service.dto import (
     ReflectionExecutionResult,
     ReflectionStatus,
 )
 from backend.service.exceptions import ValidationError
+from backend.shared.infrastructure.uuid import generate_uuid
 
 # Batch processing configuration for LLM calls
 BATCH_SIZE = int(os.environ.get('REFLECTION_BATCH_SIZE', '10'))
@@ -325,6 +328,14 @@ class ReflectionService(BaseService):
                 })
 
             logger.info(f"Approved proposal {proposal_id}: created {node_type} node {new_node_id}")
+
+        # Check if auto-approval should trigger next level
+        auto_approved_next = False
+        confidence = prop.get("confidence", 0)
+        threshold = float(os.environ.get('AUTO_APPROVE_THRESHOLD', '0.9'))
+        max_level = int(os.environ.get('AUTO_APPROVE_MAX_LEVEL', '3'))
+        if confidence >= threshold and level < max_level:
+            auto_approved_next = True
 
         return ReflectionExecutionResult(
             status=ReflectionStatus.COMPLETED,
@@ -750,7 +761,7 @@ class ReflectionService(BaseService):
                     batch_num, batch_count, str(e),
                     exc_info=True,
                 )
-                execution_log.append(f"Batch {batch_num} failed: {str(e)}")
+                execution_log.append(f"Batch {batch_num} failed: {e!s}")
 
         return {
             "facts": all_facts,
@@ -772,7 +783,6 @@ class ReflectionService(BaseService):
         The documentation says TIMESTAMPTZ but actual DB uses UUID.
         """
         import json as json_lib
-        import uuid as uuid_lib
 
         from sqlalchemy import text
 
@@ -1090,5 +1100,4 @@ class ReflectionService(BaseService):
             from backend.shared.infrastructure.uuid import generate_uuid
             return generate_uuid()
         except ImportError:
-            import uuid
             return generate_uuid()
