@@ -162,7 +162,7 @@ class OllamaReflectionProvider(ReflectionProvider):
             try:
                 result = json.loads(text)
                 if isinstance(result, dict):
-                    return result
+                    return cast(dict[str, Any], result)
                 else:
                     logger.warning("LLM output is not a dict: %s", text[:200])
                     return {"error": "invalid_json", "raw": text}
@@ -178,7 +178,7 @@ class OllamaReflectionProvider(ReflectionProvider):
             try:
                 result = json.loads(json_match.group())
                 if isinstance(result, dict):
-                    return result
+                    return cast(dict[str, Any], result)
             except json.JSONDecodeError:
                 pass
 
@@ -207,7 +207,7 @@ class OllamaReflectionProvider(ReflectionProvider):
                         try:
                             result = json.loads(candidate)
                             if isinstance(result, dict):
-                                return result
+                                return cast(dict[str, Any], result)
                         except json.JSONDecodeError:
                             pass
             # If no complete object found, try to find facts array
@@ -223,7 +223,7 @@ class OllamaReflectionProvider(ReflectionProvider):
                 minimal_json = f'{{"facts": [{facts_content}], "entities": []}}'
                 try:
                     result = json.loads(minimal_json)
-                    return result
+                    return cast(dict[str, Any], result)
                 except json.JSONDecodeError:
                     pass
         except Exception as e:

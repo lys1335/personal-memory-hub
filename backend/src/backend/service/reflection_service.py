@@ -350,6 +350,8 @@ class ReflectionService(BaseService):
 
     async def _auto_approve_by_threshold(
         self,
+        conn: Any,
+        self,
         conn,
         workspace_id: UUID,
         target_level: int,
