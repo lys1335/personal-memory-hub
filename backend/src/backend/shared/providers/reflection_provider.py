@@ -162,7 +162,7 @@ class OllamaReflectionProvider(ReflectionProvider):
             try:
                 result = json.loads(text)
                 if isinstance(result, dict):
-                    return cast(dict[str, Any], result)
+                    return cast(dict[str, Any], result)  # type: ignore[return-value]
                 else:
                     logger.warning("LLM output is not a dict: %s", text[:200])
                     return {"error": "invalid_json", "raw": text}
