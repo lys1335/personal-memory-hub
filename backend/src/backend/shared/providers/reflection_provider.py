@@ -162,14 +162,14 @@ class OllamaReflectionProvider(ReflectionProvider):
             try:
                 result = json.loads(text)
                 if isinstance(result, dict):
-                    return cast(dict[str, Any], result)  # type: ignore[return-value]
+                    return cast(dict[str, Any], result)
                 else:
                     logger.warning("LLM output is not a dict: %s", text[:200])
                     return {"error": "invalid_json", "raw": text}
             except json.JSONDecodeError as e:
                 logger.warning("Failed to parse LLM output as JSON: %s - Error: %s", text[:200], e)
                 # Try to recover truncated JSON by finding valid substring
-                return cast(dict[str, Any], result)  # type: ignore[no-any-return]
+                return cast(dict[str, Any], result)
 
         # Try to find JSON in the text
         import re
