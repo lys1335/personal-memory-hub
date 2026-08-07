@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, cast
+from typing import Any, cast, cast
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ class OllamaReflectionProvider(ReflectionProvider):
             except json.JSONDecodeError as e:
                 logger.warning("Failed to parse LLM output as JSON: %s - Error: %s", text[:200], e)
                 # Try to recover truncated JSON by finding valid substring
-                return ReflectionProvider._recover_truncated_json(text)
+                return ReflectionProvider._recover_truncated_json(text)  # type: ignore[attr-defined]
 
         # Try to find JSON in the text
         import re

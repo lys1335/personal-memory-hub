@@ -287,7 +287,7 @@ class EvidenceEvolutionEngine(EngineBase):
         if not facts:
             return 0.0
 
-        confidences = [f.get("confidence", 0.5) for f in facts]
+        confidences = [float(f.get("confidence", 0.5)) for f in facts]
         return sum(confidences) / len(confidences)
 
     def _build_candidates(
