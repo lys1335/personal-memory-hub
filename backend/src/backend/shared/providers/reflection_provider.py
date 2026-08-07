@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, cast Any
 
 logger = logging.getLogger(__name__)
 
