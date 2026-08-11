@@ -146,6 +146,9 @@ class ReflectionService(BaseService):
         # Step 3: Save proposals to database
         await self._save_proposals(engine_result.get("proposals", []), workspace_id)
 
+        # Step 3.5: Auto-approve proposals that meet threshold
+        await self._auto_approve_pending_proposals(workspace_id)
+
         # Step 4: Calculate statistics
         duration_ms = (time.monotonic() - start_time) * 1000
         proposals = engine_result.get("proposals", [])
@@ -224,7 +227,12 @@ class ReflectionService(BaseService):
             if not prop_row:
                 raise ValidationError(f"Proposal not found: {proposal_id}")
 
-            prop = dict(prop_row)
+            # Convert UUID to string to avoid asyncpg type issues
+            prop = {k: (str(v) if hasattr(v, 'hex') and not isinstance(v, str) else v)
+                     for k, v in prop_row._mapping.items()}
+            # Ensure confidence is float for database operations
+            prop['confidence'] = float(prop['confidence']) if prop.get('confidence') else 0.9
+            prop['target_level'] = int(prop['target_level']) if prop.get('target_level') else 1
 
             # Update proposal status
             await conn.execute(text("""
@@ -238,7 +246,8 @@ class ReflectionService(BaseService):
             node_type = "Pattern" if level == 2 else "Belief" if level == 3 else "Observation"
 
             # Get entity_id from proposal (set during candidate creation)
-            entity_id = prop.get("entity_id")
+            # Note: proposals table does not have entity_id column, use None
+            entity_id = None
 
             # Get evidence_chain from proposal (JSONB column, may be string or list)
             evidence_chain_raw = prop.get("evidence_chain", [])
@@ -256,7 +265,7 @@ class ReflectionService(BaseService):
             # Approach 2: Aggregate evidence content for meaningful L2 node
             evidence_contents = []
             if evidence_chain:
-                # Query original evidences from evidences table (not memory_nodes)
+                # First try to get content from evidences table
                 evidence_query = await conn.execute(
                     text("""
                         SELECT e.content
@@ -269,6 +278,21 @@ class ReflectionService(BaseService):
                 for row in evidence_rows:
                     if row and row[0]:
                         evidence_contents.append(row[0])
+                
+                # If no evidences found, try candidates table (candidate IDs)
+                if not evidence_contents:
+                    candidate_query = await conn.execute(
+                        text("""
+                            SELECT c.content
+                            FROM candidates c
+                            WHERE c.id = ANY(:ids)
+                        """),
+                        {"ids": evidence_chain[:10]}
+                    )
+                    candidate_rows = candidate_query.fetchall()
+                    for row in candidate_rows:
+                        if row and row[0]:
+                            evidence_contents.append(row[0][:500])  # Limit length
 
             # Generate meaningful content and summary from evidence
             entity_name = prop.get("entity", "unknown")
@@ -310,22 +334,35 @@ class ReflectionService(BaseService):
             })
 
             # Create relationships (derived_from)
-            for evidence_id in evidence_chain:
-                await conn.execute(text("""
-                    INSERT INTO memory_relationships (
-                        id, workspace_id, source_node_id, target_node_id,
-                        relationship_type, contribution_weight, _meta, created_at
-                    ) VALUES (
-                        :rel_id, :workspace_id, :source_id, :target_id,
-                        'derived_from', :weight, '{}', NOW()
-                    )
-                """), {
-                    "rel_id": str(self._generate_id()),
-                    "workspace_id": str(workspace_id),
-                    "source_id": str(new_node_id),
-                    "target_id": evidence_id,
-                    "weight": prop["confidence"],
-                })
+            # Only create relationships for existing memory_nodes (not candidates)
+            evidence_target_ids = evidence_chain[:5]  # Limit to 5 relationships
+            for candidate_id in evidence_target_ids:
+                # Check if target exists in memory_nodes (not candidates)
+                target_check = await conn.execute(
+                    text("SELECT id FROM memory_nodes WHERE id = :id LIMIT 1"),
+                    {"id": str(candidate_id)}
+                )
+                if target_check.fetchone():
+                    try:
+                        await conn.execute(text("""
+                            INSERT INTO memory_relationships (
+                                id, workspace_id, source_node_id, target_node_id,
+                                relationship_type, contribution_weight, _meta, created_at
+                            ) VALUES (
+                                :rel_id, :workspace_id, :source_id, :target_id,
+                                'derived_from', :weight, '{}', NOW()
+                            )
+                        """), {
+                            "rel_id": str(self._generate_id()),
+                            "workspace_id": str(workspace_id),
+                            "source_id": str(new_node_id),
+                            "target_id": str(candidate_id),
+                            "weight": prop["confidence"],
+                        })
+                    except Exception as rel_err:
+                        # Skip if relationship creation fails
+                        logger.warning(f"Failed to create relationship for {candidate_id}: {rel_err}")
+                # If target not in memory_nodes, skip relationship creation
 
             logger.info(f"Approved proposal {proposal_id}: created {node_type} node {new_node_id}")
 
@@ -647,12 +684,12 @@ class ReflectionService(BaseService):
 
         from backend.engine.evidence_evolution_engine import EvidenceEvolutionEngine
         from backend.engine.reflection_engine import ReflectionEngine
-        from backend.shared.providers.reflection_provider import OllamaReflectionProvider
+        from backend.shared.providers.reflection_provider import LocalLlmProvider
 
-        # Use OllamaReflectionProvider (concrete implementation)
-        provider = OllamaReflectionProvider(
-            base_url=os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434"),
-            model=os.environ.get("REFLECTION_MODEL", "reflection-engine"),
+        # Use LocalLlmProvider (concrete implementation)
+        provider = LocalLlmProvider(
+            base_url=os.environ.get("PMH_OLLAMA_BASE_URL", "http://host.docker.internal:11434"),
+            model=os.environ.get("PMH_REFLECTION_MODEL", "fact-extractor:v5"),
         )
 
         execution_log = []
@@ -899,6 +936,66 @@ class ReflectionService(BaseService):
                 })
 
         logger.info(f"Saved {len(candidates)} candidates to database")
+
+    async def _auto_approve_pending_proposals(
+        self,
+        workspace_id: UUID,
+    ) -> int:
+        """Auto-approve pending proposals based on AUTO_APPROVE settings."""
+        import os
+
+        auto_approve = os.environ.get("AUTO_APPROVE", "false").lower() == "true"
+        if not auto_approve:
+            logger.info("Auto-approve disabled, skipping")
+            return 0
+
+        threshold = float(os.environ.get("AUTO_APPROVE_THRESHOLD", "0.9"))
+        max_level = int(os.environ.get("AUTO_APPROVE_MAX_LEVEL", "3"))
+
+        logger.info(f"Auto-approve: threshold={threshold}, max_level={max_level}")
+
+        from sqlalchemy import text
+        from backend.shared.infrastructure.database.engine import get_engine
+
+        engine = get_engine()
+        async with engine.begin() as conn:
+            result = await conn.execute(text("""
+                SELECT id, confidence, target_level FROM proposals
+                WHERE workspace_id = :workspace_id
+                  AND status = 'pending'
+                  AND confidence >= :threshold
+                  AND target_level <= :max_level
+                ORDER BY confidence DESC
+            """), {
+                "workspace_id": str(workspace_id),
+                "threshold": threshold,
+                "max_level": max_level,
+            })
+            rows = result.fetchall()
+
+            if not rows:
+                logger.info("No pending proposals meeting auto-approve criteria")
+                return 0
+
+            approved_count = 0
+            for row in rows:
+                proposal_id = row[0]
+                confidence = row[1]
+                target_level = row[2]
+                try:
+                    await self.approve_proposal(
+                        workspace_id=workspace_id,
+                        proposal_id=proposal_id,
+                    )
+                    approved_count += 1
+                    logger.info(
+                        f"Auto-approved L{target_level} proposal "
+                        f"{proposal_id} (confidence={confidence})"
+                    )
+                except Exception as e:
+                    logger.error(f"Auto-approve failed for {proposal_id}: {e}")
+
+            return approved_count
 
     async def _save_proposals(
         self,

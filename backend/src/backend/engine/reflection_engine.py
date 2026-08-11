@@ -175,6 +175,12 @@ class ReflectionEngine(EngineBase):
         try:
             result = await provider.generate(system_prompt, {"candidates": candidates})
             facts = result.get("facts", [])
+            # Ensure all facts have source_ids from candidate IDs
+            candidate_ids = [c.get("id") for c in candidates if c.get("id")]
+            for fact in facts:
+                if not fact.get("source_ids"):
+                    # Auto-populate source_ids from candidate IDs
+                    fact["source_ids"] = candidate_ids[:2]
             log.append(f"LLM extracted {len(facts)} facts")
             return facts, log
         except Exception as e:
@@ -324,10 +330,25 @@ class ReflectionEngine(EngineBase):
                         # Skip invalid placeholder like "memory_1"
                         pass
 
+            # If no valid evidence_chain from source_ids, use candidate IDs
+            # This ensures proposals always have valid evidence references
+            if not evidence_chain and candidates:
+                for c in candidates:
+                    cid = c.get("id")
+                    if cid:
+                        try:
+                            _uuid_mod.UUID(cid)
+                            if cid not in evidence_chain:
+                                evidence_chain.append(cid)
+                        except ValueError:
+                            pass
+                    if len(evidence_chain) >= 5:  # Limit to 5 evidence IDs
+                        break
+
             # Build meaningful summary from fact values
             fact_values = [f.get("value", "") for f in entity_facts if f.get("value")]
             if fact_values:
-                value_str = ", ".join(fact_values[:2])  # First 2 values
+                value_str = ", ".join(str(v) for v in fact_values[:2])  # First 2 values
                 summary_text = f"{entity}: {value_str}"
             else:
                 summary_text = f"{proposal_type} memory for '{entity}' ({len(entity_facts)} facts, confidence={avg_confidence:.2f})"

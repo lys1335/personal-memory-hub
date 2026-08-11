@@ -25,10 +25,15 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 COPY --from=builder /build/.venv /app/.venv
 COPY backend/src/ ./src/
 COPY backend/scripts/start.sh ./scripts/start.sh
+COPY backend/dashboard-main.html ./dashboard-main.html
 RUN chmod +x ./scripts/start.sh
+
+# Clear any existing bytecode cache to prevent stale .pyc issues
+RUN find /app -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/src"
+ENV PYTHONDONTWRITEBYTECODE=1
 
 USER appuser
 

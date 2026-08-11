@@ -5,18 +5,21 @@ ReflectionEngine must NOT depend on concrete LLM implementations.
 
 This module provides:
 - ReflectionProvider protocol (abstract interface)
-- OllamaReflectionProvider (MVP implementation)
+- LocalLlmProvider (local LLM via Ollama-compatible API)
 - MockReflectionProvider (for testing)
 
-Future: OpenAIReflectionProvider, LocalReflectionProvider, etc.
+Future: OpenAIReflectionProvider, AzureReflectionProvider, etc.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import urllib.request
+import urllib.error
 from abc import ABC, abstractmethod
-from typing import Any, cast
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,220 +45,183 @@ class ReflectionProvider(ABC):
         ...
 
 
-class OllamaReflectionProvider(ReflectionProvider):
-    """Ollama-based ReflectionProvider using a custom Modelfile.
+class LocalLlmProvider(ReflectionProvider):
+    """Local LLM provider using Ollama-compatible API.
 
-    MVP implementation. Configuration via environment variables:
-    - REFLECTION_MODEL (default: "reflection-engine")
-    - REFLECTION_TEMPERATURE (default: 0.3)
-    - OLLAMA_BASE_URL (default: "http://localhost:11434")
+    This is the default implementation for local LLM inference.
+    Configuration via environment variables:
+    - PMH_LLM_BASE_URL (default: "http://host.docker.internal:11434")
+    - PMH_REFLECTION_MODEL (default: "fact-extractor:v5")
     """
 
     def __init__(
         self,
-        model: str | None = None,
-        temperature: float | None = None,
         base_url: str | None = None,
+        model: str | None = None,
+        timeout: float = 120.0,
     ) -> None:
-        import os
-
-        self.model = model or os.environ.get("REFLECTION_MODEL", "reflection-engine")
-        self.temperature = (
-            temperature
-            if temperature is not None
-            else float(os.environ.get("REFLECTION_TEMPERATURE", "0.3"))
-        )
         self.base_url = (
-            base_url or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-        )
-        self._log = logging.getLogger(f"{__name__}.Ollama")
+            base_url
+            or __import__("os").environ.get("PMH_LLM_BASE_URL", "http://host.docker.internal:11434")
+        ).rstrip("/")
+        self.model = model or __import__("os").environ.get("PMH_REFLECTION_MODEL", "local-model")
+        self.timeout = timeout
+        self._log = logging.getLogger(f"{__name__}.LocalLlm")
 
-    async def generate(
-        self, prompt: str, context: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Call Ollama API with structured prompt."""
-
+    async def _wait_for_llm(self, retries: int = 3, delay: int = 2) -> None:
+        """Wait for LLM to be ready and model loaded."""
         try:
             import httpx
         except ImportError:
-            # Fallback to urllib if httpx not available
-            return await self._generate_with_urllib(prompt, context)
+            return
 
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"temperature": self.temperature},
-        }
+        for i in range(retries):
+            try:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(5.0)) as client:
+                    resp = await client.get(f"{self.base_url}/api/tags")
+                    if resp.status_code == 200:
+                        models = resp.json().get("models", [])
+                        model_names = [m.get("name", "") for m in models]
+                        if self.model in model_names:
+                            self._log.info(f"LLM ready, model {self.model} loaded")
+                            return
+                        self._log.warning(f"LLM ready but model {self.model} not found, waiting...")
+                    else:
+                        self._log.warning(f"LLM returned status {resp.status_code}, waiting...")
+            except Exception as e:
+                self._log.warning(f"LLM not ready (attempt {i+1}/{retries}): {e}")
+            if i < retries - 1:
+                await asyncio.sleep(delay)
+
+    async def generate(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]:
+        """Call local LLM API with structured prompt."""
+        # Wait for LLM to be ready
+        await self._wait_for_llm(retries=5, delay=5)
+
+        system_prompt = prompt
+
+        # Build the structured prompt if context has candidates
+        if context and "candidates" in context:
+            candidates = context["candidates"]
+            structured_prompt = f"""You are a fact extraction engine. Extract facts from the following candidates.
+
+Candidates:
+{json.dumps(candidates, ensure_ascii=False, indent=2)}
+
+Extract facts in this exact JSON format:
+{{
+  "facts": [
+    {{"entity": "entity name", "value": "fact value", "confidence": 0.9}}
+  ]
+}}
+
+Return ONLY valid JSON, no explanations."""
+        else:
+            structured_prompt = system_prompt
 
         url = f"{self.base_url}/api/generate"
-        self._log.info("Calling Ollama: model=%s, url=%s", self.model, url)
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(url, json=payload)
-            resp.raise_for_status()
-            raw = resp.json()
+        # Retry logic for model loading
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                import httpx
 
-        # Ollama generate returns "response" field
-        text_response = raw.get("response", "")
-        return self._parse_json_output(text_response)
+                payload = {
+                    "model": self.model,
+                    "prompt": structured_prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": 2048,
+                    },
+                }
 
-    async def _generate_with_urllib(
-        self, prompt: str, context: dict[str, Any]
-    ) -> dict[str, Any]:
+                self._log.info("Calling LLM: model=%s, url=%s", self.model, url)
+
+                async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout)) as client:
+                    resp = await client.post(url, json=payload)
+                    if resp.status_code == 404:
+                        self._log.warning(f"LLM returned 404 (attempt {attempt+1}/{max_retries}), waiting 10s...")
+                        await asyncio.sleep(10)
+                        await self._wait_for_llm(retries=3, delay=5)
+                        continue
+
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                # Parse response
+                response_text = data.get("response", "")
+                return self._parse_response(response_text)
+
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404 and attempt < max_retries - 1:
+                    self._log.warning(f"LLM returned 404 (attempt {attempt+1}/{max_retries}), waiting 10s...")
+                    await asyncio.sleep(10)
+                    continue
+                raise
+            except Exception as e:
+                self._log.error(f"LLM call failed: {e}")
+                if attempt < max_retries - 1:
+                    self._log.info(f"Retrying LLM call (attempt {attempt+2}/{max_retries})...")
+                    await asyncio.sleep(5)
+                    continue
+                raise
+
+        # Fallback: use urllib for compatibility
+        return await self._generate_urllib(structured_prompt)
+
+    async def _generate_urllib(self, prompt: str) -> dict[str, Any]:
         """Fallback using urllib for environments without httpx."""
-        import urllib.error
-        import urllib.request
-
-        payload = {
+        url = f"{self.base_url}/api/generate"
+        payload = json.dumps({
             "model": self.model,
             "prompt": prompt,
             "stream": False,
-            "options": {"temperature": self.temperature},
-        }
+        }).encode("utf-8")
 
-        data = json.dumps(payload).encode("utf-8")
-        url = f"{self.base_url}/api/generate"
-
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-
-        self._log.info("Calling Ollama (urllib): model=%s, url=%s", self.model, url)
+        self._log.info("Calling LLM (urllib): model=%s, url=%s", self.model, url)
 
         try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                raw = json.loads(resp.read().decode("utf-8"))
-        except urllib.error.URLError as e:
-            self._log.error("Ollama connection failed: %s", e)
-            raise
-
-        text_response = raw.get("response", "")
-        return self._parse_json_output(text_response)
-
-    @staticmethod
-    def _parse_json_output(text: str) -> dict[str, Any]:
-        """Parse LLM text response into structured JSON.
-
-        Handles cases where LLM wraps JSON in markdown code blocks
-        like ```json { ... } ``` or just ``` { ... } ```,
-        and also handles truncated/incomplete JSON by finding valid substrings.
-        """
-        text = text.strip()
-
-        # Strip markdown code fences if present (with or without language)
-        if text.startswith("```"):
-            lines = text.split("\n")
-            # Remove opening fence (possibly with language tag like ```json)
-            if lines:
-                lines = lines[1:]
-            # Remove closing fence
-            if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-
-        # If still starts with {, try to parse
-        if text.startswith("{"):
-            try:
-                result = json.loads(text)
-                if isinstance(result, dict):
-                    return cast(dict[str, Any], result)
-                else:
-                    logger.warning("LLM output is not a dict: %s", text[:200])
-                    return {"error": "invalid_json", "raw": text}
-            except json.JSONDecodeError as e:
-                logger.warning("Failed to parse LLM output as JSON: %s - Error: %s", text[:200], e)
-                # Try to recover truncated JSON by finding valid substring
-                return cast(dict[str, Any], result)
-
-        # Try to find JSON in the text
-        import re
-        json_match = re.search(r'\{[^{}]*"facts"[^{}]*\}', text, re.DOTALL)
-        if json_match:
-            try:
-                result = json.loads(json_match.group())
-                if isinstance(result, dict):
-                    return cast(dict[str, Any], result)
-            except json.JSONDecodeError:
-                pass
-
-        logger.warning("Failed to parse LLM output as JSON: %s", text[:200])
-        return {"error": "invalid_json", "raw": text}
-
-    @staticmethod
-    def _recover_truncated_json(text: str) -> dict[str, Any]:
-        """Attempt to recover valid JSON from truncated LLM output.
-
-        This handles cases where the model returns incomplete JSON
-        due to token limits, especially with long Chinese text.
-        """
-        try:
-            import re
-            # Find the last complete JSON object by looking for balanced braces
-            depth = 0
-            for i, char in enumerate(text):
-                if char == '{':
-                    depth += 1
-                elif char == '}':
-                    depth -= 1
-                    if depth == 0:
-                        # Found a complete JSON object
-                        candidate = text[:i+1]
-                        try:
-                            result = json.loads(candidate)
-                            if isinstance(result, dict):
-                                return cast(dict[str, Any], result)
-                        except json.JSONDecodeError:
-                            pass
-            # If no complete object found, try to find facts array
-            facts_match = re.search(r'"facts"\s*:\s*\[(.*?)\]', text, re.DOTALL)
-            if facts_match:
-                # Try to reconstruct minimal valid JSON
-                facts_content = facts_match.group(1)
-                # Clean up incomplete fact objects
-                facts_content = re.sub(r',\s*}', '}', facts_content)
-                facts_content = re.sub(r'\[\s*,', '[', facts_content)
-                facts_content = re.sub(r',\s*\]', ']', facts_content)
-                # Try parsing with minimal structure
-                minimal_json = f'{{"facts": [{facts_content}], "entities": []}}'
-                try:
-                    result = json.loads(minimal_json)
-                    return cast(dict[str, Any], result)
-                except json.JSONDecodeError:
-                    pass
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                response_text = data.get("response", "")
+                return self._parse_response(response_text)
         except Exception as e:
-            logger.error("JSON recovery failed: %s", e)
+            self._log.error("LLM connection failed: %s", e)
+            return {"facts": []}
 
-        return {"error": "invalid_json", "raw": text[:200]}
+    def _parse_response(self, response_text: str) -> dict[str, Any]:
+        """Parse LLM response into structured facts."""
+        # Try to extract JSON from response
+        response_text = response_text.strip()
+
+        # Find JSON block
+        start = response_text.find("{")
+        end = response_text.rfind("}")
+        if start != -1 and end != -1:
+            response_text = response_text[start : end + 1]
+
+        try:
+            data = json.loads(response_text)
+            return data
+        except json.JSONDecodeError as e:
+            self._log.error(f"Failed to parse LLM response: {e}")
+            # Return empty facts
+            return {"facts": []}
 
 
 class MockReflectionProvider(ReflectionProvider):
-    """Mock provider for unit testing.
+    """Mock provider for testing."""
 
-    Returns deterministic results based on input, useful for Engine tests.
-    """
+    def __init__(self, facts: list[dict[str, Any]] | None = None) -> None:
+        self.facts = facts or []
 
-    def __init__(self, mock_data: dict[str, Any] | None = None) -> None:
-        self._mock_data = mock_data or {}
-        self.call_count: int = 0
-        self.last_prompt: str | None = None
-
-    async def generate(
-        self, prompt: str, context: dict[str, Any]
-    ) -> dict[str, Any]:
-        self.call_count += 1
-        self.last_prompt = prompt
-
-        if self._mock_data:
-            return self._mock_data
-
-        # Default mock response
-        return {
-            "facts": [],
-            "entities": [],
-            "interest_trends": {},
-            "proposals": [],
-        }
+    async def generate(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]:
+        return {"facts": self.facts}

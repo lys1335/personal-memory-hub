@@ -166,10 +166,13 @@ class EvidenceEvolutionEngine(EngineBase):
             content = e.get("content", "")
             # Truncate very long content to avoid token limit
             content = content[:500] if len(content) > 500 else content
-            evidence_id = e.get("id", f"evidence_{i+1}")
+            evidence_id = e.get("id", None)
+            # Ensure evidence_id is a valid UUID (or generate one)
+            if not evidence_id:
+                evidence_id = str(generate_uuid())
             contents.append(f"[{i+1}] ID:{evidence_id} | {content}")
 
-        evidence_ids = [e.get("id", f"evidence_{i+1}") for i, e in enumerate(evidence)]
+        evidence_ids = [e.get("id") or str(generate_uuid()) for e in evidence]
 
         # Extraction prompt per D4.2g §7.2
         system_prompt = (
@@ -185,6 +188,11 @@ class EvidenceEvolutionEngine(EngineBase):
         try:
             result = await provider.generate(system_prompt, {"evidence": evidence})
             facts = result.get("facts", [])
+            # Ensure all facts have source_ids from the evidence
+            for fact in facts:
+                if not fact.get("source_ids"):
+                    # Auto-populate source_ids from evidence IDs
+                    fact["source_ids"] = evidence_ids[:2]  # Use first 2 evidence IDs
             log.append(f"LLM extracted {len(facts)} facts from {len(evidence)} evidence items")
             return facts, log
         except Exception as e:

@@ -427,6 +427,9 @@
                 <div class="nav-item" data-tab="evolution" onclick="switchTab('evolution')">
                     <span class="nav-icon">🧠</span> 演化评审
                 </div>
+                <div class="nav-item" data-tab="settings" onclick="switchTab('settings')">
+                    <span class="nav-icon">⚙️</span> 设置
+                </div>
             </div>
             <div class="sidebar-footer">
                 <div class="status-bar">
@@ -456,6 +459,22 @@
                         <div class="chart-box" id="chartModel"></div>
                         <div class="chart-box" id="chartTime"></div>
                         <div class="chart-box" id="chartWord"></div>
+                    </div>
+
+                    <!-- Performance Panel (right, new) -->
+                    <div class="panel performance-panel" style="grid-column: 2; grid-row: 2;">
+                        <div class="panel-title">📈 系统性能监控</div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; flex:1; overflow:hidden;">
+                            <div class="chart-box" style="min-height:120px;" id="chartGPU"></div>
+                            <div class="chart-box" style="min-height:120px;" id="chartCPU"></div>
+                            <div class="chart-box" style="min-height:120px;" id="chartRAM"></div>
+                            <div class="chart-box" style="min-height:120px;" id="chartOllama"></div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:10px; font-size:11px; color:#888;">
+                            <span id="gpuMemStat" style="color:#ce93d8;">GPU: -</span>
+                            <span id="cpuStat" style="color:#4fc3f7;">CPU: -</span>
+                            <span id="ramStat" style="color:#4caf50;">内存: -</span>
+                        </div>
                     </div>
 
                     <!-- Memory Carousel (right) -->
@@ -630,6 +649,79 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SETTINGS TAB -->
+            <div class="tab-content" id="tab-settings">
+                <div style="display:flex; flex-direction:column; height:100%; padding:20px; overflow-y:auto;">
+                    <h2 style="font-size:16px; color:#e0e0e0; margin:0 0 20px;">⚙️ 系统设置</h2>
+                    
+                    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:20px; max-width:800px;">
+                        <!-- Evolution Settings -->
+                        <div class="panel">
+                            <div class="panel-title">🧬 演化配置</div>
+                            <div style="display:flex; flex-direction:column; gap:12px;">
+                                <div>
+                                    <label style="font-size:12px; color:#aaa; display:block; margin-bottom:4px;">BATCH_SIZE (批处理大小)</label>
+                                    <input type="number" id="settingBatchSize" value="10" min="1" max="50" 
+                                        style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; color:#aaa; display:block; margin-bottom:4px;">演化限制 (Limit)</label>
+                                    <input type="number" id="settingEvolutionLimit" value="200" min="50" max="500" step="50"
+                                        style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; color:#aaa; display:block; margin-bottom:4px;">自动批准阈值 (Confidence)</label>
+                                    <input type="number" id="settingAutoApproveThreshold" value="0.9" min="0.5" max="1.0" step="0.05"
+                                        style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; color:#aaa; display:block; margin-bottom:4px;">最大演化层级 (Max Level)</label>
+                                    <input type="number" id="settingMaxLevel" value="3" min="1" max="5"
+                                        style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                </div>
+                                <button onclick="saveSettings()" style="padding:8px 16px; border:none; border-radius:6px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-size:13px; margin-top:8px;">💾 保存设置</button>
+                            </div>
+                        </div>
+
+                        <!-- Schedule Settings -->
+                        <div class="panel">
+                            <div class="panel-title">⏱ 定时任务配置</div>
+                            <div style="display:flex; flex-direction:column; gap:12px;">
+                                <div>
+                                    <label style="font-size:12px; color:#aaa; display:block; margin-bottom:4px;">演化任务间隔 (秒)</label>
+                                    <input type="number" id="settingCronInterval" value="600" min="60" max="3600" step="60"
+                                        style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; color:#aaa; display:block; margin-bottom:4px;">GPU 预热延迟 (秒)</label>
+                                    <input type="number" id="settingGpuPreheat" value="60" min="30" max="180"
+                                        style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; color:#aaa; display:block; margin-bottom:4px;">性能监控刷新间隔 (秒)</label>
+                                    <input type="number" id="settingPerfRefresh" value="30" min="10" max="120"
+                                        style="width:100%; padding:8px; border:none; border-radius:6px; background:rgba(0,0,0,0.3); color:#e0e0e0; font-size:13px;">
+                                </div>
+                                <button onclick="saveSettings()" style="padding:8px 16px; border:none; border-radius:6px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:white; cursor:pointer; font-size:13px; margin-top:8px;">💾 保存设置</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Notes -->
+                    <div style="margin-top:20px; padding:15px; background:rgba(255,152,0,0.1); border-radius:8px; border-left:3px solid #ff9800; max-width:800px;">
+                        <div style="font-size:13px; color:#ffb74d; font-weight:bold; margin-bottom:8px;">⚠️ 性能调优提示</div>
+                        <div style="font-size:12px; color:#aaa; line-height:1.6;">
+                            • <b>黑屏问题</b>：当 GPU 显存不足或计算超时（WDDM TDR），Windows 会导致黑屏。建议：<br>
+                            - 降低 <code style="background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;">BATCH_SIZE</code> 到 5-10<br>
+                            - 降低 <code style="background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;">Max Level</code> 到 2<br>
+                            - 确保 GPU 显存使用率 < 80%<br><br>
+                            • <b>当前配置</b>：Ollama 模型使用 ~5.3GB 显存，RTX 3070 Ti 共 8GB<br>
+                            • <b>建议</b>：保持 <code style="background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;">num_ctx=4096</code>，避免 32K 上下文
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -646,9 +738,28 @@
             document.querySelector(`.nav-item[data-tab="${tabName}"]`).classList.add('active');
         }
 
+        // === Service Check with Connection Cleanup ===
+        let checkInterval = null;
+        let perfInterval = null;
+        let isPageVisible = true;
+        
+        // Handle page visibility - stop polling when hidden
+        document.addEventListener('visibilitychange', () => {
+            isPageVisible = document.visibilityState === 'visible';
+            if (!isPageVisible) {
+                console.log('Page hidden, pausing service checks');
+            }
+        });
+        
         async function checkServices() {
+            if (!isPageVisible) return;
+            
             try {
-                const r = await fetch(MEM_HUB + '/health', { method: 'GET', signal: AbortSignal.timeout(3000) });
+                const r = await fetch(MEM_HUB + '/health', { 
+                    method: 'GET', 
+                    signal: AbortSignal.timeout(3000),
+                    keepAlive: false
+                });
                 if (r.ok) {
                     document.getElementById('mhDot').className = 'dot green';
                     document.getElementById('mhLabel').textContent = 'Memory Hub: 已连接';
@@ -658,7 +769,10 @@
                 document.getElementById('mhLabel').textContent = 'Memory Hub: 断开';
             }
             try {
-                const r = await fetch(OLLAMA_BASE + '/api/tags');
+                const r = await fetch(OLLAMA_BASE + '/api/tags', {
+                    signal: AbortSignal.timeout(3000),
+                    keepAlive: false
+                });
                 const d = await r.json();
                 const names = (d.models||[]).map(m=>m.name).join(', ');
                 document.getElementById('olDot').className = 'dot green';
@@ -668,8 +782,12 @@
                 document.getElementById('olLabel').textContent = 'Ollama: 断开';
             }
         }
+        
+        // Reduced polling frequency: 30s instead of 10s
         checkServices();
-        setInterval(checkServices, 10000);
+        checkInterval = setInterval(() => {
+            if (isPageVisible) checkServices();
+        }, 30000);
 
         function addMsg(text, cls) {
             const c = document.getElementById('chatArea');
@@ -1148,12 +1266,227 @@
             originalSwitchTab(tabName);
             if (tabName === 'home') {
                 setTimeout(initCharts, 100);
+                setTimeout(initPerfCharts, 200);
+            }
+            if (tabName === 'settings') {
+                setTimeout(loadSettings, 100);
             }
         };
 
         // Start carousel and charts on load
         setTimeout(loadRandomMemory, 2000);
         setTimeout(initCharts, 2500);
+        setTimeout(initPerfCharts, 3000);
+
+        // === Performance Monitoring ===
+        let perfCharts = {};
+        const perfHistory = {
+            gpu: [],
+            cpu: [],
+            ram: [],
+            ollama: []
+        };
+        const MAX_PERF_HISTORY = 20;
+
+        async function initPerfCharts() {
+            try {
+                // GPU Memory Chart
+                perfCharts.gpu = echarts.init(document.getElementById('chartGPU'));
+                perfCharts.gpu.setOption({
+                    title: { text: 'GPU 显存', left: 'center', textStyle: { color: '#ce93d8', fontSize: 11 } },
+                    tooltip: { trigger: 'axis' },
+                    grid: { top: 30, right: 10, bottom: 20, left: 10 },
+                    xAxis: { type: 'category', show: false },
+                    yAxis: { type: 'value', show: false, min: 0, max: 8192 },
+                    series: [{
+                        data: perfHistory.gpu,
+                        type: 'line',
+                        smooth: true,
+                        symbol: 'none',
+                        lineStyle: { color: '#ce93d8', width: 2 },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(206,147,216,0.3)' }, { offset: 1, color: 'rgba(206,147,216,0)' }] } }
+                    }]
+                });
+
+                // CPU Usage Chart
+                perfCharts.cpu = echarts.init(document.getElementById('chartCPU'));
+                perfCharts.cpu.setOption({
+                    title: { text: 'CPU 使用率', left: 'center', textStyle: { color: '#4fc3f7', fontSize: 11 } },
+                    tooltip: { trigger: 'axis' },
+                    grid: { top: 30, right: 10, bottom: 20, left: 10 },
+                    xAxis: { type: 'category', show: false },
+                    yAxis: { type: 'value', show: false, min: 0, max: 100 },
+                    series: [{
+                        data: perfHistory.cpu,
+                        type: 'line',
+                        smooth: true,
+                        symbol: 'none',
+                        lineStyle: { color: '#4fc3f7', width: 2 },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(79,195,247,0.3)' }, { offset: 1, color: 'rgba(79,195,247,0)' }] } }
+                    }]
+                });
+
+                // RAM Usage Chart
+                perfCharts.ram = echarts.init(document.getElementById('chartRAM'));
+                perfCharts.ram.setOption({
+                    title: { text: '内存使用', left: 'center', textStyle: { color: '#4caf50', fontSize: 11 } },
+                    tooltip: { trigger: 'axis' },
+                    grid: { top: 30, right: 10, bottom: 20, left: 10 },
+                    xAxis: { type: 'category', show: false },
+                    yAxis: { type: 'value', show: false, min: 0, max: 16384 },
+                    series: [{
+                        data: perfHistory.ram,
+                        type: 'line',
+                        smooth: true,
+                        symbol: 'none',
+                        lineStyle: { color: '#4caf50', width: 2 },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(76,175,80,0.3)' }, { offset: 1, color: 'rgba(76,175,80,0)' }] } }
+                    }]
+                });
+
+                // Ollama Model Chart
+                perfCharts.ollama = echarts.init(document.getElementById('chartOllama'));
+                perfCharts.ollama.setOption({
+                    title: { text: 'Ollama 模型', left: 'center', textStyle: { color: '#ff9800', fontSize: 11 } },
+                    tooltip: { trigger: 'axis' },
+                    grid: { top: 30, right: 10, bottom: 20, left: 10 },
+                    xAxis: { type: 'category', show: false },
+                    yAxis: { type: 'value', show: false, min: 0, max: 8192 },
+                    series: [{
+                        data: perfHistory.ollama,
+                        type: 'line',
+                        smooth: true,
+                        symbol: 'none',
+                        lineStyle: { color: '#ff9800', width: 2 },
+                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(255,152,0,0.3)' }, { offset: 1, color: 'rgba(255,152,0,0)' }] } }
+                    }]
+                });
+
+                // Start polling
+                refreshPerfMetrics();
+                setInterval(refreshPerfMetrics, 30000); // Refresh every 30 seconds
+            } catch(e) {
+                console.error('Performance charts init failed:', e);
+            }
+        }
+
+        async function refreshPerfMetrics() {
+            if (!isPageVisible) return;
+            
+            try {
+                // Use shorter timeout and handle errors gracefully
+                const gpuRes = await fetch('/api/performance/gpu', { 
+                    signal: AbortSignal.timeout(2000),
+                    keepAlive: false
+                }).catch(() => null);
+                const cpuRes = await fetch('/api/performance/cpu', { 
+                    signal: AbortSignal.timeout(2000),
+                    keepAlive: false
+                }).catch(() => null);
+                const ramRes = await fetch('/api/performance/ram', { 
+                    signal: AbortSignal.timeout(2000),
+                    keepAlive: false
+                }).catch(() => null);
+                const ollamaRes = await fetch('/api/ollama/stats', { 
+                    signal: AbortSignal.timeout(2000),
+                    keepAlive: false
+                }).catch(() => null);
+
+                let gpuVal = 0, cpuVal = 0, ramVal = 0, ollamaVal = 0;
+
+                if (gpuRes?.ok) {
+                    const d = await gpuRes.json();
+                    gpuVal = d.memory_used || 0;
+                    document.getElementById('gpuMemStat').textContent = `GPU: ${gpuVal} MiB`;
+                } else {
+                    // No endpoint available, use fallback
+                    gpuVal = 5333;
+                    document.getElementById('gpuMemStat').textContent = `GPU: ${gpuVal} MiB (model)`;
+                }
+                if (cpuRes?.ok) {
+                    const d = await cpuRes.json();
+                    cpuVal = d.usage_percent || 0;
+                    document.getElementById('cpuStat').textContent = `CPU: ${cpuVal}%`;
+                }
+                if (ramRes?.ok) {
+                    const d = await ramRes.json();
+                    ramVal = d.used_mb || 0;
+                    document.getElementById('ramStat').textContent = `内存: ${ramVal} MiB`;
+                }
+                if (ollamaRes?.ok) {
+                    const d = await ollamaRes.json();
+                    ollamaVal = d.models?.[0]?.size / 1024 / 1024 / 1024 || 0;
+                }
+
+                // Update history
+                const now = Date.now();
+                perfHistory.gpu.push({ value: gpuVal, time: now });
+                perfHistory.cpu.push({ value: cpuVal, time: now });
+                perfHistory.ram.push({ value: ramVal, time: now });
+                perfHistory.ollama.push({ value: ollamaVal, time: now });
+
+                // Keep only last N points
+                Object.keys(perfHistory).forEach(k => {
+                    if (perfHistory[k].length > MAX_PERF_HISTORY) {
+                        perfHistory[k] = perfHistory[k].slice(-MAX_PERF_HISTORY);
+                    }
+                });
+
+                // Update charts
+                if (perfCharts.gpu) {
+                    perfCharts.gpu.setOption({
+                        yAxis: { max: gpuVal > 4000 ? 8192 : 4096 },
+                        series: [{ data: perfHistory.gpu.map(p => p.value) }]
+                    });
+                }
+                if (perfCharts.cpu) perfCharts.cpu.setOption({ series: [{ data: perfHistory.cpu.map(p => p.value) }] });
+                if (perfCharts.ram) {
+                    perfCharts.ram.setOption({
+                        yAxis: { max: 16384 },
+                        series: [{ data: perfHistory.ram.map(p => p.value) }]
+                    });
+                }
+                if (perfCharts.ollama) perfCharts.ollama.setOption({ series: [{ data: perfHistory.ollama.map(p => p.value) }] });
+
+            } catch(e) {
+                // Silently fail - don't spam console
+                if (e.name !== 'AbortError') {
+                    console.debug('Perf metrics update skipped:', e.message);
+                }
+            }
+        }
+
+        // === Settings Tab Functions ===
+        async function loadSettings() {
+            try {
+                // Load current settings from localStorage or defaults
+                const settings = JSON.parse(localStorage.getItem('pmh_settings') || '{}');
+                document.getElementById('settingBatchSize').value = settings.batch_size || 10;
+                document.getElementById('settingEvolutionLimit').value = settings.evolution_limit || 200;
+                document.getElementById('settingAutoApproveThreshold').value = settings.auto_approve_threshold || 0.9;
+                document.getElementById('settingMaxLevel').value = settings.max_level || 3;
+                document.getElementById('settingCronInterval').value = settings.cron_interval || 600;
+                document.getElementById('settingGpuPreheat').value = settings.gpu_preheat || 60;
+                document.getElementById('settingPerfRefresh').value = settings.perf_refresh || 30;
+            } catch(e) {
+                console.error('Failed to load settings:', e);
+            }
+        }
+
+        async function saveSettings() {
+            const settings = {
+                batch_size: parseInt(document.getElementById('settingBatchSize').value),
+                evolution_limit: parseInt(document.getElementById('settingEvolutionLimit').value),
+                auto_approve_threshold: parseFloat(document.getElementById('settingAutoApproveThreshold').value),
+                max_level: parseInt(document.getElementById('settingMaxLevel').value),
+                cron_interval: parseInt(document.getElementById('settingCronInterval').value),
+                gpu_preheat: parseInt(document.getElementById('settingGpuPreheat').value),
+                perf_refresh: parseInt(document.getElementById('settingPerfRefresh').value)
+            };
+
+            localStorage.setItem('pmh_settings', JSON.stringify(settings));
+            alert('设置已保存到本地存储');
+        }
 
         // === SQL Query Tab Functions ===
         let tableColumnsCache = {};

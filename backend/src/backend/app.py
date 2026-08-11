@@ -12,12 +12,15 @@ import sys
 import threading
 from contextlib import asynccontextmanager
 from dataclasses import asdict
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-# Add src directory to path
+# Add src directory to path BEFORE any backend imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from backend.shared.infrastructure.uuid import generate_uuid
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,6 +45,13 @@ AUTO_APPROVE_PROPOSALS = os.environ.get('AUTO_APPROVE', 'true').lower() == 'true
 AUTO_APPROVE_THRESHOLD = float(os.environ.get('AUTO_APPROVE_THRESHOLD', '0.95'))
 # Max memory level to auto-approve (default: 3, set 0 to disable)
 AUTO_APPROVE_MAX_LEVEL = int(os.environ.get('AUTO_APPROVE_MAX_LEVEL', '3'))
+
+# Performance API cache to avoid frequent Ollama calls
+_perf_cache = {
+    "gpu": {"value": None, "timestamp": None},
+    "ollama": {"value": None, "timestamp": None},
+}
+_perf_cache_ttl = timedelta(seconds=30)  # Cache for 30 seconds
 
 
 async def get_session() -> AsyncSession:
@@ -91,7 +101,7 @@ def get_services(
     from backend.shared.infrastructure.config.settings import get_settings
     _settings = get_settings()
     embedding_service = EmbeddingService(
-        ollama_base_url=_settings.OLLAMA_BASE_URL,
+        ollama_base_url=_settings.PMH_OLLAMA_BASE_URL,
         model=_settings.EMBEDDING_MODEL,
     )
 
@@ -166,10 +176,13 @@ async def lifespan(app: FastAPI):
     logger.info("Database engine initialized successfully")
 
     # Start cron scheduler as background task (after engine is ready)
-    if _cron_scheduler_task is None or _cron_scheduler_task.done():
-        _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
-        logger.info("[CRON] Scheduler task created")
-        app.state.cron_scheduler_task = _cron_scheduler_task
+    try:
+        if _cron_scheduler_task is None or _cron_scheduler_task.done():
+            _cron_scheduler_task = asyncio.create_task(_cron_scheduler_loop())
+            logger.info("[CRON] Scheduler task created")
+            # Use global variable instead of app.state to avoid None app issue
+    except Exception as e:
+        logger.error(f"[CRON] Failed to create scheduler task: {e}", exc_info=True)
 
     yield
 
@@ -222,6 +235,122 @@ async def health_check() -> dict[str, Any]:
         "service": "personal-memory-hub",
         "version": "0.1.0",
     }
+
+
+# ------------------------------------------------------------------
+# Performance Monitoring Endpoints
+# ------------------------------------------------------------------
+
+@app.get("/api/performance/gpu", tags=["performance"])
+async def get_gpu_info() -> dict[str, Any]:
+    """Get GPU memory usage - inferred from Ollama model size (cached)."""
+    # Check cache first
+    now = datetime.now()
+    if (_perf_cache["gpu"]["value"] is not None and
+        _perf_cache["gpu"]["timestamp"] is not None and
+        now - _perf_cache["gpu"]["timestamp"] < _perf_cache_ttl):
+        return _perf_cache["gpu"]["value"]
+
+    try:
+        import urllib.request
+        import json
+        req = urllib.request.Request('http://host.docker.internal:11434/api/tags')
+        with urllib.request.urlopen(req, timeout=3) as r:
+            data = json.loads(r.read())
+            models = data.get('models', [])
+            total_gpu = 0
+            for m in models:
+                if m.get('size', 0) > 0:
+                    total_gpu += m['size'] // (1024 * 1024)  # Convert to MiB
+            result = {"memory_used": total_gpu, "unit": "MiB"}
+            _perf_cache["gpu"] = {"value": result, "timestamp": now}
+            return result
+    except Exception as e:
+        logger.debug(f"GPU info fetch failed: {e}")
+        # Return cached value or default if available
+        if _perf_cache["gpu"]["value"] is not None:
+            return _perf_cache["gpu"]["value"]
+        return {"memory_used": 0, "unit": "MiB", "error": "Ollama not available"}
+
+
+@app.get("/api/performance/cpu", tags=["performance"])
+async def get_cpu_info() -> dict[str, Any]:
+    """Get CPU usage from /proc/stat."""
+    try:
+        with open('/proc/stat', 'r') as f:
+            line = f.readline()
+            parts = line.split()
+            # cpu user nice system idle iowait irq softirq steal guest guest_nice
+            if len(parts) >= 5:
+                user = int(parts[1])
+                nice = int(parts[2])
+                system = int(parts[3])
+                idle = int(parts[4])
+                total = user + nice + system + idle
+                if total > 0:
+                    usage = ((total - idle) / total) * 100
+                    return {"usage_percent": round(usage, 1)}
+    except Exception:
+        pass
+    return {"usage_percent": 0}
+
+
+@app.get("/api/performance/ram", tags=["performance"])
+async def get_ram_info() -> dict[str, Any]:
+    """Get RAM usage from /proc/meminfo."""
+    try:
+        mem_total = 0
+        mem_free = 0
+        mem_available = 0
+        buffers = 0
+        cached = 0
+        
+        with open('/proc/meminfo', 'r') as f:
+            for line in f:
+                if line.startswith('MemTotal:'):
+                    mem_total = int(line.split()[1])  # kB
+                elif line.startswith('MemFree:'):
+                    mem_free = int(line.split()[1])
+                elif line.startswith('MemAvailable:'):
+                    mem_available = int(line.split()[1])
+                elif line.startswith('Buffers:'):
+                    buffers = int(line.split()[1])
+                elif line.startswith('Cached:'):
+                    cached = int(line.split()[1])
+        
+        used_mb = (mem_total - mem_free - buffers - cached) // 1024
+        total_mb = mem_total // 1024
+        return {"used_mb": max(used_mb, 0), "total_mb": total_mb}
+    except Exception:
+        return {"used_mb": 0, "total_mb": 0}
+
+
+@app.get("/api/ollama/stats", tags=["performance"])
+async def get_ollama_stats() -> dict[str, Any]:
+    """Get Ollama model stats (cached)."""
+    # Check cache first
+    now = datetime.now()
+    if (_perf_cache["ollama"]["value"] is not None and
+        _perf_cache["ollama"]["timestamp"] is not None and
+        now - _perf_cache["ollama"]["timestamp"] < _perf_cache_ttl):
+        return _perf_cache["ollama"]["value"]
+
+    try:
+        import urllib.request
+        import json
+        req = urllib.request.Request('http://host.docker.internal:11434/api/tags')
+        with urllib.request.urlopen(req, timeout=3) as r:
+            data = json.loads(r.read())
+            models = data.get('models', [])
+            result = {"models": models}
+            _perf_cache["ollama"] = {"value": result, "timestamp": now}
+            return result
+    except Exception as e:
+        logger.debug(f"Ollama stats fetch failed: {e}")
+        # Return cached value or empty if available
+        if _perf_cache["ollama"]["value"] is not None:
+            return _perf_cache["ollama"]["value"]
+        return {"models": []}
 
 
 # ------------------------------------------------------------------
@@ -934,41 +1063,44 @@ async def execute_sql_query(body: dict = Body(..., embed=False)):
 
 
 # ------------------------------------------------------------------
-# Cron Control Panel Endpoints (Dashboard Scheduled Tasks)
+# Background Cron Scheduler
 # ------------------------------------------------------------------
 
 _cron_lock = threading.Lock()
 _cron_tasks: dict = {}  # task_id -> task config
-_CRON_DATA_FILE = os.environ.get('LOG_DIR', '/app/logs') + '/cron_tasks.json'
+# Use /tmp/cron for data files (writable by appuser)
+_CRON_DIR = Path("/tmp/cron")
+_CRON_DIR.mkdir(parents=True, exist_ok=True)
+_CRON_DATA_FILE = str(_CRON_DIR / "cron_tasks.json")
+_sandbox_proposals: list = []
+_sandbox_lock = threading.Lock()
+_SANDBOX_DATA_FILE = str(_CRON_DIR / "sandbox_proposals.json")
+
 
 def _load_cron_tasks():
     """Load cron tasks from disk."""
     global _cron_tasks
     try:
-        if os.path.exists(_CRON_DATA_FILE):
-            with open(_CRON_DATA_FILE, encoding='utf-8') as f:
-                _cron_tasks = json.load(f)
-    except Exception:
+        with open(_CRON_DATA_FILE, 'r', encoding='utf-8') as f:
+            _cron_tasks = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
         _cron_tasks = {}
 
+
 def _save_cron_tasks():
-    """Persist cron tasks to disk."""
-    try:
-        os.makedirs(os.path.dirname(_CRON_DATA_FILE), exist_ok=True)
-        with open(_CRON_DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(_cron_tasks, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    """Persist cron tasks to disk. Caller must hold _cron_lock."""
+    os.makedirs(os.path.dirname(_CRON_DATA_FILE), exist_ok=True)
+    with open(_CRON_DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(_cron_tasks, f, ensure_ascii=False, indent=2)
 
-# Load on startup
+
+# Load existing tasks
 _load_cron_tasks()
-
-
 # Default evolution task configuration
 _DEFAULT_EVOLUTION_TASK = {
     "name": "记忆演化",
     "type": "evolution",
-    "interval_seconds": int(os.environ.get("CRON_EVOLUTION_INTERVAL", "600")),  # Changed from 3600 to 600 for testing
+    "interval_seconds": int(os.environ.get("CRON_EVOLUTION_INTERVAL", "600")),
     "enabled": True,
     "payload": {
         "workspace_id": "fd0223ed-7aa2-491e-8db5-b0de71b75219",
@@ -980,14 +1112,13 @@ _DEFAULT_EVOLUTION_TASK = {
 def _initialize_default_tasks():
     """Initialize default cron tasks if not exist."""
     global _cron_tasks
-    import uuid as _uuid
     from datetime import datetime, timezone
-    
+
     # Check if evolution task exists
     has_evolution = any(
         t.get('type') == 'evolution' for t in _cron_tasks.values()
     )
-    
+
     if not has_evolution:
         # Create default evolution task
         task_id = str(generate_uuid())[:8]
@@ -1002,45 +1133,14 @@ def _initialize_default_tasks():
             "status": "idle",
             "created_at": datetime.now(timezone.utc).isoformat()
         }
-        _save_cron_tasks()
+        with _cron_lock:
+            _save_cron_tasks()
         logger.info(f"[CRON] Initialized default evolution task: {task_id}")
 
 
 _initialize_default_tasks()
 
 
-# ================================================================
-# Background Cron Scheduler
-# ================================================================
-
-_cron_lock = threading.Lock()
-_cron_tasks: dict = {}  # task_id -> task config
-_CRON_DATA_FILE = os.environ.get('LOG_DIR', '/app/logs') + '/cron_tasks.json'
-_sandbox_proposals: list = []
-_sandbox_lock = threading.Lock()
-_SANDBOX_DATA_FILE = os.environ.get('LOG_DIR', '/app/logs') + '/sandbox_proposals.json'
-
-
-def _load_cron_tasks():
-    """Load cron tasks from disk."""
-    global _cron_tasks
-    try:
-        with open(_CRON_DATA_FILE, 'r', encoding='utf-8') as f:
-            _cron_tasks = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        _cron_tasks = {}
-
-
-def _save_cron_tasks():
-    """Persist cron tasks to disk."""
-    with _cron_lock:
-        os.makedirs(os.path.dirname(_CRON_DATA_FILE), exist_ok=True)
-        with open(_CRON_DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(_cron_tasks, f, ensure_ascii=False, indent=2)
-
-
-# Load existing tasks
-_load_cron_tasks()
 
 
 async def _cron_scheduler_loop():
@@ -1050,10 +1150,12 @@ async def _cron_scheduler_loop():
 
     logger.info("[CRON] Background scheduler started")
 
+    iteration = 0
+    sleep_seconds = int(os.environ.get("CRON_POLL_INTERVAL", "30"))
     while True:
+        iteration += 1
         try:
-            await asyncio.sleep(30)
-
+            await asyncio.sleep(sleep_seconds)
             now = datetime.now(timezone.utc)
 
             with _cron_lock:
@@ -1074,10 +1176,12 @@ async def _cron_scheduler_loop():
                     else:
                         tasks_to_run.append(task_id)
 
+            logger.info(f"[CRON] Tasks to run: {tasks_to_run}")
             for task_id in tasks_to_run:
                 try:
                     logger.info(f"[CRON] Triggering task {task_id}")
-                    await run_cron_task_now(task_id)
+                    result = await run_cron_task_now(task_id)
+                    logger.info(f"[CRON] Task {task_id} completed with status: {result.get('status')}")
                 except Exception as e:
                     logger.error(f"[CRON] Error running task {task_id}: {e}", exc_info=True)
 
@@ -1255,6 +1359,7 @@ async def run_cron_task_now(
 
             # Store proposals in sandbox (from metadata if available)
             proposals = exec_result.metadata.get("proposals", [])
+            from backend.shared.infrastructure.uuid import generate_uuid
             import uuid as _uuid_mod
             with _sandbox_lock:
                 for prop in proposals:
@@ -1278,14 +1383,18 @@ async def run_cron_task_now(
     else:
         result["message"] = f"Unknown task type: {task_type}"
 
+    from datetime import datetime, timezone
+    logger.info(f"[CRON] Updating task status: task_id={task_id} status={result['status']}")
+
     # Update task status
     with _cron_lock:
         if task_id in _cron_tasks:
-            from datetime import datetime, timezone
             _cron_tasks[task_id]["last_run"] = datetime.now(timezone.utc).isoformat()
             _cron_tasks[task_id]["status"] = result["status"]
             _save_cron_tasks()
+            logger.info(f"[CRON] Task status updated in _cron_tasks")
 
+    logger.info(f"[CRON] Returning from run_cron_task_now")
     return result
 
 
@@ -1695,7 +1804,7 @@ async def proxy_ollama(request: Request, path: str):
     import httpx
     from backend.shared.infrastructure.config.settings import get_settings
     _settings = get_settings()
-    ollama_url = _settings.OLLAMA_BASE_URL.rstrip('/')
+    ollama_url = _settings.PMH_OLLAMA_BASE_URL.rstrip('/')
     target_url = f"{ollama_url}/{path}"
     
     # Forward headers

@@ -72,7 +72,7 @@ class AppSettings(BaseSettings):
     # Vector / Embeddings
     # ------------------------------------------------------------------
     EMBEDDING_MODEL: str = "nomic-embed-text"
-    OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
+    PMH_OLLAMA_BASE_URL: str = "http://192.168.65.254:11434"
 
     # ------------------------------------------------------------------
     # LLM / OpenRouter (deferred to D3+)
