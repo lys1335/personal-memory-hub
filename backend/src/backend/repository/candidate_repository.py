@@ -228,6 +228,39 @@ class CandidateRepository(BaseRepository):  # type: ignore[type-arg]
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def update_status(
+        self,
+        *,
+        candidate_id: str,
+        new_status: str,
+    ) -> None:
+        """Update a candidate's status.
+
+        Args:
+            candidate_id: The candidate UUID (as string).
+            new_status: New status value (candidate, confirmed, archived, orphaned).
+
+        Raises:
+            DomainIntegrityError: If new_status is not valid.
+        """
+        valid_statuses = ("candidate", "confirmed", "archived", "orphaned")
+        if new_status not in valid_statuses:
+            raise DomainIntegrityError(
+                entity_type="candidate",
+                constraint=f"Invalid status: {new_status}. Must be one of {valid_statuses}",
+            )
+
+        from sqlalchemy import text
+
+        await self.session.execute(
+            text("""
+                UPDATE candidates
+                SET status = :new_status, updated_at = NOW()
+                WHERE id = :candidate_id
+            """),
+            {"new_status": new_status, "candidate_id": candidate_id},
+        )
+
     async def find_by_candidate_type(
         self,
         *,

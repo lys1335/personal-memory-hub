@@ -366,6 +366,20 @@ class ReflectionService(BaseService):
 
             logger.info(f"Approved proposal {proposal_id}: created {node_type} node {new_node_id}")
 
+            # P2 Fix: Update candidate status to 'confirmed'
+            candidate_id = prop.get('candidate_id')
+            if candidate_id:
+                try:
+                    await conn.execute(text("""
+                        UPDATE candidates
+                        SET status = 'confirmed', updated_at = NOW()
+                        WHERE id = :candidate_id
+                    """), {"candidate_id": str(candidate_id)})
+                    logger.info(f"Updated candidate {candidate_id} status to 'confirmed'")
+                except Exception as e:
+                    # Log but don't fail - candidate status is secondary
+                    logger.warning(f"Failed to update candidate status: {e}")
+
         # Check if auto-approval should trigger next level
         auto_approved_next = False
         confidence = prop.get("confidence", 0)
@@ -457,6 +471,17 @@ class ReflectionService(BaseService):
 
         engine = get_engine()
         async with engine.begin() as conn:
+            # Get proposal to find candidate_id
+            result = await conn.execute(text("""
+                SELECT id, candidate_id FROM proposals
+                WHERE id = :id AND workspace_id = :workspace_id
+            """), {"id": str(proposal_id), "workspace_id": str(workspace_id)})
+            prop_row = result.fetchone()
+
+            if not prop_row:
+                raise ValidationError(f"Proposal not found: {proposal_id}")
+
+            # Update proposal status
             await conn.execute(text("""
                 UPDATE proposals SET status = 'rejected', rejected_reason = :reason, updated_at = NOW()
                 WHERE id = :id AND workspace_id = :workspace_id
@@ -465,6 +490,20 @@ class ReflectionService(BaseService):
                 "workspace_id": str(workspace_id),
                 "reason": reason,
             })
+
+            # P2 Fix: Update candidate status to 'orphaned'
+            candidate_id = prop_row[1]  # candidate_id from proposal
+            if candidate_id:
+                try:
+                    await conn.execute(text("""
+                        UPDATE candidates
+                        SET status = 'orphaned', updated_at = NOW()
+                        WHERE id = :candidate_id
+                    """), {"candidate_id": str(candidate_id)})
+                    logger.info(f"Updated candidate {candidate_id} status to 'orphaned'")
+                except Exception as e:
+                    # Log but don't fail - candidate status is secondary
+                    logger.warning(f"Failed to update candidate status: {e}")
 
         return ReflectionExecutionResult(
             status=ReflectionStatus.COMPLETED,
@@ -718,9 +757,12 @@ class ReflectionService(BaseService):
             try:
                 # Stage 1: Evidence Evolution (Information Extraction)
                 evidence_engine = EvidenceEvolutionEngine()
+                # Extract candidate IDs from batch for propagation
+                batch_ids = [str(c.get('id')) for c in batch if c.get('id')]
                 evolution_result = await evidence_engine.evolve(
                     evidence=batch,
                     provider=provider,
+                    candidate_ids=batch_ids if batch_ids else None,
                 )
                 execution_log.append(
                     f"Batch {batch_num}: EvidenceEvolution: {len(evolution_result.candidates)} candidates"
@@ -753,15 +795,19 @@ class ReflectionService(BaseService):
                 if evolution_result.candidates:
                     reflection_candidates = []
                     for c in evolution_result.candidates:
-                        # Use evidence_chain IDs as candidate IDs for proper source tracking
-                        evidence_chain = c.get('evidence_chain', [])
-                        candidate_id = evidence_chain[0] if evidence_chain else f'entity_{i}'
+                        # FIX P0: Use candidate_id from EvolutionResult, NOT evidence_chain[0]
+                        candidate_id = c.get('candidate_id')
+                        if not candidate_id:
+                            logger.warning(
+                                f"Missing candidate_id for evolution result, skipping"
+                            )
+                            continue
                         reflection_candidates.append({
-                            'id': candidate_id,
+                            'id': candidate_id,  # ✅ Correct: Original Candidate ID
                             'content': c.get('content', ''),
                             'evidence_source': 'evolution',
                             'source_level': c.get('source_level', 2),
-                            'evidence_chain': evidence_chain,
+                            'evidence_chain': c.get('evidence_chain', []),
                             'confidence': c.get('confidence', 0.9),
                         })
                 else:
@@ -1084,7 +1130,12 @@ class ReflectionService(BaseService):
                            COALESCE(source_level, 1) as source_level
                     FROM candidates
                     WHERE workspace_id = :workspace_id
-                    AND status IN ('candidate', 'pending')
+                    AND status = 'candidate'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM proposals
+                        WHERE proposals.candidate_id = candidates.id
+                        AND proposals.status = 'pending'
+                    )
                     ORDER BY created_at ASC
                     LIMIT :limit
                 """), {"workspace_id": str(workspace_id), "limit": limit})

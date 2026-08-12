@@ -18,6 +18,7 @@ class Proposal(Base):
 
     id = Column(String, primary_key=True)
     workspace_id = Column(String, nullable=False)
+    candidate_id = Column(String, nullable=True)  # P0 Fix: FK to candidates.id (UUID stored as string)
     type = Column(String(20), nullable=False)
     source_level = Column(DateTime, default=datetime.utcnow)
     target_level = Column(Integer, nullable=False)

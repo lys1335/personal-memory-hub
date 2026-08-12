@@ -66,6 +66,7 @@ class EvidenceEvolutionEngine(EngineBase):
         *,
         evidence: list[dict[str, Any]],
         provider: Any,  # ReflectionProvider type
+        candidate_ids: list[str] | None = None,
     ) -> EvolutionResult:
         """Execute evidence evolution pipeline.
 
@@ -79,6 +80,11 @@ class EvidenceEvolutionEngine(EngineBase):
         3. Aggregate evidence (rule-based, future)
         4. Estimate confidence (rule-based, future)
         5. Build candidates
+
+        Args:
+            evidence: List of evidence dicts
+            provider: LLM provider
+            candidate_ids: Optional list of original candidate IDs for propagation
         """
         if not evidence:
             logger.info("evolve: no evidence provided")
@@ -93,8 +99,18 @@ class EvidenceEvolutionEngine(EngineBase):
             f"EvidenceEvolutionEngine.evolve() called with {len(evidence)} evidence items",
         ]
 
+        # P0 Fix: Inject candidate_id into each evidence dict for lineage tracking
+        enriched_evidence = []
+        if candidate_ids:
+            for i, ev in enumerate(evidence):
+                ev_copy = ev.copy()
+                ev_copy['candidate_id'] = candidate_ids[i] if i < len(candidate_ids) else None
+                enriched_evidence.append(ev_copy)
+        else:
+            enriched_evidence = evidence
+
         # Step 1: LLM-based extraction
-        facts, fact_log = await self._extract_facts(evidence, provider)
+        facts, fact_log = await self._extract_facts(enriched_evidence, provider)
         execution_log.extend(fact_log)
 
         if not facts:
@@ -119,7 +135,7 @@ class EvidenceEvolutionEngine(EngineBase):
         execution_log.append(f"Estimated confidence: {confidence:.3f}")
 
         # Step 5: Build candidates from extracted facts
-        candidates = self._build_candidates(facts, evidence)
+        candidates = self._build_candidates(facts, evidence, candidate_ids=candidate_ids)
         entities = self._extract_entity_names(facts)
 
         execution_log.append(f"Built {len(candidates)} candidates from {len(facts)} facts")
@@ -151,6 +167,8 @@ class EvidenceEvolutionEngine(EngineBase):
         Per D4.2g §7.2: Uses LLM via Provider interface.
         Migrated from ReflectionEngine._extract_facts().
 
+        P0 Fix: Preserve candidate_id lineage from evidence to fact.
+
         Args:
             evidence: List of evidence dicts with content, source, metadata
             provider: LLM provider for inference
@@ -159,6 +177,14 @@ class EvidenceEvolutionEngine(EngineBase):
             Tuple of (facts list, execution log)
         """
         log: list[str] = []
+
+        # P0 Fix: Build evidence_id → candidate_id mapping for lineage tracking
+        evidence_candidate_map: dict[str, str] = {}
+        for e in evidence:
+            eid = e.get("id")
+            cid = e.get("candidate_id")
+            if eid and cid:
+                evidence_candidate_map[eid] = cid
 
         # Build prompt from evidence content
         contents = []
@@ -181,7 +207,7 @@ class EvidenceEvolutionEngine(EngineBase):
             "1. 只输出有效的JSON,不要有任何解释或Markdown\n"
             "2. JSON必须以{开头,以}结尾\n"
             "3. 不要包含```json```或```标记\n\n"
-            '输出格式:{"facts":[{"entity":"实体名","value":"值","source_ids":["id"],"confidence":0.9}],"entities":[]}\n\n'
+            '{"facts":[{"entity":"实体名","value":"值","source_ids":["id"],"confidence":0.9}],"entities":[]}\n\n'
             f"Evidence IDs: {evidence_ids}\n\nEvidence Items:\n" + "\n".join(contents)
         )
 
@@ -193,6 +219,13 @@ class EvidenceEvolutionEngine(EngineBase):
                 if not fact.get("source_ids"):
                     # Auto-populate source_ids from evidence IDs
                     fact["source_ids"] = evidence_ids[:2]  # Use first 2 evidence IDs
+
+                # P0 Fix: Inject candidate_id from evidence lineage
+                for sid in fact.get("source_ids", []):
+                    if sid in evidence_candidate_map:
+                        fact["candidate_id"] = evidence_candidate_map[sid]
+                        break  # Take the first matching candidate_id
+
             log.append(f"LLM extracted {len(facts)} facts from {len(evidence)} evidence items")
             return facts, log
         except Exception as e:
@@ -302,6 +335,7 @@ class EvidenceEvolutionEngine(EngineBase):
         self,
         facts: list[dict[str, Any]],
         evidence: list[dict[str, Any]],
+        candidate_ids: list[str] | None = None,
     ) -> list[dict[str, Any]]:
         """Build Candidate dicts from extracted facts.
 
@@ -309,59 +343,71 @@ class EvidenceEvolutionEngine(EngineBase):
         Each candidate represents a structured piece of information
         ready for ReflectionEngine processing.
 
-        Enhancement: Store full evidence content for later summarization
-        (Approach 2: post-processing aggregation).
+        P0 Fix: Group by (entity, candidate_id) to preserve Candidate boundary.
+
+        Args:
+            facts: Extracted facts from LLM
+            evidence: Original evidence items
+            candidate_ids: Optional list of original candidate IDs for propagation
         """
         candidates = []
 
         # Build evidence map for quick lookup
         evidence_map = {e.get("id"): e for e in evidence if e.get("id")}
 
-        # Group facts by entity
-        entity_facts: dict[str, list[dict[str, Any]]] = {}
+        # P0 Fix: Group facts by (entity, candidate_id) to preserve Candidate boundary
+        # This ensures multiple Candidates contributing to the same Entity
+        # generate separate Evolution Candidates
+        entity_candidate_facts: dict[str, dict[str, list[dict[str, Any]]]] = {}
         for fact in facts:
             entity = fact.get("entity", "unknown")
-            if entity not in entity_facts:
-                entity_facts[entity] = []
-            entity_facts[entity].append(fact)
+            cid = fact.get("candidate_id")  # P0 Fix: Get candidate_id from fact lineage
 
-        # Build one candidate per entity group
-        for entity, entity_facts_list in entity_facts.items():
-            # Get source evidence IDs
-            source_ids = []
-            source_evidences = []  # Store full evidence for later use
-            for f in entity_facts_list:
-                source_ids.extend(f.get("source_ids", []))
-            source_ids = list(set(source_ids))
+            if entity not in entity_candidate_facts:
+                entity_candidate_facts[entity] = {}
+            if cid not in entity_candidate_facts[entity]:
+                entity_candidate_facts[entity][cid] = []
+            entity_candidate_facts[entity][cid].append(fact)
 
-            # Collect full evidence content for summarization
-            for eid in source_ids[:10]:  # Limit to 10 evidences
-                if eid in evidence_map:
-                    source_evidences.append(evidence_map[eid])
+        # Build one candidate per (entity, candidate_id) group
+        for entity, candidate_groups in entity_candidate_facts.items():
+            for cid, entity_facts_list in candidate_groups.items():
+                # Get source evidence IDs
+                source_ids = []
+                source_evidences = []  # Store full evidence for later use
+                for f in entity_facts_list:
+                    source_ids.extend(f.get("source_ids", []))
+                source_ids = list(set(source_ids))
 
-            # Calculate aggregate confidence
-            avg_confidence = sum(
-                f.get("confidence", 0.5) for f in entity_facts_list
-            ) / len(entity_facts_list)
+                # Collect full evidence content for summarization
+                for eid in source_ids[:10]:  # Limit to 10 evidences
+                    if eid in evidence_map:
+                        source_evidences.append(evidence_map[eid])
 
-            # Build candidate content - store evidence for later processing
-            values = [f.get("value", "") for f in entity_facts_list if f.get("value")]
+                # Calculate aggregate confidence
+                avg_confidence = sum(
+                    f.get("confidence", 0.5) for f in entity_facts_list
+                ) / len(entity_facts_list)
 
-            candidate = {
-                "entity": entity,
-                "content": f"{entity}: {', '.join(values[:3])}" if values else entity,
-                "evidence_chain": source_ids[:10],  # Limit chain length
-                "evidence_count": len(source_ids),
-                "confidence": round(avg_confidence, 3),
-                "source_level": 1,
-                "candidate_type": "pattern",
-                "status": "candidate",
-                # NEW: Store full evidence content for post-processing
-                "_raw_evidence": source_evidences,
-                "_fact_values": values,
-            }
+                # Build candidate content - store evidence for later processing
+                values = [f.get("value", "") for f in entity_facts_list if f.get("value")]
 
-            candidates.append(candidate)
+                candidate = {
+                    "entity": entity,
+                    "content": f"{entity}: {', '.join(values[:3])}" if values else entity,
+                    "evidence_chain": source_ids[:10],  # Limit chain length
+                    "evidence_count": len(source_ids),
+                    "confidence": round(avg_confidence, 3),
+                    "source_level": 1,
+                    "candidate_type": "pattern",
+                    "status": "candidate",
+                    "candidate_id": cid,  # P0 Fix: Use candidate_id from fact lineage
+                    # NEW: Store full evidence content for post-processing
+                    "_raw_evidence": source_evidences,
+                    "_fact_values": values,
+                }
+
+                candidates.append(candidate)
 
         return candidates
 
