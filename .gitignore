@@ -73,6 +73,10 @@ logs/
 # Agnes workspace state - should never be committed to source control
 .agnes/
 
+# Agent work files
+AGENTS.md
+docs/CODEX_CONTEXT.md
+
 
 # Temporary runtime directories
 tmp/
