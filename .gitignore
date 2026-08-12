@@ -73,3 +73,6 @@ logs/
 # Agnes workspace state - should never be committed to source control
 .agnes/
 
+
+# Temporary runtime directories
+tmp/
