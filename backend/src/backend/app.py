@@ -135,12 +135,28 @@ def get_services(
     )
     task_svc = TaskService(repos["task"])
 
+    # Phase 21 Services
+    from backend.service.evidence_pipeline_service import EvidencePipelineService
+    from backend.service.formation_service import FormationService
+    from backend.service.topic_service import TopicService
+    from backend.evolution.evolution_service import EvolutionService
+
+    pipeline_session = session
+    evidence_pipeline_service = EvidencePipelineService(pipeline_session)
+    formation_service = FormationService(pipeline_session)
+    topic_service = TopicService(pipeline_session)
+    evolution_service = EvolutionService(pipeline_session)
+
     return {
         "memory": memory_service,
         "query": query_service,
         "entity": entity_service,
         "reflection": reflection_service,
         "task": task_svc,
+        "pipeline": evidence_pipeline_service,
+        "formation": formation_service,
+        "topic": topic_service,
+        "evolution": evolution_service,
     }
 
 
@@ -915,6 +931,51 @@ async def trigger_reflection(body: dict = Body(...), services: dict = Depends(ge
     if response.status == ResponseStatus.SUCCESS:
         return asdict(response)
     raise HTTPException(status_code=422, detail=asdict(response))
+
+
+# ------------------------------------------------------------------
+# Phase 21 Pipeline Endpoints
+# ------------------------------------------------------------------
+
+@app.post("/pipeline/trigger", tags=["phase21"])
+async def trigger_pipeline(body: dict = Body(...), session: AsyncSession = Depends(get_session)):
+    """POST /pipeline/trigger - trigger Phase 21 pipeline for an Evidence.
+    
+    This endpoint executes the complete Phase 21 pipeline:
+    Evidence → ContextWindow → Interpretation → Formation → Topic → Evolution
+    
+    Request body:
+    - evidence_id: UUID of the Evidence to process
+    - workspace_id: UUID of the workspace (optional, defaults to user workspace)
+    
+    Response:
+    - success: bool
+    - reconstruction_id: UUID (if formed)
+    - candidate_id: UUID (if formed)
+    - topic_ids: list[UUID]
+    """
+    from backend.service.evidence_pipeline_service import EvidencePipelineService
+    
+    evidence_id_str = body.get("evidence_id")
+    workspace_id_str = body.get("workspace_id")
+    
+    if not evidence_id_str:
+        raise HTTPException(status_code=400, detail="evidence_id is required")
+    
+    try:
+        from uuid import UUID as UUIDType
+        evidence_id = UUIDType(evidence_id_str)
+        workspace_id = UUIDType(workspace_id_str) if workspace_id_str else UUIDType("fd0223ed-7aa2-491e-8db5-b0de71b75219")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid UUID: {e}")
+    
+    service = EvidencePipelineService(session)
+    result = await service.process_evidence(
+        evidence_id=evidence_id,
+        workspace_id=workspace_id,
+    )
+    
+    return result.get_summary()
 
 
 # ------------------------------------------------------------------

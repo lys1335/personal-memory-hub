@@ -106,10 +106,6 @@ class OpenWebUIAdapter(BaseImportAdapter):
             for msg_idx, msg in enumerate(messages):
                 role = msg.get("role", "").lower()
 
-                # Only import user messages (skip assistant/system)
-                if role != "user":
-                    continue
-
                 # Extract content
                 content = extract_text_segments(msg, ["content", "text", "message"])
                 content = sanitize_content(content, max_length=10000)
@@ -123,13 +119,14 @@ class OpenWebUIAdapter(BaseImportAdapter):
                 model = msg.get("model", "unknown")
                 conversation_id = msg.get("conversation_id", "")
 
-                # Build metadata
+                # Build metadata with role
                 metadata: dict[str, Any] = {
                     "source": "open_webui",
                     "conversation_title": conv_title,
                     "conversation_id": conversation_id,
                     "message_index": msg_idx,
                     "model": model,
+                    "role": role if role else "unknown",
                 }
 
                 if created_at:

@@ -113,10 +113,6 @@ class ChatGPTImportAdapter(BaseImportAdapter):
                 if isinstance(author, dict):
                     role = author.get("role", "").lower()
 
-                # Only import user messages (skip assistant/system)
-                if role != "user":
-                    continue
-
                 # Extract content
                 content = self._extract_message_content(msg)
                 content = sanitize_content(content, max_length=10000)
@@ -131,12 +127,13 @@ class ChatGPTImportAdapter(BaseImportAdapter):
                 created_at = self._extract_timestamp(msg)
                 recipient = msg.get("recipient", {}).get("id", "unknown") if isinstance(msg.get("recipient"), dict) else str(msg.get("recipient", "unknown"))
 
-                # Build metadata
+                # Build metadata with role
                 metadata: dict[str, Any] = {
                     "source": "chatgpt",
                     "conversation_title": conv_title,
                     "message_id": msg_id,
                     "recipient": recipient,
+                    "role": role if role else "unknown",
                 }
 
                 if created_at:

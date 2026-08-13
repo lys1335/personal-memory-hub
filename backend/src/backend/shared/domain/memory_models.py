@@ -49,6 +49,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
+import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -393,6 +394,98 @@ class TagLink(Base):
 
     # Relationships
     tag: Mapped[Tag] = relationship("Tag", back_populates="tag_links")
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
+# Topic — Phase 21.6
+# ---------------------------------------------------------------------------
+
+
+class Topic(Base):
+    """ORM model for the topics table (Phase 21.6).
+
+    Semantic organization dimension for grouping Reconstructions.
+    Distinct from Tag (Tag is open-index, Topic is semantic-domain).
+
+    Status: initial, active, evolved, superseded, archived
+    Hierarchy: parent_topic_id self-reference (nullable)
+    """
+
+    __tablename__ = "topics"
+    __table_args__: tuple[Any, ...] = (
+        sa.UniqueConstraint("workspace_id", "name", name="uk_topics_workspace_name"),
+        sa.CheckConstraint(
+            "status IN ('initial', 'active', 'evolved', 'superseded', 'archived')",
+            name="chk_topic_status",
+        ),
+        {
+
+        },
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    parent_topic_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("topics.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="initial")
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    reconstruction_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    metadata_col: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True, default=dict)
+
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    # Relationships
+    topic_links: Mapped[list["TopicLink"]] = relationship(
+        "TopicLink", back_populates="topic", lazy="selectin"
+    )
+    children: Mapped[list["Topic"]] = relationship(
+        "Topic", remote_side=[parent_topic_id], lazy="selectin"
+    )
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
+# TopicLink — Phase 21.6
+# ---------------------------------------------------------------------------
+
+
+class TopicLink(Base):
+    """ORM model for the topic_links table (Phase 21.6).
+
+    Many-to-many junction between Topic and sources
+    (reconstruction, candidate, entity).
+    """
+
+    __tablename__ = "topic_links"
+    __table_args__: tuple[Any, ...] = (
+        sa.CheckConstraint(
+            "source_type IN ('reconstruction', 'candidate', 'entity')",
+            name="chk_topic_links_source_type",
+        ),
+        {
+
+        },
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    topic_id: Mapped[UUID] = mapped_column(
+        ForeignKey("topics.id", ondelete="CASCADE"), nullable=False
+    )
+    source_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    source_id: Mapped[UUID] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    # Relationships
+    topic: Mapped[Topic] = relationship("Topic", back_populates="topic_links")
 
     __mapper_args__ = {"eager_defaults": True}
 
@@ -769,6 +862,79 @@ class Candidate(Base):
 
 
 # ---------------------------------------------------------------------------
+# Reconstruction — Phase 21.2
+# ---------------------------------------------------------------------------
+
+
+class Reconstruction(Base):
+    """ORM model for the reconstructions table (Phase 21.2).
+
+    Persistent semantic version object between Evidence and Candidate.
+    Represents a semantic reconstruction of user-owned meaning from evidence chain.
+
+    Version chain: R1 → R2(parent=R1) → R3(parent=R2)
+    Each version maps to exactly one Candidate snapshot (1:1 relationship).
+
+    Status: initial, active, updated, superseded, archived
+    Evidence refs: JSONB array of evidence IDs
+    """
+
+    __tablename__ = "reconstructions"
+    __table_args__: tuple[Any, ...] = (
+        CheckConstraint(
+            "status IN ('initial', 'active', 'updated', 'superseded', 'archived')",
+            name="chk_reconstruction_status",
+        ),
+        CheckConstraint(
+            "evidence_count >= 0",
+            name="chk_reconstruction_evidence_count",
+        ),
+        CheckConstraint(
+            "confidence >= 0.0 AND confidence <= 1.0",
+            name="chk_reconstruction_confidence",
+        ),
+        {
+
+        },
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
+    )
+    entity_id: Mapped[UUID] = mapped_column(
+        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
+    )
+
+    # Semantic content
+    semantic_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    decision_type: Mapped[str | None] = mapped_column(String(50))
+
+    # Evidence reference
+    evidence_refs: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Confidence
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    # Version chain
+    parent_reconstruction_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("reconstructions.id", ondelete="SET NULL")
+    )
+
+    # Status and Candidate link
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    candidate_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("candidates.id", ondelete="SET NULL")
+    )
+
+    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+    updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+# ---------------------------------------------------------------------------
 # Task — 09.4.15
 # ---------------------------------------------------------------------------
 
@@ -918,6 +1084,7 @@ __all__ = [
     "MemoryEvidence",
     "MemoryNode",
     "MemoryRelationship",
+    "Reconstruction",
     "Tag",
     "TagLink",
     "Task",

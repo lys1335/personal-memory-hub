@@ -82,22 +82,27 @@ class TestOpenWebUIAdapter:
         result = adapter.parse(data)
 
         assert result.source == ImportSource.OPEN_WEBUI
-        # Only user messages should be imported (msg-001, msg-003, msg-004)
-        assert len(result.items) == 3
+        # All messages are now imported with role metadata
+        assert len(result.items) == 4  # 2 user + 1 assistant + 1 user from second conv
         assert result.raw_size_bytes > 0
 
     def test_parse_bytes_input(self, adapter: OpenWebUIAdapter) -> None:
         data = json.dumps(SAMPLE_OPEN_WEBUI_JSON).encode("utf-8")
         result = adapter.parse(data)
 
-        assert len(result.items) == 3
+        assert len(result.items) == 4
 
     def test_parse_skips_assistant_messages(self, adapter: OpenWebUIAdapter) -> None:
+        """Test that assistant messages are now preserved with role metadata."""
         data = json.dumps(SAMPLE_OPEN_WEBUI_JSON)
         result = adapter.parse(data)
 
-        for item in result.items:
-            assert item.content not in ("I'm doing well, thanks!",)
+        # All messages should be preserved
+        assert len(result.items) == 4
+        # Check roles are correctly set
+        roles = [item.metadata.get("role") for item in result.items]
+        assert "user" in roles
+        assert "assistant" in roles
 
     def test_parse_empty_conversations(self, adapter: OpenWebUIAdapter) -> None:
         empty_data = {"conversations": []}
@@ -264,7 +269,7 @@ class TestImportPipeline:
         data = json.dumps(SAMPLE_OPEN_WEBUI_JSON)
         result = pipeline.execute(ImportSource.OPEN_WEBUI, data)
 
-        assert len(result.items) == 3
+        assert len(result.items) == 4
         assert all(isinstance(item, MemoryItem) for item in result.items)
 
     def test_execute_unknown_source(self) -> None:

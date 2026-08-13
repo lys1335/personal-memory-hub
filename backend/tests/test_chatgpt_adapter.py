@@ -83,7 +83,7 @@ class TestChatGPTAdapter:
         assert result.items[0].content == "Bytes message"
 
     def test_parse_skips_assistant_messages(self, adapter: ChatGPTImportAdapter) -> None:
-        """Test that assistant messages are skipped."""
+        """Test that assistant messages are now preserved with role metadata."""
         sample_data = [
             {
                 "title": "Mixed Conversation",
@@ -106,8 +106,13 @@ class TestChatGPTAdapter:
 
         result = adapter.parse(json.dumps(sample_data))
 
-        assert len(result.items) == 1
+        assert len(result.items) == 3
         assert result.items[0].content == "User message"
+        assert result.items[0].metadata.get("role") == "user"
+        assert result.items[1].content == "Assistant reply"
+        assert result.items[1].metadata.get("role") == "assistant"
+        assert result.items[2].content == "System prompt"
+        assert result.items[2].metadata.get("role") == "system"
 
     def test_parse_empty_conversations(self, adapter: ChatGPTImportAdapter) -> None:
         """Test parsing empty conversations list."""
@@ -204,8 +209,11 @@ class TestChatGPTAdapter:
 
         result = adapter.parse(json.dumps(sample_data))
 
-        assert len(result.items) == 1
+        assert len(result.items) == 2
         assert result.items[0].content == "Wrapped user message"
+        assert result.items[0].metadata.get("role") == "user"
+        assert result.items[1].content == "Assistant reply"
+        assert result.items[1].metadata.get("role") == "assistant"
         assert result.items[0].metadata["conversation_title"] == "Wrapped Format Test"
 
     def test_parse_single_conversation_object(self, adapter: ChatGPTImportAdapter) -> None:
@@ -446,10 +454,14 @@ var data = {json.dumps([{
 
         result = adapter.parse(json.dumps(sample_data))
 
-        assert len(result.items) == 2  # Only user messages (msg-1, msg-3)
+        assert len(result.items) == 3  # All messages preserved with role
         assert result.items[0].content == "我现在的 NISA 配置中，有哪三只基金？具体比例是多少？"  # noqa: RUF001
-        assert result.items[1].content == "好的，帮我记录一下。"  # noqa: RUF001
+        assert "根据你之前的对话" in result.items[1].content  # noqa: RUF001
+        assert result.items[2].content == "好的，帮我记录一下。"  # noqa: RUF001
+        assert result.items[0].metadata.get("role") == "user"
+        assert result.items[1].metadata.get("role") == "assistant"
+        assert result.items[2].metadata.get("role") == "user"
         assert result.items[0].metadata["conversation_title"] == "NISA Investment Discussion"
         assert result.items[0].metadata["message_id"] == "msg-1"
-        assert result.items[1].metadata["message_id"] == "msg-3"
+        assert result.items[2].metadata["message_id"] == "msg-3"
         assert "2025-02-09" in result.items[0].metadata["original_timestamp"]  # Unix epoch converted
