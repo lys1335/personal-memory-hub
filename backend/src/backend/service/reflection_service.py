@@ -1075,11 +1075,11 @@ class ReflectionService(BaseService):
                 await conn.execute(text("""
                     INSERT INTO proposals (
                         id, workspace_id, type, source_level, target_level,
-                        entity, evidence_chain, confidence, summary, content,
+                        entity, evidence_chain, candidate_id, confidence, summary, content,
                         status, created_at, updated_at
                     ) VALUES (
                         :id, :workspace_id, :type, :source_level, :target_level,
-                        :entity, :evidence_chain, :confidence, :summary, :content,
+                        :entity, :evidence_chain, :candidate_id, :confidence, :summary, :content,
                         'pending', NOW(), NOW()
                     )
                 """), {
@@ -1090,6 +1090,7 @@ class ReflectionService(BaseService):
                     "target_level": prop.get("target_level", source_level + 1),
                     "entity": prop.get("entity", "unknown"),
                     "evidence_chain": evidence_chain_json,
+                    "candidate_id": prop.get("candidate_id"),
                     "confidence": prop.get("confidence", 0.5),
                     "summary": prop.get("summary", ""),
                     "content": prop.get("content", ""),

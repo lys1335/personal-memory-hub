@@ -353,11 +353,22 @@ class ReflectionEngine(EngineBase):
             else:
                 summary_text = f"{proposal_type} memory for '{entity}' ({len(entity_facts)} facts, confidence={avg_confidence:.2f})"
 
+            # Build candidate_id from evidence_chain (first valid UUID)
+            candidate_id = None
+            for eid in evidence_chain:
+                try:
+                    _uuid_mod.UUID(eid)
+                    candidate_id = eid
+                    break
+                except ValueError:
+                    pass
+
             proposals.append({
                 "type": proposal_type,
                 "target_level": target_level,
                 "entity": entity,
                 "evidence_chain": evidence_chain,
+                "candidate_id": candidate_id,
                 "confidence": round(avg_confidence, 3),
                 "summary": summary_text,
                 # 添加更多元数据用于后续生成 L2/L3 内容

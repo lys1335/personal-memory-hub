@@ -32,11 +32,11 @@ class ProposalRepository:
             stmt = text("""
                 INSERT INTO proposals (
                     id, workspace_id, type, source_level, target_level,
-                    entity, evidence_chain, confidence, summary, content,
+                    entity, evidence_chain, candidate_id, confidence, summary, content,
                     status, created_at, updated_at
                 ) VALUES (
                     :id, :workspace_id, :type, :source_level, :target_level,
-                    :entity, :evidence_chain, :confidence, :summary, :content,
+                    :entity, :evidence_chain, :candidate_id, :confidence, :summary, :content,
                     :status, NOW(), NOW()
                 )
                 RETURNING id
@@ -49,6 +49,7 @@ class ProposalRepository:
                 "target_level": proposal.get("target_level", 2),
                 "entity": proposal.get("entity", "unknown"),
                 "evidence_chain": proposal.get("evidence_chain", []),
+                "candidate_id": proposal.get("candidate_id"),
                 "confidence": proposal.get("confidence", 0.5),
                 "summary": proposal.get("summary", ""),
                 "content": proposal.get("content", ""),
@@ -67,7 +68,7 @@ class ProposalRepository:
         async with self._session_factory() as session:
             stmt = text("""
                 SELECT id, workspace_id, type, source_level, target_level,
-                       entity, evidence_chain, confidence, summary, content,
+                       entity, evidence_chain, candidate_id, confidence, summary, content,
                        status, created_at, updated_at
                 FROM proposals
                 WHERE workspace_id = :workspace_id
@@ -77,7 +78,7 @@ class ProposalRepository:
             if status:
                 stmt = text("""
                     SELECT id, workspace_id, type, source_level, target_level,
-                           entity, evidence_chain, confidence, summary, content,
+                           entity, evidence_chain, candidate_id, confidence, summary, content,
                            status, created_at, updated_at
                     FROM proposals
                     WHERE workspace_id = :workspace_id
@@ -107,12 +108,13 @@ class ProposalRepository:
                     target_level=row[4],
                     entity=row[5],
                     evidence_chain=row[6],
-                    confidence=row[7],
-                    summary=row[8],
-                    content=row[9],
-                    status=row[10],
-                    created_at=row[11],
-                    updated_at=row[12],
+                    candidate_id=str(row[7]) if row[7] else None,
+                    confidence=row[8],
+                    summary=row[9],
+                    content=row[10],
+                    status=row[11],
+                    created_at=row[12],
+                    updated_at=row[13],
                 ))
             return proposals
 
