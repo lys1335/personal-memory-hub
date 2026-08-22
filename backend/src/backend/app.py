@@ -21,8 +21,9 @@ from uuid import UUID
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from backend.shared.infrastructure.uuid import generate_uuid
+from tests.safety_mechanisms import CronSafetyValidator
 
-from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,6 +39,61 @@ from backend.shared.infrastructure.config.settings import get_settings
 from backend.shared.infrastructure.database.engine import get_engine, get_session_factory
 
 logger = logging.getLogger(__name__)
+
+# ------------------------------------------------------------------
+# Cron API Authentication Dependency
+# ------------------------------------------------------------------
+async def require_cron_admin(
+    request: Request,
+    x_cron_api_key: str = Header(None)
+) -> bool:
+    """Require valid API key for cron mutation operations.
+
+    All cron mutation endpoints (POST, PUT, DELETE) must use this dependency.
+    GET endpoints are read-only and do not require authentication.
+    """
+    settings = get_settings()
+
+    # Read-only operations don't need auth
+    if request.method in ['GET', 'HEAD', 'OPTIONS']:
+        return True
+
+    # If no API key configured, deny all mutations (secure failure)
+    if not settings.PMH_CRON_API_KEY:
+        logger.warning("[CRON-AUDIT] Cron API key not configured, denying mutation")
+        raise HTTPException(
+            status_code=500,
+            detail="Cron API key not configured. Set PMH_CRON_API_KEY environment variable."
+        )
+
+    # Check API key
+    if not x_cron_api_key:
+        logger.warning(f"[CRON-AUDIT] Missing API key from {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(status_code=401, detail="API key required")
+
+    if x_cron_api_key != settings.PMH_CRON_API_KEY:
+        logger.warning(f"[CRON-AUDIT] Invalid API key from {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(status_code=403, detail="Invalid API key")
+
+    # Auth successful - log with REDACTED key
+    logger.info(f"[CRON-AUDIT] Authorized mutation from {request.client.host if request.client else 'unknown'}")
+    return True
+
+
+def validate_no_test_task(task_id: str, name: str = None):
+    """Reject test_* tasks in production environment.
+
+    Check task_id when provided (update/start/delete/run-now endpoints).
+    Check name when provided (create endpoint).
+    """
+    settings = get_settings()
+    check_value = name if name is not None else task_id
+    if check_value and check_value.startswith('test_') and not settings.PMH_ALLOW_TEST_TASKS:
+        raise HTTPException(
+            status_code=400,
+            detail="Test tasks not allowed in production environment"
+        )
+
 
 # Auto-approve setting (default: True for production)
 AUTO_APPROVE_PROPOSALS = os.environ.get('AUTO_APPROVE', 'true').lower() == 'true'
@@ -320,7 +376,7 @@ async def get_ram_info() -> dict[str, Any]:
         mem_available = 0
         buffers = 0
         cached = 0
-        
+
         with open('/proc/meminfo', 'r') as f:
             for line in f:
                 if line.startswith('MemTotal:'):
@@ -333,7 +389,7 @@ async def get_ram_info() -> dict[str, Any]:
                     buffers = int(line.split()[1])
                 elif line.startswith('Cached:'):
                     cached = int(line.split()[1])
-        
+
         used_mb = (mem_total - mem_free - buffers - cached) // 1024
         total_mb = mem_total // 1024
         return {"used_mb": max(used_mb, 0), "total_mb": total_mb}
@@ -760,11 +816,11 @@ async def list_memories(
     target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
 
     memory_node_repo = repos["memory_node"]
-    
+
     # Use provided limit or large default to fetch all memories
     repo_limit = limit if limit is not None else 999999
     all_memories = await memory_node_repo.find_active_by_workspace(
-        workspace_id=target_wid, 
+        workspace_id=target_wid,
         limit=repo_limit
     )
 
@@ -811,11 +867,11 @@ async def list_entities(
     """GET /entities - Search entities by keyword."""
     from sqlalchemy import text
     from uuid import UUID
-    
+
     engine = get_engine()
     default_ws_id = "fb77c6ce-1e15-47e9-a8b7-2e707a011071"
     target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
-    
+
     async with engine.connect() as conn:
         if keyword:
             sql = """
@@ -848,11 +904,11 @@ async def list_areas(
     """GET /areas - Search areas by keyword."""
     from sqlalchemy import text
     from uuid import UUID
-    
+
     engine = get_engine()
     default_ws_id = "fb77c6ce-1e15-47e9-a8b7-2e707a011071"
     target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
-    
+
     async with engine.connect() as conn:
         if keyword:
             sql = """
@@ -886,11 +942,11 @@ async def list_evidences(
     """GET /evidences - Search evidences by keyword."""
     from sqlalchemy import text
     from uuid import UUID
-    
+
     engine = get_engine()
     default_ws_id = "fb77c6ce-1e15-47e9-a8b7-2e707a011071"
     target_wid = UUID(workspace_id) if workspace_id else UUID(default_ws_id)
-    
+
     async with engine.connect() as conn:
         if keyword:
             sql = """
@@ -940,14 +996,14 @@ async def trigger_reflection(body: dict = Body(...), services: dict = Depends(ge
 @app.post("/pipeline/trigger", tags=["phase21"])
 async def trigger_pipeline(body: dict = Body(...), session: AsyncSession = Depends(get_session)):
     """POST /pipeline/trigger - trigger Phase 21 pipeline for an Evidence.
-    
+
     This endpoint executes the complete Phase 21 pipeline:
     Evidence → ContextWindow → Interpretation → Formation → Topic → Evolution
-    
+
     Request body:
     - evidence_id: UUID of the Evidence to process
     - workspace_id: UUID of the workspace (optional, defaults to user workspace)
-    
+
     Response:
     - success: bool
     - reconstruction_id: UUID (if formed)
@@ -955,26 +1011,26 @@ async def trigger_pipeline(body: dict = Body(...), session: AsyncSession = Depen
     - topic_ids: list[UUID]
     """
     from backend.service.evidence_pipeline_service import EvidencePipelineService
-    
+
     evidence_id_str = body.get("evidence_id")
     workspace_id_str = body.get("workspace_id")
-    
+
     if not evidence_id_str:
         raise HTTPException(status_code=400, detail="evidence_id is required")
-    
+
     try:
         from uuid import UUID as UUIDType
         evidence_id = UUIDType(evidence_id_str)
         workspace_id = UUIDType(workspace_id_str) if workspace_id_str else UUIDType("fd0223ed-7aa2-491e-8db5-b0de71b75219")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid UUID: {e}")
-    
+
     service = EvidencePipelineService(session)
     result = await service.process_evidence(
         evidence_id=evidence_id,
         workspace_id=workspace_id,
     )
-    
+
     return result.get_summary()
 
 
@@ -1162,7 +1218,7 @@ _DEFAULT_EVOLUTION_TASK = {
     "name": "记忆演化",
     "type": "evolution",
     "interval_seconds": int(os.environ.get("CRON_EVOLUTION_INTERVAL", "600")),
-    "enabled": True,
+    "enabled": False,
     "payload": {
         "workspace_id": "fd0223ed-7aa2-491e-8db5-b0de71b75219",
         "limit": int(os.environ.get("CRON_EVOLUTION_LIMIT", "200"))
@@ -1271,7 +1327,7 @@ async def list_cron_tasks():
     with _cron_lock:
         return {"tasks": list(_cron_tasks.values())}
 
-@app.post("/api/cron/tasks")
+@app.post("/api/cron/tasks", dependencies=[Depends(require_cron_admin)])
 async def create_cron_task(body: dict = Body(embed=False)):
     """Create a new scheduled task.
 
@@ -1288,6 +1344,8 @@ async def create_cron_task(body: dict = Body(embed=False)):
     name = body.get('name', '')
     if not name:
         raise HTTPException(status_code=400, detail="Task name is required")
+
+    validate_no_test_task(task_id="", name=name)
 
     task_type = body.get('type', 'evolution')
     interval = body.get('interval_seconds', 300)
@@ -1317,9 +1375,10 @@ async def create_cron_task(body: dict = Body(embed=False)):
 
     return {"task_id": task_id, **task}
 
-@app.put("/api/cron/tasks/{task_id}")
+@app.put("/api/cron/tasks/{task_id}", dependencies=[Depends(require_cron_admin)])
 async def update_cron_task(task_id: str, body: dict = Body(embed=False)):
     """Update an existing task's configuration."""
+    validate_no_test_task(task_id=task_id)
     with _cron_lock:
         if task_id not in _cron_tasks:
             raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
@@ -1332,7 +1391,7 @@ async def update_cron_task(task_id: str, body: dict = Body(embed=False)):
         _save_cron_tasks()
         return {"task_id": task_id, **task}
 
-@app.delete("/api/cron/tasks/{task_id}")
+@app.delete("/api/cron/tasks/{task_id}", dependencies=[Depends(require_cron_admin)])
 async def delete_cron_task(task_id: str):
     """Delete a scheduled task."""
     with _cron_lock:
@@ -1342,9 +1401,10 @@ async def delete_cron_task(task_id: str):
         _save_cron_tasks()
         return {"deleted": task_id}
 
-@app.post("/api/cron/tasks/{task_id}/start")
+@app.post("/api/cron/tasks/{task_id}/start", dependencies=[Depends(require_cron_admin)])
 async def start_cron_task(task_id: str):
     """Start (enable) a task."""
+    validate_no_test_task(task_id=task_id)
     with _cron_lock:
         if task_id not in _cron_tasks:
             raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
@@ -1353,7 +1413,7 @@ async def start_cron_task(task_id: str):
         _save_cron_tasks()
         return {"task_id": task_id, "status": "started"}
 
-@app.post("/api/cron/tasks/{task_id}/stop")
+@app.post("/api/cron/tasks/{task_id}/stop", dependencies=[Depends(require_cron_admin)])
 async def stop_cron_task(task_id: str):
     """Stop (disable) a task."""
     with _cron_lock:
@@ -1364,11 +1424,12 @@ async def stop_cron_task(task_id: str):
         _save_cron_tasks()
         return {"task_id": task_id, "status": "stopped"}
 
-@app.post("/api/cron/tasks/{task_id}/run-now")
+@app.post("/api/cron/tasks/{task_id}/run-now", dependencies=[Depends(require_cron_admin)])
 async def run_cron_task_now(
     task_id: str,
 ):
     """Manually trigger a task execution via Service layer."""
+    validate_no_test_task(task_id=task_id)
     task = _cron_tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
@@ -1380,6 +1441,26 @@ async def run_cron_task_now(
     if task_type == 'evolution':
         limit = payload.get('limit', 200)
         workspace_id = UUID(payload.get('workspace_id', DEFAULT_WORKSPACE))
+
+        # Phase 26-G-C-D: Initialize safety validator
+        safety_validator = CronSafetyValidator(engine=engine)
+
+        # Phase 26-G-C-D: Pre-flight safety check
+        preflight_valid, preflight_reason = await safety_validator.pre_flight_check(
+            workspace_id=workspace_id,
+            task_id=task_id
+        )
+        if not preflight_valid:
+            logger.error(f"[SAFETY] Pre-flight check failed for task {task_id}: {preflight_reason}")
+            result["error"] = f"Pre-flight safety check failed: {preflight_reason}"
+            result["status"] = "failed"
+            result["safety_blocked"] = True
+            with _cron_lock:
+                if task_id in _cron_tasks:
+                    _cron_tasks[task_id]["status"] = "safety_blocked"
+                    _save_cron_tasks()
+            return result
+
 
         try:
             # Initialize services directly with required repos
@@ -1404,10 +1485,30 @@ async def run_cron_task_now(
                     relationship_repo=relationship_repo,
                 )
 
-                exec_result = await reflection_svc.reflect(
+                exec_result_dict = await reflection_svc.reflect_all_entities(
                     workspace_id=workspace_id,
-                    scope="daily",
-                    limit=limit,
+                    include_unresolved=True,
+                    limit_per_entity=limit,
+                )
+
+                # Adapt dict result to ReflectionExecutionResult for compatibility
+                total_proposals = exec_result_dict.get("total_proposals", 0)
+                total_facts = exec_result_dict.get("total_facts", 0)
+                from backend.service.dto import ReflectionExecutionResult, ReflectionStatus
+                exec_result = ReflectionExecutionResult(
+                    status=ReflectionStatus.COMPLETED,
+                    reflections_performed=total_facts,
+                    new_patterns=0,
+                    new_beliefs=0,
+                    evidence_completeness=1.0 if total_proposals > 0 else 0.0,
+                    scope="entity",
+                    duration_ms=0,
+                    metadata={
+                        "candidate_count": exec_result_dict.get("total_candidates_processed", 0),
+                        "proposal_count": total_proposals,
+                        "entities_processed": exec_result_dict.get("entities_processed", {}),
+                        "unresolved_candidates": exec_result_dict.get("unresolved_candidates", 0),
+                    },
                 )
 
             result["message"] = f"Reflection completed: {exec_result.reflections_performed} operations"
@@ -1434,8 +1535,42 @@ async def run_cron_task_now(
 
             logger.info(f"[EVOLUTION] ReflectionService completed: {exec_result.reflections_performed} ops, {len(proposals)} proposals")
 
+            # Phase 26-G-C-D: Post-flight validation
+            if "safety_validator" in locals():
+                try:
+                    async with engine.begin() as conn:
+                        count_result = await conn.execute(text("SELECT COUNT(*) FROM proposals WHERE workspace_id = :wid"), {"wid": str(workspace_id)})
+                        post_proposal_count = count_result.scalar() or 0
+                        count_result = await conn.execute(text("SELECT COUNT(*) FROM candidates WHERE workspace_id = :wid"), {"wid": str(workspace_id)})
+                        post_candidate_count = count_result.scalar() or 0
+
+                    proposed_mutation_count = post_proposal_count - pre_mutation_count.get("proposals", 0)
+                    candidate_mutation_count = post_candidate_count - pre_mutation_count.get("candidates", 0)
+
+                    logger.info(f"[SAFETY] Post-flight: {proposed_mutation_count} proposals, {candidate_mutation_count} candidates created")
+
+                    # Reset failure counter on success
+                    await safety_validator.reset_failure_counter()
+
+                except Exception as pf_error:
+                    logger.warning(f"[SAFETY] Post-flight validation error: {pf_error}")
+
+
         except Exception as e:
             logger.error(f"[EVOLUTION] ReflectionService error: {e}", exc_info=True)
+            # Phase 26-G-C-D: Record failure and check circuit breaker
+            if "safety_validator" in locals():
+                triggered = await safety_validator.record_failure(str(e), task_id)
+                if triggered:
+                    logger.critical(f"[SAFETY] Circuit breaker triggered for task {task_id}!")
+                    result["safety_circuit_breaker_triggered"] = True
+                    # Disable cron automatically
+                    with _cron_lock:
+                        if task_id in _cron_tasks:
+                            _cron_tasks[task_id]["enabled"] = False
+                            _cron_tasks[task_id]["status"] = "circuit_breaker_triggered"
+                            _save_cron_tasks()
+                            logger.critical(f"[SAFETY] Cron task {task_id} automatically disabled due to circuit breaker")
             result["error"] = str(e)
             result["status"] = "failed"
     elif task_type == 'batch_import':
@@ -1513,7 +1648,7 @@ async def approve_proposal(
 ):
     """Approve a proposal — marks it as reviewed and writes to DB."""
     global _sandbox_proposals, _sandbox_lock
-    
+
     # Mark as approved in sandbox
     with _sandbox_lock:
         proposal = None
@@ -1521,16 +1656,16 @@ async def approve_proposal(
             if p.get("id") == proposal_id:
                 proposal = p
                 break
-        
+
         if not proposal:
             raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
-        
+
         # Mark as approved
         proposal["status"] = "approved"
         proposal["approved_at"] = __import__('datetime').datetime.utcnow().isoformat()
         _save_sandbox()
         logger.info(f"[EVOLUTION] Proposal {proposal_id} approved in sandbox")
-    
+
     # Write to DB using FastAPI dependency injection
     try:
         # Use the existing factory functions defined in this file
@@ -1538,14 +1673,14 @@ async def approve_proposal(
         repos = get_repositories(session)
         services = get_services(session, repos)
         memory_service = services["memory"]
-        
+
         # Extract data from proposal
         entity_name = proposal.get("entity", "unknown")
         summary = proposal.get("summary", f"AI-generated memory for {entity_name}")
         confidence = proposal.get("confidence", 0.5)
         proposal_type = proposal.get("type", "Refine")
         evidence_chain = proposal.get("evidence_chain", [])
-        
+
         # Determine memory level based on proposal type or target_level
         level = 1  # Default to Observation
         target_level = proposal.get("target_level")
@@ -1555,7 +1690,7 @@ async def approve_proposal(
             level = 2
         elif proposal_type in ("Merge", "Strengthen", "Create"):
             level = 3
-        
+
         # Prepare metadata
         metadata = {
             "source_proposal_id": proposal_id,
@@ -1564,9 +1699,9 @@ async def approve_proposal(
             "original_summary": summary,
             "generated_by": "ai_reflect"
         }
-        
+
         from uuid import UUID as PyUUID
-        
+
         # Capture memory - entity_id is optional, we can pass None
         result = await memory_service.capture_memory(
             workspace_id=PyUUID(DEFAULT_WORKSPACE),
@@ -1580,17 +1715,17 @@ async def approve_proposal(
             signal_strength=float(confidence) * 0.6,
             metadata=metadata
         )
-        
+
         # Link evidence from proposal's evidence_chain to the new memory
         # Filter to only valid UUIDs
         memory_id = result.memory_id
         evidence_count = 0
-        
+
         if evidence_chain and len(evidence_chain) > 0:
             try:
                 import uuid as uuid_mod
                 from backend.shared.domain.memory_models import MemoryRelationship
-                
+
                 # Filter to valid UUIDs only
                 valid_evidence = []
                 for eid in evidence_chain:
@@ -1599,7 +1734,7 @@ async def approve_proposal(
                         valid_evidence.append(eid)
                     except ValueError:
                         logger.warning(f"[EVOLUTION] Skipping invalid evidence ID: {eid}")
-                
+
                 # Create derived_from relationships
                 for source_memory_id_str in valid_evidence:
                     try:
@@ -1617,14 +1752,14 @@ async def approve_proposal(
                         evidence_count += 1
                     except Exception as e:
                         logger.warning(f"[EVOLUTION] Failed to link {source_memory_id_str}: {e}")
-                
+
                 # Commit the relationships
                 await session.commit()
-                
+
                 logger.info(f"[EVOLUTION] Linked {evidence_count}/{len(evidence_chain)} evidence items to {memory_id}")
             except Exception as e:
                 logger.warning(f"[EVOLUTION] Failed to create relationships: {e}")
-        
+
         logger.info(f"[EVOLUTION] Written to DB: memory_id={memory_id}, evidence_count={evidence_count}")
         return {"proposal_id": proposal_id, "status": "approved", "memory_id": str(memory_id), "evidence_count": evidence_count}
     except Exception as e:
@@ -1794,7 +1929,7 @@ async def get_logs(
 ):
     """GET /api/logs - Read log files for dashboard viewer."""
     import os
-    
+
     # Find log file
     log_file = None
     for d in ["/app/logs", "./logs"]:
@@ -1802,10 +1937,10 @@ async def get_logs(
         if os.path.exists(potential):
             log_file = potential
             break
-    
+
     if not log_file or not os.path.exists(log_file):
         return {"logs": [], "total_lines": 0, "filtered_lines": 0}
-    
+
     try:
         with open(log_file, "r", encoding="utf-8", errors="replace") as f:
             f.seek(0, 2)
@@ -1820,7 +1955,7 @@ async def get_logs(
             if "\n" in content:
                 content = content[content.index("\n") + 1:]
             log_lines = content.splitlines()
-            
+
             total_count = len(log_lines)
             filtered = log_lines
             if q:
@@ -1828,7 +1963,7 @@ async def get_logs(
                 filtered = [l for l in filtered if q_lower in l.lower()]
             if level:
                 filtered = [l for l in filtered if level in l]
-            
+
             return {
                 "logs": filtered,
                 "total_lines": total_count,
@@ -1867,24 +2002,24 @@ async def proxy_ollama(request: Request, path: str):
     _settings = get_settings()
     ollama_url = _settings.PMH_OLLAMA_BASE_URL.rstrip('/')
     target_url = f"{ollama_url}/{path}"
-    
+
     # Forward headers
     headers = {k: v for k, v in request.headers.items()
                if k.lower() not in ('host', 'content-length')}
-    
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         # Read body for POST
         body = None
         if request.method == "POST":
             body = await request.body()
-        
+
         resp = await client.request(
             method=request.method,
             url=target_url,
             headers=headers,
             content=body,
         )
-        
+
         return Response(
             content=resp.content,
             status_code=resp.status_code,
