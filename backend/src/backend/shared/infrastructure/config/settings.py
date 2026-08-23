@@ -64,6 +64,12 @@ class AppSettings(BaseSettings):
     SECRET_KEY: str = "changeme"
 
     # ------------------------------------------------------------------
+    # Cron API Security
+    # ------------------------------------------------------------------
+    PMH_CRON_API_KEY: str = ""  # Required for cron mutation APIs
+    PMH_ALLOW_TEST_TASKS: bool = False  # Block test_* tasks in production
+
+    # ------------------------------------------------------------------
     # Redis (V2+ placeholder)
     # ------------------------------------------------------------------
     REDIS_URL: str = ""

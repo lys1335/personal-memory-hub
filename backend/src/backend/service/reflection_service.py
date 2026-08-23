@@ -198,12 +198,132 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         entity_id: UUID,
     ) -> ReflectionExecutionResult:
-        """Execute reflection on a specific entity's memories."""
+        """Execute reflection on a specific entity's memories.
+
+        Semantic boundary: workspace_id + entity_id
+        All candidates for this entity are processed together.
+        """
         return await self.reflect(
             workspace_id=workspace_id,
             entity_id=entity_id,
             scope="entity",
         )
+
+    async def reflect_unresolved(
+        self,
+        *,
+        workspace_id: UUID,
+        limit: int = 50,
+    ) -> ReflectionExecutionResult:
+        """Execute reflection on unresolved candidates (entity_id IS NULL).
+
+        Ensures unresolved candidates are not遗漏 when switching to
+        entity-level reflection orchestration.
+        """
+        return await self.reflect(
+            workspace_id=workspace_id,
+            entity_id=None,
+            scope="unresolved",
+            limit=limit,
+        )
+
+    async def reflect_all_entities(
+        self,
+        *,
+        workspace_id: UUID,
+        entity_ids: list[UUID] | None = None,
+        include_unresolved: bool = True,
+        limit_per_entity: int = 50,
+    ) -> dict[str, Any]:
+        """Orchestrate entity-level reflection for a workspace.
+
+        This is the primary entry point for production cron tasks.
+        It iterates over all entities and runs reflection per entity,
+        ensuring semantic isolation between entities.
+
+        Args:
+            workspace_id: Workspace scope.
+            entity_ids: Optional list of entity IDs to process.
+                        If None, processes all entities with candidates.
+            include_unresolved: Whether to also process unresolved candidates.
+            limit_per_entity: Max candidates per entity reflection call.
+
+        Returns:
+            Dict with per-entity results and summary statistics.
+        """
+        from sqlalchemy import text
+        from backend.shared.infrastructure.database.engine import get_engine
+
+        engine = get_engine()
+        async with engine.begin() as conn:
+            if entity_ids:
+                placeholders = ", ".join(f":eid{i}" for i in range(len(entity_ids)))
+                params = {f"eid{i}": str(eid) for i, eid in enumerate(entity_ids)}
+                params["workspace_id"] = str(workspace_id)
+                result = await conn.execute(text(f"""
+                    SELECT DISTINCT entity_id FROM candidates
+                    WHERE workspace_id = :workspace_id
+                      AND entity_id IN ({placeholders})
+                      AND entity_id IS NOT NULL
+                """), params)
+            else:
+                result = await conn.execute(text("""
+                    SELECT DISTINCT entity_id FROM candidates
+                    WHERE workspace_id = :workspace_id
+                      AND entity_id IS NOT NULL
+                """), {"workspace_id": str(workspace_id)})
+
+            rows = result.fetchall()
+            entity_ids_to_process = [row[0] for row in rows if row[0]]
+
+        total_entities = len(entity_ids_to_process)
+        total_candidates_processed = 0
+        total_facts = 0
+        total_proposals = 0
+        entity_results = {}
+
+        for entity_id in entity_ids_to_process:
+            entity_result = await self.reflect_by_entity(
+                workspace_id=workspace_id,
+                entity_id=entity_id,
+            )
+            entity_results[str(entity_id)] = {
+                "candidates": entity_result.metadata.get("candidate_count", 0),
+                "facts": entity_result.reflections_performed,
+                "proposals": entity_result.metadata.get("proposal_count", 0),
+            }
+            total_candidates_processed += entity_result.metadata.get("candidate_count", 0)
+            total_facts += entity_result.reflections_performed
+            total_proposals += entity_result.metadata.get("proposal_count", 0)
+
+        unresolved_result = None
+        if include_unresolved:
+            unresolved_result = await self.reflect_unresolved(
+                workspace_id=workspace_id,
+                limit=limit_per_entity,
+            )
+            unresolved_candidates = unresolved_result.metadata.get("candidate_count", 0)
+            unresolved_facts = unresolved_result.reflections_performed
+            unresolved_proposals = unresolved_result.metadata.get("proposal_count", 0)
+            total_candidates_processed += unresolved_candidates
+            total_facts += unresolved_facts
+            total_proposals += unresolved_proposals
+        else:
+            unresolved_candidates = 0
+            unresolved_facts = 0
+            unresolved_proposals = 0
+
+        return {
+            "workspace_id": str(workspace_id),
+            "total_entities": total_entities,
+            "entities_processed": entity_results,
+            "unresolved_candidates": unresolved_candidates,
+            "unresolved_facts": unresolved_facts,
+            "unresolved_proposals": unresolved_proposals,
+            "total_candidates_processed": total_candidates_processed,
+            "total_facts": total_facts,
+            "total_proposals": total_proposals,
+        }
 
     async def approve_proposal(
         self,
@@ -211,16 +331,23 @@ class ReflectionService(BaseService):
         workspace_id: UUID,
         proposal_id: UUID,
     ) -> ReflectionExecutionResult:
-        """Approve a reflection proposal and create L2/L3 memory."""
+        """Approve a reflection proposal and create L2/L3 memory.
+
+        Safety guarantees:
+        - Idempotent: Already approved/rejected proposals return early
+        - Transactional: All DB operations in single transaction
+        - No side effects on already-processed proposals
+        """
         from sqlalchemy import text
 
         from backend.shared.infrastructure.database.engine import get_engine
 
         engine = get_engine()
         async with engine.begin() as conn:
-            # Get proposal
+            # Safety Check 1: Verify proposal exists
             result = await conn.execute(text("""
-                SELECT * FROM proposals WHERE id = :id AND workspace_id = :workspace_id
+                SELECT * FROM proposals
+                WHERE id = :id AND workspace_id = :workspace_id
             """), {"id": str(proposal_id), "workspace_id": str(workspace_id)})
             prop_row = result.fetchone()
 
@@ -234,20 +361,60 @@ class ReflectionService(BaseService):
             prop['confidence'] = float(prop['confidence']) if prop.get('confidence') else 0.9
             prop['target_level'] = int(prop['target_level']) if prop.get('target_level') else 1
 
-            # Update proposal status
+            # Safety Check 2: Idempotency - reject if already processed
+            current_status = prop.get('status', 'pending')
+            if current_status != 'pending':
+                logger.warning(
+                    "Proposal %s already processed (status=%s), skipping approval",
+                    proposal_id, current_status
+                )
+                return ReflectionExecutionResult(
+                    status=ReflectionStatus.COMPLETED,
+                    reflections_performed=0,
+                    scope=f"approve:{proposal_id}",
+                    metadata={
+                        "skipped": True,
+                        "reason": f"already_{current_status}",
+                        "proposal_id": str(proposal_id),
+                    },
+                )
+
+            # Update proposal status FIRST (within transaction)
             await conn.execute(text("""
-                UPDATE proposals SET status = 'approved', approved_by = 'user', approved_at = NOW(), updated_at = NOW()
-                WHERE id = :id
+                UPDATE proposals
+                SET status = 'approved', approved_by = 'user', approved_at = NOW(), updated_at = NOW()
+                WHERE id = :id AND status = 'pending'
             """), {"id": str(proposal_id)})
+
+            # Verify update succeeded
+            verify_result = await conn.execute(text("""
+                SELECT status FROM proposals WHERE id = :id
+            """), {"id": str(proposal_id)})
+            verify_row = verify_result.fetchone()
+            if not verify_row or verify_row[0] != 'approved':
+                raise ValidationError(f"Failed to approve proposal: {proposal_id}")
 
             # Create L2/L3 memory node with aggregated content from evidence
             new_node_id = self._generate_id()
             level = prop["target_level"]
             node_type = "Pattern" if level == 2 else "Belief" if level == 3 else "Observation"
 
-            # Get entity_id from proposal (set during candidate creation)
-            # Note: proposals table does not have entity_id column, use None
-            entity_id = None
+            # Get entity_id from candidate via proposal's candidate_id
+            # proposals table has candidate_id FK and entity (varchar name)
+            candidate_id = prop.get("candidate_id")
+            if candidate_id:
+                candidate_result = await conn.execute(
+                    text("SELECT entity_id FROM candidates WHERE id = :id LIMIT 1"),
+                    {"id": str(candidate_id)},
+                )
+                candidate_row = candidate_result.fetchone()
+                if candidate_row and candidate_row[0]:
+                    entity_id = candidate_row[0]
+            else:
+                logger.warning(
+                    "Proposal %s has no candidate_id, L1 will have NULL entity_id",
+                    proposal_id,
+                )
 
             # Get evidence_chain from proposal (JSONB column, may be string or list)
             evidence_chain_raw = prop.get("evidence_chain", [])
@@ -261,6 +428,26 @@ class ReflectionService(BaseService):
                 evidence_chain = evidence_chain_raw
             else:
                 evidence_chain = []
+
+            # FIX P1: Extract primary evidence_id from candidate
+            primary_evidence_id = None
+            if candidate_id:
+                candidate_evidence_result = await conn.execute(
+                    text("SELECT evidence_id FROM candidates WHERE id = :id LIMIT 1"),
+                    {"id": str(candidate_id)}
+                )
+                candidate_evidence_row = candidate_evidence_result.fetchone()
+                if candidate_evidence_row and candidate_evidence_row[0]:
+                    primary_evidence_id = str(candidate_evidence_row[0])
+
+            # FIX P1: Validate we have a real evidence_id
+            if not primary_evidence_id:
+                logger.warning(
+                    f"Proposal {proposal_id} has no valid evidence_id, rejecting approval"
+                )
+                raise ValidationError(
+                    f"Cannot approve proposal without valid evidence: {proposal_id}"
+                )
 
             # Approach 2: Aggregate evidence content for meaningful L2 node
             evidence_contents = []
@@ -278,7 +465,7 @@ class ReflectionService(BaseService):
                 for row in evidence_rows:
                     if row and row[0]:
                         evidence_contents.append(row[0])
-                
+
                 # If no evidences found, try candidates table (candidate IDs)
                 if not evidence_contents:
                     candidate_query = await conn.execute(
@@ -309,6 +496,17 @@ class ReflectionService(BaseService):
                 content = f"{entity_name}"
                 summary = f"{entity_name}"
 
+            # FIX P1: Build evidence_links with valid evidence IDs
+            evidence_links = [primary_evidence_id]
+            if evidence_chain:
+                for eid in evidence_chain[:5]:
+                    ev_check = await conn.execute(
+                        text("SELECT 1 FROM evidences WHERE id = :id LIMIT 1"),
+                        {"id": str(eid)}
+                    )
+                    if ev_check.fetchone():
+                        evidence_links.append(str(eid))
+
             await conn.execute(text("""
                 INSERT INTO memory_nodes (
                     id, workspace_id, entity_id, level, node_type, content, summary,
@@ -330,39 +528,30 @@ class ReflectionService(BaseService):
                 "confidence": prop["confidence"],
                 "importance": prop["confidence"],
                 "signal_strength": prop["confidence"],
-                "evidence_links": json.dumps(evidence_chain) if evidence_chain else "[]",
+                "evidence_links": json.dumps(evidence_links),
             })
 
-            # Create relationships (derived_from)
-            # Only create relationships for existing memory_nodes (not candidates)
-            evidence_target_ids = evidence_chain[:5]  # Limit to 5 relationships
-            for candidate_id in evidence_target_ids:
-                # Check if target exists in memory_nodes (not candidates)
-                target_check = await conn.execute(
-                    text("SELECT id FROM memory_nodes WHERE id = :id LIMIT 1"),
-                    {"id": str(candidate_id)}
-                )
-                if target_check.fetchone():
-                    try:
-                        await conn.execute(text("""
-                            INSERT INTO memory_relationships (
-                                id, workspace_id, source_node_id, target_node_id,
-                                relationship_type, contribution_weight, _meta, created_at
-                            ) VALUES (
-                                :rel_id, :workspace_id, :source_id, :target_id,
-                                'derived_from', :weight, '{}', NOW()
-                            )
-                        """), {
-                            "rel_id": str(self._generate_id()),
-                            "workspace_id": str(workspace_id),
-                            "source_id": str(new_node_id),
-                            "target_id": str(candidate_id),
-                            "weight": prop["confidence"],
-                        })
-                    except Exception as rel_err:
-                        # Skip if relationship creation fails
-                        logger.warning(f"Failed to create relationship for {candidate_id}: {rel_err}")
-                # If target not in memory_nodes, skip relationship creation
+            # FIX P1: Create memory_evidences junction records (not memory_relationships)
+            for evidence_id in evidence_links:
+                try:
+                    await conn.execute(text("""
+                        INSERT INTO memory_evidences (
+                            id, workspace_id, memory_node_id, evidence_id,
+                            relationship_type, contribution_weight, created_at
+                        ) VALUES (
+                            :id, :workspace_id, :memory_node_id, :evidence_id,
+                            'supports', :weight, NOW()
+                        )
+                        ON CONFLICT (memory_node_id, evidence_id) DO NOTHING
+                    """), {
+                        "id": str(self._generate_id()),
+                        "workspace_id": str(workspace_id),
+                        "memory_node_id": str(new_node_id),
+                        "evidence_id": str(evidence_id),
+                        "weight": prop["confidence"],
+                    })
+                except Exception as rel_err:
+                    logger.warning(f"Failed to create memory_evidence for {evidence_id}: {rel_err}")
 
             logger.info(f"Approved proposal {proposal_id}: created {node_type} node {new_node_id}")
 
@@ -425,12 +614,14 @@ class ReflectionService(BaseService):
 
         # Find pending proposals for next level
         result = await conn.execute(text("""
-            SELECT id, confidence FROM proposals
-            WHERE workspace_id = :workspace_id
-              AND target_level = :target_level
-              AND status = 'pending'
-              AND confidence >= :threshold
-            ORDER BY confidence DESC
+            SELECT p.id, p.confidence FROM proposals p
+            JOIN candidates c ON c.id = p.candidate_id
+            WHERE p.workspace_id = :workspace_id
+              AND p.target_level = :target_level
+              AND p.status = 'pending'
+              AND p.confidence >= :threshold
+              AND c.entity_id IS NOT NULL
+            ORDER BY p.confidence DESC
         """), {
             "workspace_id": str(workspace_id),
             "target_level": target_level,
@@ -949,6 +1140,24 @@ class ReflectionService(BaseService):
                 else:
                     area_cache["default"] = area_id  # Cache for reuse
 
+                # FIX P1 + C-B: Validate evidence_id exists and is valid
+                evidence_id_val = candidate.get("evidence_id")
+                if not evidence_id_val:
+                    logger.warning(
+                        f"Candidate missing evidence_id, skipping (entity={candidate.get('entity', 'unknown')})"
+                    )
+                    continue
+                # C-B Fix: Verify evidence exists in correct workspace
+                evidence_check = await conn.execute(
+                    text("SELECT 1 FROM evidences WHERE id = :id AND workspace_id = :workspace_id LIMIT 1"),
+                    {"id": str(evidence_id_val), "workspace_id": str(workspace_id)}
+                )
+                if not evidence_check.fetchone():
+                    logger.warning(
+                        f"Evidence {evidence_id_val} not found in workspace {workspace_id}, skipping candidate (entity={candidate.get('entity', 'unknown')})"
+                    )
+                    continue
+
                 await conn.execute(text("""
                     INSERT INTO candidates (
                         id, workspace_id, entity_id, area_id, content,
@@ -971,7 +1180,7 @@ class ReflectionService(BaseService):
                     "content": candidate.get("content", ""),
                     "candidate_type": candidate.get("node_type", "pattern"),
                     "evidence_source": candidate.get("evidence_source", "reflection"),
-                    "evidence_id": candidate.get("evidence_id") or str(generate_uuid()),
+                    "evidence_id": str(evidence_id_val),
                     "evidence_chain": json_lib.dumps(candidate.get("evidence_chain", ["dummy"])),
                     "evidence_count": candidate.get("evidence_count", 1),
                     "evidence_strength": candidate.get("evidence_strength", 0.9),
@@ -1006,12 +1215,14 @@ class ReflectionService(BaseService):
         engine = get_engine()
         async with engine.begin() as conn:
             result = await conn.execute(text("""
-                SELECT id, confidence, target_level FROM proposals
-                WHERE workspace_id = :workspace_id
-                  AND status = 'pending'
-                  AND confidence >= :threshold
-                  AND target_level <= :max_level
-                ORDER BY confidence DESC
+                SELECT p.id, p.confidence, p.target_level FROM proposals p
+                JOIN candidates c ON c.id = p.candidate_id
+                WHERE p.workspace_id = :workspace_id
+                  AND p.status = 'pending'
+                  AND p.confidence >= :threshold
+                  AND p.target_level <= :max_level
+                  AND c.entity_id IS NOT NULL
+                ORDER BY p.confidence DESC
             """), {
                 "workspace_id": str(workspace_id),
                 "threshold": threshold,
@@ -1048,7 +1259,13 @@ class ReflectionService(BaseService):
         proposals: list[dict[str, Any]],
         workspace_id: UUID,
     ) -> None:
-        """Save proposals to database for review."""
+        """Save proposals to database for review.
+
+        P0 Fix: Deduplicate proposals by candidate_id to prevent UniqueViolation.
+       同一 candidate 在同一个 batch 内可能生成多个 proposal（不同 entity），
+        但 unique constraint 要求 (workspace_id, candidate_id) 唯一。
+        因此按 candidate_id 分组，每组只保留第一个 proposal。
+        """
         import json as json_lib
 
         from sqlalchemy import text
@@ -1059,9 +1276,24 @@ class ReflectionService(BaseService):
         if not proposals:
             return
 
+        # P0 Fix: Deduplicate by candidate_id
+        # If multiple proposals share the same candidate_id, keep only the first one
+        deduplicated: dict[str, dict[str, Any]] = {}
+        for prop in proposals:
+            candidate_id = prop.get("candidate_id")
+            if candidate_id and candidate_id not in deduplicated:
+                deduplicated[candidate_id] = prop
+
+        skipped_count = len(proposals) - len(deduplicated)
+        if skipped_count > 0:
+            logger.warning(
+                f"[PROPOSAL] Deduplicated {skipped_count} proposals "
+                f"(duplicate candidate_id detected)"
+            )
+
         engine = get_engine()
         async with engine.begin() as conn:
-            for prop in proposals:
+            for prop in deduplicated.values():
                 # Serialize evidence_chain to JSON string for PostgreSQL
                 evidence_chain = prop.get("evidence_chain", [])
                 if isinstance(evidence_chain, list):
@@ -1096,7 +1328,7 @@ class ReflectionService(BaseService):
                     "content": prop.get("content", ""),
                 })
 
-            logger.info(f"Saved {len(proposals)} proposals for review")
+            logger.info(f"Saved {len(deduplicated)} proposals for review")
 
     async def _acquire_scope(
         self,
@@ -1145,8 +1377,9 @@ class ReflectionService(BaseService):
                 if rows:
                     # Return candidates as dicts with source_level
                     result = []
+                    skipped_invalid_evidence = 0
                     for row in rows:
-                        result.append({
+                        candidate_data = {
                             "id": str(row[0]),
                             "entity_id": str(row[1]) if row[1] else None,
                             "area_id": str(row[2]) if row[2] else None,
@@ -1159,9 +1392,32 @@ class ReflectionService(BaseService):
                             "evidence_strength": row[9],
                             "status": row[10],
                             "level": row[11] if row[11] else 1,  # source_level
-                        })
+                        }
+
+                        # C-B Fix: Pre-flight validation - skip candidates with invalid evidence
+                        evidence_id = candidate_data.get("evidence_id")
+                        if evidence_id:
+                            # Verify evidence exists
+                            evidence_check = await conn.execute(
+                                text("SELECT 1 FROM evidences WHERE id = :id AND workspace_id = :workspace_id LIMIT 1"),
+                                {"id": evidence_id, "workspace_id": str(workspace_id)}
+                            )
+                            if not evidence_check.fetchone():
+                                logger.warning(
+                                    f"Candidate {evidence_id} has invalid evidence reference {evidence_id}, skipping"
+                                )
+                                skipped_invalid_evidence += 1
+                                continue
+
+                        result.append(candidate_data)
+
+                    if skipped_invalid_evidence > 0:
+                        logger.warning(
+                            f"[EVOLUTION] Skipped {skipped_invalid_evidence} candidates with invalid evidence references"
+                        )
+
                     logger.info(
-                        f"[EVOLUTION] Scope acquired: {len(result)} candidates"
+                        f"[EVOLUTION] Scope acquired: {len(result)} candidates (skipped {skipped_invalid_evidence} invalid)"
                     )
                     return result
 
@@ -1210,8 +1466,100 @@ class ReflectionService(BaseService):
                 f"[EVOLUTION] Scope acquired: {len(result)} candidates from memory_nodes"
             )
             return result
+        elif scope == "entity":
+            # Entity scope: query candidates table (NOT memory_nodes)
+            engine = get_engine()
+            async with engine.begin() as conn:
+                result = await conn.execute(text("""
+                    SELECT id, entity_id, area_id, content, candidate_type,
+                           evidence_source, evidence_id, evidence_chain,
+                           evidence_count, evidence_strength, status,
+                           COALESCE(source_level, 1) as source_level
+                    FROM candidates
+                    WHERE workspace_id = :workspace_id
+                      AND entity_id = :entity_id
+                      AND status = 'candidate'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM proposals
+                          WHERE proposals.candidate_id = candidates.id
+                            AND proposals.status = 'pending'
+                      )
+                    ORDER BY created_at ASC
+                    LIMIT :limit
+                """), {"workspace_id": str(workspace_id), "entity_id": str(entity_id), "limit": limit})
+
+                rows = result.fetchall()
+                if rows:
+                    candidate_list = []
+                    for row in rows:
+                        candidate_list.append({
+                            "id": str(row[0]),
+                            "entity_id": str(row[1]) if row[1] else None,
+                            "area_id": str(row[2]) if row[2] else None,
+                            "content": row[3],
+                            "node_type": row[4],
+                            "evidence_source": row[5],
+                            "evidence_id": str(row[6]) if row[6] else None,
+                            "evidence_chain": row[7],
+                            "evidence_count": row[8],
+                            "evidence_strength": row[9],
+                            "status": row[10],
+                            "level": row[11] if row[11] else 1,
+                        })
+                    logger.info(
+                        f"[EVOLUTION] Entity scope acquired: {len(candidate_list)} candidates for entity {entity_id}"
+                    )
+                    return candidate_list
+                return []
+
+        elif scope == "unresolved":
+            # Unresolved scope: query candidates with NULL entity_id
+            engine = get_engine()
+            async with engine.begin() as conn:
+                result = await conn.execute(text("""
+                    SELECT id, entity_id, area_id, content, candidate_type,
+                           evidence_source, evidence_id, evidence_chain,
+                           evidence_count, evidence_strength, status,
+                           COALESCE(source_level, 1) as source_level
+                    FROM candidates
+                    WHERE workspace_id = :workspace_id
+                      AND entity_id IS NULL
+                      AND status = 'candidate'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM proposals
+                          WHERE proposals.candidate_id = candidates.id
+                            AND proposals.status = 'pending'
+                      )
+                    ORDER BY created_at ASC
+                    LIMIT :limit
+                """), {"workspace_id": str(workspace_id), "limit": limit})
+
+                rows = result.fetchall()
+                if rows:
+                    candidate_list = []
+                    for row in rows:
+                        candidate_list.append({
+                            "id": str(row[0]),
+                            "entity_id": None,
+                            "area_id": str(row[2]) if row[2] else None,
+                            "content": row[3],
+                            "node_type": row[4],
+                            "evidence_source": row[5],
+                            "evidence_id": str(row[6]) if row[6] else None,
+                            "evidence_chain": row[7],
+                            "evidence_count": row[8],
+                            "evidence_strength": row[9],
+                            "status": row[10],
+                            "level": row[11] if row[11] else 1,
+                        })
+                    logger.info(
+                        f"[EVOLUTION] Unresolved scope acquired: {len(candidate_list)} candidates"
+                    )
+                    return candidate_list
+                return []
+
         else:
-            # Entity scope: get all memories for this entity
+            # Fallback: query memory_nodes (for future L2/L3 evolution)
             if entity_id:
                 nodes = await self._memory_node_repo.find_by_entity(
                     entity_id=entity_id,
@@ -1223,25 +1571,25 @@ class ReflectionService(BaseService):
                     limit=limit,
                 )
 
-        # Convert ORM objects to dicts
-        result = []
-        for node in nodes:
-            if isinstance(node, MemoryNode):
-                result.append({
-                    "id": str(node.id),
-                    "workspace_id": str(node.workspace_id),
-                    "content": node.content,
-                    "level": node.level,
-                    "node_type": node.node_type,
-                    "status": node.status,
-                    "source": node.source,
-                    "created_at": node.created_at.isoformat() if node.created_at else None,
-                    "evidence_links": node.evidence_links or [],
-                })
-            else:
-                result.append(node)
+            # Convert ORM objects to dicts
+            result = []
+            for node in nodes:
+                if isinstance(node, MemoryNode):
+                    result.append({
+                        "id": str(node.id),
+                        "workspace_id": str(node.workspace_id),
+                        "content": node.content,
+                        "level": node.level,
+                        "node_type": node.node_type,
+                        "status": node.status,
+                        "source": node.source,
+                        "created_at": node.created_at.isoformat() if node.created_at else None,
+                        "evidence_links": node.evidence_links or [],
+                    })
+                else:
+                    result.append(node)
 
-        return result
+            return result
 
     def _generate_id(self) -> UUID:
         """Generate a UUID for internal use."""

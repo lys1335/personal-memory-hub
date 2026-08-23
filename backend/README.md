@@ -1,6 +1,7 @@
 # Personal Memory Hub — Backend
 
-> **Phase D, Milestone D3: Service Layer**
+> **Phase D3: Service Layer** — ✅ Complete
+> **Phase 26-G-B.6: Entity Resolution Clean Rebuild** — 🔒 Locked (2026-08-23)
 
 Core application code for the Personal Memory Hub.
 

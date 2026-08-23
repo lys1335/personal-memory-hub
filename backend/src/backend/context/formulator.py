@@ -22,6 +22,7 @@ from backend.context.context_window import (
     EvidenceRole,
     ContextBoundary,
     classify_role,
+    classify_role_from_evidence_type,
     estimate_tokens,
     BUDGET_DEFAULT,
     BUDGET_HARD_LIMIT,
@@ -121,7 +122,10 @@ class ContextWindowFormulator:
     
     def _evidence_to_context(self, evidence: Evidence) -> EvidenceContext:
         """Convert Evidence to EvidenceContext."""
-        role = classify_role(evidence._meta)
+        # Use evidence_type as source of truth, fallback to _meta['role']
+        role = classify_role_from_evidence_type(evidence.evidence_type)
+        if role == EvidenceRole.UNKNOWN:
+            role = classify_role(evidence._meta)
         content = evidence.content or ""
         token_count = estimate_tokens(content)
         

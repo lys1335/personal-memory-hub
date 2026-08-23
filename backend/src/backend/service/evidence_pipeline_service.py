@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class PipelineResult:
     """Result of the complete Phase 21 pipeline execution."""
-    
+
     def __init__(
         self,
         success: bool,
@@ -58,19 +58,19 @@ class PipelineResult:
         self.context_window = context_window
         self.error = error
         self.skipped = skipped
-    
+
     @property
     def has_reconstruction(self) -> bool:
         return self.reconstruction_id is not None
-    
+
     @property
     def has_candidate(self) -> bool:
         return self.candidate_id is not None
-    
+
     @property
     def has_topics(self) -> bool:
         return len(self.topic_ids) > 0
-    
+
     def get_summary(self) -> dict[str, Any]:
         return {
             "success": self.success,
@@ -86,14 +86,14 @@ class PipelineResult:
 
 class EvidencePipelineService(BaseService):
     """Orchestrates the complete Phase 21 pipeline.
-    
+
     Pipeline flow:
     Evidence → ContextWindow → Interpretation → Formation → Topic → Evolution
-    
+
     Transaction: This service owns the transaction.
     It manages BEGIN/COMMIT/ROLLBACK for the entire pipeline.
     """
-    
+
     def __init__(self, session: AsyncSession) -> None:
         super().__init__("EvidencePipelineService")
         self.session = session
@@ -102,7 +102,7 @@ class EvidencePipelineService(BaseService):
         self.formation = FormationService(session)
         self.topics = TopicService(session)
         self.evolution = EvolutionService(session)
-    
+
     async def process_evidence(
         self,
         *,
@@ -110,11 +110,11 @@ class EvidencePipelineService(BaseService):
         workspace_id: UUID,
     ) -> PipelineResult:
         """Execute the complete Phase 21 pipeline for an Evidence.
-        
+
         Args:
             evidence_id: The Evidence that triggered this pipeline.
             workspace_id: Workspace scope.
-            
+
         Returns:
             PipelineResult with reconstruction_id, candidate_id, topic_ids.
         """
@@ -122,7 +122,7 @@ class EvidencePipelineService(BaseService):
             "Pipeline started: evidence=%s, workspace=%s",
             evidence_id, workspace_id,
         )
-        
+
         try:
             # Step 1: Form ContextWindow (memory operation, no DB)
             context_window = await self._form_context_window(evidence_id, workspace_id)
@@ -133,7 +133,7 @@ class EvidencePipelineService(BaseService):
                     workspace_id=workspace_id,
                     error="Failed to form context window",
                 )
-            
+
             # Step 2: Semantic Interpretation (memory operation, no DB)
             interpretation = await self._interpret(context_window, evidence_id, workspace_id)
             if interpretation is None:
@@ -143,40 +143,40 @@ class EvidencePipelineService(BaseService):
                     workspace_id=workspace_id,
                     error="Failed to interpret evidence",
                 )
-            
+
             # Step 3: Formation (Reconstruction + Candidate)
             formation = await self._form(
                 interpretation=interpretation,
                 evidence_id=evidence_id,
                 workspace_id=workspace_id,
+                context_window=context_window,
             )
-            
+
             # Step 4: Topic extraction and linking
-            topic_ids = await self._extract_topics(
-                interpretation=interpretation,
-                formation=formation,
-                workspace_id=workspace_id,
-            )
-            
-            # Step 5: Historical evolution (if user-owned)
+            # Step 5: Topic extraction (if user-owned)
             if interpretation.user_owned:
-                await self._evolve(
-                    candidate_id=formation.candidate_id,
+                topic_ids = await self._extract_topics(
+                    interpretation=interpretation,
+                    formation=formation,
                     workspace_id=workspace_id,
-                    entity_id=formation.entity_id,
-                    topic_ids=topic_ids,
                 )
-            
+
+            # NOTE: Historical evolution (L2/L3 creation) is now handled by
+            # EvolutionService.evolve_entity_history() called separately,
+            # NOT during EvidencePipelineService processing.
+            # This prevents direct L2 creation from EvidencePipelineService.
+            topic_ids = []
+
             # Success: commit the transaction
             await self._commit(self.session)
-            
+
             logger.info(
                 "Pipeline completed: recon=%s, candidate=%s, topics=%d",
                 formation.reconstruction_id,
                 formation.candidate_id,
                 len(topic_ids),
             )
-            
+
             return PipelineResult(
                 success=True,
                 evidence_id=evidence_id,
@@ -187,24 +187,24 @@ class EvidencePipelineService(BaseService):
                 interpretation=interpretation,
                 context_window=context_window,
             )
-            
+
         except Exception as e:
             # Failure: rollback the transaction
             await self._rollback(self.session, str(e))
-            
+
             logger.error(
                 "Pipeline failed: evidence=%s, error=%s",
                 evidence_id, e,
                 exc_info=True,
             )
-            
+
             return PipelineResult(
                 success=False,
                 evidence_id=evidence_id,
                 workspace_id=workspace_id,
                 error=str(e),
             )
-    
+
     async def _form_context_window(
         self, evidence_id: UUID, workspace_id: UUID
     ) -> ContextWindow | None:
@@ -217,7 +217,7 @@ class EvidencePipelineService(BaseService):
         except Exception as e:
             logger.error("Failed to form context window: %s", e)
             return None
-    
+
     async def _interpret(
         self,
         context_window: ContextWindow,
@@ -228,26 +228,26 @@ class EvidencePipelineService(BaseService):
         try:
             return await self.interpreter.interpret(
                 context=context_window.to_interpretation_context(),
-                trigger_evidence_id=evidence_id,
-                workspace_id=workspace_id,
             )
         except Exception as e:
             logger.error("Failed to interpret context: %s", e)
             return None
-    
+
     async def _form(
         self,
         interpretation: InterpretationResult,
         evidence_id: UUID,
         workspace_id: UUID,
+        context_window: "ContextWindow" | None = None,
     ) -> FormationResult:
         """Form Reconstruction and Candidate from interpretation."""
         return await self.formation.form(
             interpretation=interpretation,
             trigger_evidence_id=evidence_id,
             workspace_id=workspace_id,
+            context_window=context_window,
         )
-    
+
     async def _extract_topics(
         self,
         interpretation: InterpretationResult,
@@ -276,7 +276,7 @@ class EvidencePipelineService(BaseService):
         except Exception as e:
             logger.error("Failed to extract topics: %s", e)
             return []
-    
+
     async def _evolve(
         self,
         *,
@@ -285,7 +285,16 @@ class EvidencePipelineService(BaseService):
         entity_id: UUID | None,
         topic_ids: list[UUID],
     ) -> None:
-        """Execute historical memory evolution."""
+        """Execute historical memory evolution.
+
+        DEPRECATED: This method is no longer called during normal pipeline.
+        Evolution is now handled by EvolutionService.evolve_entity_history().
+        Kept for backward compatibility only.
+        """
+        logger.warning(
+            "_evolve() is deprecated and should not be called directly. "
+            "Use EvolutionService.evolve_entity_history() instead."
+        )
         await self.evolution.evolve(
             candidate_id=candidate_id,
             workspace_id=workspace_id,

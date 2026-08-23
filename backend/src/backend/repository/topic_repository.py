@@ -285,8 +285,8 @@ class TopicRepository(BaseRepository):  # type: ignore[type-arg]
                 entity_id=str(topic_id),
             )
 
-        # Check workspace isolation
-        if topic.workspace_id != str(workspace_id):
+        # Check workspace isolation (UUID comparison, not string)
+        if topic.workspace_id != workspace_id:
             raise DomainIntegrityError(
                 entity_type="topic_link",
                 constraint=f"Topic {topic_id} not in workspace {workspace_id}",
@@ -307,7 +307,6 @@ class TopicRepository(BaseRepository):  # type: ignore[type-arg]
             )
 
         link = TopicLink(
-            id=self._generate_id(),
             topic_id=topic_id,
             source_type=source_type,
             source_id=source_id,
@@ -445,7 +444,7 @@ class TopicRepository(BaseRepository):  # type: ignore[type-arg]
         topic = await self.get_by_id(topic_id)
         if topic is None:
             return False
-        if topic.workspace_id != str(workspace_id):
+        if topic.workspace_id != workspace_id:
             return False
 
         # Self-parent check
@@ -467,3 +466,101 @@ class TopicRepository(BaseRepository):  # type: ignore[type-arg]
                 queue.append(UUID(parent.parent_topic_id))
 
         return True
+
+    # ------------------------------------------------------------------
+    # Count Management
+    # ------------------------------------------------------------------
+
+    async def increment_count(
+        self,
+        *,
+        topic_id: UUID,
+        count_field: str,
+    ) -> None:
+        """Increment a count field on a topic.
+
+        Args:
+            topic_id: The topic to update.
+            count_field: The field name to increment (e.g., 'reconstruction_count').
+
+        Raises:
+            NotFoundError: If topic does not exist.
+            ValueError: If count_field is invalid.
+        """
+        from sqlalchemy import update
+        from backend.shared.domain.memory_models import Topic
+
+        # Validate count_field
+        valid_fields = {'evidence_count', 'reconstruction_count'}
+        if count_field not in valid_fields:
+            raise ValueError(
+                f"Invalid count_field: {count_field}. "
+                f"Must be one of: {', '.join(valid_fields)}"
+            )
+
+        # Verify topic exists
+        topic = await self.get_by_id(topic_id)
+        if topic is None:
+            raise NotFoundError(
+                entity_type="topic",
+                entity_id=str(topic_id),
+            )
+
+        # Increment the count
+        stmt = (
+            update(Topic)
+            .where(Topic.id == topic_id)
+            .values(**{count_field: Topic.__table__.c[count_field] + 1})
+        )
+        await self.session.execute(stmt)
+
+    async def set_count(
+        self,
+        *,
+        topic_id: UUID,
+        count_field: str,
+        value: int,
+    ) -> None:
+        """Set a count field on a topic to an explicit value.
+
+        Args:
+            topic_id: The topic to update.
+            count_field: The field name to set (e.g., 'reconstruction_count').
+            value: The value to set.
+
+        Raises:
+            NotFoundError: If topic does not exist.
+            ValueError: If count_field is invalid or value is negative.
+        """
+        from sqlalchemy import update
+
+        # Validate count_field
+        valid_fields = {'evidence_count', 'reconstruction_count'}
+        if count_field not in valid_fields:
+            raise ValueError(
+                f"Invalid count_field: {count_field}. "
+                f"Must be one of: {', '.join(valid_fields)}"
+            )
+
+        if value < 0:
+            raise ValueError(f"Count value must be non-negative, got {value}")
+
+        # Verify topic exists
+        topic = await self.get_by_id(topic_id)
+        if topic is None:
+            raise NotFoundError(
+                entity_type="topic",
+                entity_id=str(topic_id),
+            )
+
+        # Set the count
+        stmt = (
+            update(Topic)
+            .where(Topic.id == topic_id)
+            .values(**{count_field: value})
+        )
+        await self.session.execute(stmt)
+
+
+if __name__ == '__main__':
+    pass

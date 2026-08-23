@@ -24,6 +24,7 @@ from backend.context.context_window import (
     ContextBoundary,
     estimate_tokens,
     classify_role,
+    classify_role_from_evidence_type,
     BUDGET_DEFAULT,
     BUDGET_HARD_LIMIT,
     SHORT_CONFIRMATION_MAX_CHARS,
@@ -63,6 +64,35 @@ class TestEvidenceRoleClassification:
         """Test invalid role defaults to unknown."""
         meta = {"role": "invalid"}
         role = classify_role(meta)
+        assert role == EvidenceRole.UNKNOWN
+
+
+class TestEvidenceTypeRoleClassification:
+    """Test role classification from evidence_type field (source of truth)."""
+
+    def test_classify_user_from_type(self):
+        """Test user role from evidence_type."""
+        role = classify_role_from_evidence_type("user")
+        assert role == EvidenceRole.USER
+
+    def test_classify_assistant_from_type(self):
+        """Test assistant role from evidence_type."""
+        role = classify_role_from_evidence_type("assistant")
+        assert role == EvidenceRole.ASSISTANT
+
+    def test_classify_system_from_type(self):
+        """Test system role from evidence_type."""
+        role = classify_role_from_evidence_type("system")
+        assert role == EvidenceRole.SYSTEM
+
+    def test_classify_unknown_from_type(self):
+        """Test unknown role for invalid evidence_type."""
+        role = classify_role_from_evidence_type("unknown")
+        assert role == EvidenceRole.UNKNOWN
+
+    def test_classify_conversation_from_type(self):
+        """Test fallback for conversation type."""
+        role = classify_role_from_evidence_type("conversation")
         assert role == EvidenceRole.UNKNOWN
 
 

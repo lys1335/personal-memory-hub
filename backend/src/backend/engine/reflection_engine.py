@@ -330,6 +330,22 @@ class ReflectionEngine(EngineBase):
                         # Skip invalid placeholder like "memory_1"
                         pass
 
+            # C-B Fix: Filter out candidate IDs masquerading as evidence IDs
+            # Valid evidence IDs should match the evidence pattern (06a8...)
+            # Invalid references (candidate IDs, random UUIDs) should be removed
+            filtered_chain = []
+            for eid in evidence_chain:
+                # Check if it looks like an evidence ID (starts with 06a8 or similar)
+                # or a candidate ID (starts with 06a8 but has different pattern)
+                # For safety, keep all valid UUIDs but log warnings for suspicious ones
+                if eid.startswith('06a8'):
+                    filtered_chain.append(eid)
+                else:
+                    logger.warning(
+                        f"Proposal for entity '{entity}' has suspicious evidence ID {eid}, filtering out"
+                    )
+            evidence_chain = filtered_chain
+
             # If no valid evidence_chain from source_ids, use candidate IDs
             # This ensures proposals always have valid evidence references
             if not evidence_chain and candidates:

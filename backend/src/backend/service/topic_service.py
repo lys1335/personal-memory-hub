@@ -218,12 +218,12 @@ class TopicService(BaseService):
     
     async def _increment_reconstruction_count(self, topic_id: UUID) -> None:
         """Increment reconstruction_count on topic."""
-        await self.repo.increment_count(topic_id, count_field="reconstruction_count")
+        await self.repo.increment_count(topic_id=topic_id, count_field="reconstruction_count")
     
     async def _increment_candidate_count(self, topic_id: UUID) -> None:
         """Increment candidate_count on topic."""
-        await self.repo.increment_count(topic_id, count_field="candidate_count")
+        await self.repo.increment_count(topic_id=topic_id, count_field="candidate_count")
     
     async def _increment_entity_count(self, topic_id: UUID) -> None:
         """Increment entity_count on topic."""
-        await self.repo.increment_count(topic_id, count_field="entity_count")
+        await self.repo.increment_count(topic_id=topic_id, count_field="entity_count")

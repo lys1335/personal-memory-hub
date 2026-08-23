@@ -83,8 +83,8 @@ class Evidence(Base):
     workspace_id: Mapped[UUID] = mapped_column(
         ForeignKey("workspace.id", ondelete="CASCADE"), nullable=False
     )
-    entity_id: Mapped[UUID] = mapped_column(
-        ForeignKey("entities.id", ondelete="CASCADE"), nullable=False
+    entity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("entities.id", ondelete="SET NULL"), nullable=True
     )
     area_id: Mapped[UUID] = mapped_column(
         ForeignKey("areas.id", ondelete="SET NULL")
@@ -463,6 +463,8 @@ class TopicLink(Base):
 
     Many-to-many junction between Topic and sources
     (reconstruction, candidate, entity).
+
+    NOTE: No independent id column — PK is composite (topic_id, source_type, source_id).
     """
 
     __tablename__ = "topic_links"
@@ -476,12 +478,12 @@ class TopicLink(Base):
         },
     )
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    # Composite PK: (topic_id, source_type, source_id)
     topic_id: Mapped[UUID] = mapped_column(
-        ForeignKey("topics.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("topics.id", ondelete="CASCADE"), nullable=False, primary_key=True
     )
-    source_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    source_id: Mapped[UUID] = mapped_column(nullable=False)
+    source_type: Mapped[str] = mapped_column(String(50), nullable=False, primary_key=True)
+    source_id: Mapped[UUID] = mapped_column(nullable=False, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
 
     # Relationships

@@ -187,18 +187,27 @@ class EvidenceEvolutionEngine(EngineBase):
                 evidence_candidate_map[eid] = cid
 
         # Build prompt from evidence content
+        # P0 Fix: Reject evidence items without valid IDs instead of generating random UUIDs
         contents = []
+        evidence_ids = []
         for i, e in enumerate(evidence):
+            evidence_id = e.get("id")
+            # P0 Fix: Skip evidence items without valid IDs
+            if not evidence_id:
+                logger.warning(
+                    "EvidenceEvolution: Skipping evidence item %d without valid ID", i
+                )
+                continue
             content = e.get("content", "")
             # Truncate very long content to avoid token limit
             content = content[:500] if len(content) > 500 else content
-            evidence_id = e.get("id", None)
-            # Ensure evidence_id is a valid UUID (or generate one)
-            if not evidence_id:
-                evidence_id = str(generate_uuid())
             contents.append(f"[{i+1}] ID:{evidence_id} | {content}")
+            evidence_ids.append(evidence_id)
 
-        evidence_ids = [e.get("id") or str(generate_uuid()) for e in evidence]
+        # P0 Fix: If no valid evidence items remain, return empty
+        if not evidence_ids:
+            log.append("EvidenceEvolution: No valid evidence items with IDs found")
+            return [], log
 
         # Extraction prompt per D4.2g §7.2
         system_prompt = (
@@ -392,11 +401,25 @@ class EvidenceEvolutionEngine(EngineBase):
                 # Build candidate content - store evidence for later processing
                 values = [f.get("value", "") for f in entity_facts_list if f.get("value")]
 
+                # Filter source_ids to only valid UUIDs
+                import uuid as _uuid_mod
+                valid_source_ids = []
+                for sid in source_ids:
+                    try:
+                        _uuid_mod.UUID(sid)
+                        valid_source_ids.append(sid)
+                    except (ValueError, TypeError):
+                        continue
+
+                # Set primary evidence_id to first valid source ID
+                evidence_id = valid_source_ids[0] if valid_source_ids else None
+
                 candidate = {
                     "entity": entity,
                     "content": f"{entity}: {', '.join(values[:3])}" if values else entity,
-                    "evidence_chain": source_ids[:10],  # Limit chain length
-                    "evidence_count": len(source_ids),
+                    "evidence_chain": valid_source_ids[:10],  # Limit chain length
+                    "evidence_count": len(valid_source_ids),
+                    "evidence_id": evidence_id,  # C-B Fix: Set primary evidence ID
                     "confidence": round(avg_confidence, 3),
                     "source_level": 1,
                     "candidate_type": "pattern",

@@ -315,7 +315,6 @@ class UserSemanticInterpreter:
             semantic_content=f"用户处于不确定状态: {content[:100]}",
             confidence=0.7,
             source_evidence_ids=[trigger.evidence_id],
-            uncertainty=0.3,
             rationale="User expressed uncertainty",
         )
     
@@ -435,6 +434,5 @@ Rules:
             semantic_content="",
             confidence=0.3,
             source_evidence_ids=[],
-            uncertainty=0.7,
             rationale=reason,
         )

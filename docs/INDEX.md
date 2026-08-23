@@ -144,7 +144,8 @@ AI Development Workflow — Project lifecycle state machine (seven states), Huma
 * D3.9_Documentation_Updates（D3.9 — 已完成 2026-07-13）
 
 Current Progress: 25 / 25 completed
-Phase D: D1 ✅ · D2 ✅ · D3 ✅ 🧊 Frozen · D4 ✅ 🧊 Frozen · D5 ✅ 🧊 Frozen · D6 ✅ Certified
+Phase D: D1 ✅ · D2 ✅ · D3 ✅ · D4 ✅ · D5 ✅ · D6 ✅
+Phase 26-G-B.6: Entity Resolution Clean Rebuild — 🔒 Locked (2026-08-23)
 ---
 
 # Phase D — Implementation
@@ -247,10 +248,40 @@ Complete human verification guide for D1 Infrastructure Foundation. Allows any d
 
 ---
 
-# Planned Documents
+## Phase 26-G-B.6 — Entity Resolution Clean Rebuild
+
+### Final Documentation (Locked)
+* [phase26g_b6_final_lock_report.md](./phase26g_b6_final_lock_report.md) — Final lock report with all validation gates
+* [phase26g_b6_step4_2_final_validation_report.md](./phase26g_b6_step4_2_final_validation_report.md) — Step 4.2 validation
+* [phase26g_b6_step4_2_1_forensic_report.md](./phase26g_b6_step4_2_1_forensic_report.md) — Writer forensics
+
+### Execution Reports
+* [phase26g_b6_preflight_report.md](./phase26g_b6_preflight_report.md)
+* [phase26g_b6_scope_reassessment.md](./phase26g_b6_scope_reassessment.md)
+* [phase26g_b6_step2_workspace_fix_report.md](./phase26g_b6_step2_workspace_fix_report.md)
+* [phase26g_b6_step4_1_final_stability_check.md](./phase26g_b6_step4_1_final_stability_check.md)
+* [phase26g_b6_clean_phase_report.md](./phase26g_b6_clean_phase_report.md)
+* [phase26g_b6_fresh_backup_report.md](./phase26g_b6_fresh_backup_report.md)
+
+### Key Lessons
+* [references/phase26g-b6-rebuild-lessons.md](./references/phase26g-b6-rebuild-lessons.md) — Workspace ID mismatch root cause
+
+### Final State
+- **Evidences:** 15,772
+- **Semantic Candidates:** 2,431
+- **Reflection Candidates:** 4,060
+- **Reconstructions:** 2,431
+- **Topic Links:** 7,276
+- **Coverage:** 15.41%
+- **Workspace:** fd0223ed-7aa2-491e-8db5-b0de71b75219 (user-workspace)
+
+---
+
+## Planned Documents
 * D4 — Domain Engine documents ✅ 🧊 Frozen
 * D5 — Entry Layer documents ✅ 🧊 Frozen
 * D6 — Architecture Verification & Implementation Readiness ✅ Certified
+* Phase 26-G-B.6 — Entity Resolution Clean Rebuild ✅ 🔒 Locked
 
 ---
 
@@ -287,4 +318,4 @@ Complete human verification guide for D1 Infrastructure Foundation. Allows any d
 
 ---
 
-Last Updated: 2026-07-04
+Last Updated: 2026-08-24

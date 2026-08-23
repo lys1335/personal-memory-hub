@@ -2,7 +2,9 @@
 
 > **A document-driven long-term memory system for personal AI assistants.**
 >
-> **Phase D, Milestone D3: Service Layer** — ✅ Complete
+> **Current Status:** Phase D3 Complete · Phase 26-G-B.6 Locked (2026-08-23)
+>
+> **Production Baseline:** Evidences=15,772 · Semantic Candidates=2,431 · Coverage=15.41%
 
 ---
 
@@ -134,13 +136,17 @@ See `docs/INDEX.md` for the full architecture documentation.
 | **↓** | | |
 | **Phase C** | Architecture Review | ✅ Complete |
 | **↓** | | |
-| **Phase D** | Engineering Architecture | 🔄 In Progress |
+| **Phase D** | Engineering Architecture | ✅ Complete |
 | **↓** | | |
-| **Phase E** | MVP Development | 📋 Planned |
+| **Phase E** | MVP Development | ✅ Complete |
 | **↓** | | |
-| **Phase F** | AI Integration | 📋 Planned |
+| **Phase F** | AI Integration | ✅ Complete |
 | **↓** | | |
-| **Phase G** | Production Ready | 📋 Planned |
+| **Phase G** | Production Ready | 🔄 In Progress |
+| **↓** | | |
+| **Phase 26-G-B.6** | Entity Resolution Clean Rebuild | 🔒 Locked (2026-08-23) |
+
+> **Note:** The implementation roadmap has evolved during the project. Phase D3 (Service Layer) was completed as the foundation. Subsequent phases (E, F, G) have been implemented incrementally. Phase 26-G-B.6 represents the current production baseline with entity resolution fixes and clean rebuild validation.
 
 ---
 

@@ -43,25 +43,21 @@ def mock_evidence():
 @pytest.fixture
 def mock_provider():
     """Create MockReflectionProvider with sample facts."""
-    return MockReflectionProvider(
-        mock_data={
-            "facts": [
-                {
-                    "entity": "HappySmile",
-                    "value": "photography platform",
-                    "source_ids": ["e1", "e2", "e3"],
-                    "confidence": 0.9,
-                },
-                {
-                    "entity": "Apple Pay",
-                    "value": "contactless payment",
-                    "source_ids": ["e4", "e5"],
-                    "confidence": 0.85,
-                },
-            ],
-            "entities": ["HappySmile", "Apple Pay"],
-        }
-    )
+    facts = [
+        {
+            "entity": "HappySmile",
+            "value": "photography platform",
+            "source_ids": ["e1", "e2", "e3"],
+            "confidence": 0.9,
+        },
+        {
+            "entity": "Apple Pay",
+            "value": "contactless payment",
+            "source_ids": ["e4", "e5"],
+            "confidence": 0.85,
+        },
+    ]
+    return MockReflectionProvider(facts=facts)
 
 
 class TestEvidenceEvolutionEngineInit:

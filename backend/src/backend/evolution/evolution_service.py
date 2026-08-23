@@ -397,3 +397,134 @@ class EvolutionService(BaseService):
         except Exception as e:
             logger.error("Failed to create relationship: %s", e)
             return False
+
+    async def evolve_entity_history(
+        self,
+        *,
+        workspace_id: UUID,
+        entity_id: UUID | None = None,
+        min_l1_count: int = 3,
+        min_avg_confidence: float = 0.8,
+    ) -> list[dict]:
+        """Evolve historical L1 MemoryNodes into L2 Patterns / L3 Beliefs.
+
+        This method is called AFTER ReflectionService has created L1 nodes.
+        It aggregates L1 nodes by entity and creates higher-level abstractions
+        when threshold criteria are met.
+
+        Args:
+            workspace_id: Workspace scope.
+            entity_id: Optional specific entity to evolve. If None, evolves all entities.
+            min_l1_count: Minimum number of L1 nodes required (default: 3).
+            min_avg_confidence: Minimum average confidence required (default: 0.8).
+
+        Returns:
+            List of evolution results with entity_id, level, node_id, rationale.
+        """
+        from backend.shared.domain.memory_models import MemoryNode as NodeModel
+
+        results = []
+
+        # Query L1 nodes grouped by entity
+        query = text("""
+            SELECT entity_id, COUNT(*) as l1_count, AVG(confidence) as avg_confidence
+            FROM memory_nodes
+            WHERE workspace_id = :workspace_id
+              AND level = 1
+              AND status = 'active'
+              AND (:entity_id IS NULL OR entity_id = :entity_id)
+            GROUP BY entity_id
+            HAVING COUNT(*) >= :min_l1_count
+               AND AVG(confidence) >= :min_avg_confidence
+        """)
+
+        result = await self.session.execute(query, {
+            "workspace_id": str(workspace_id),
+            "entity_id": str(entity_id) if entity_id else None,
+            "min_l1_count": min_l1_count,
+            "min_avg_confidence": min_avg_confidence,
+        })
+
+        entities_to_evolve = result.fetchall()
+
+        for row in entities_to_evolve:
+            ev_entity_id = row[0]
+            l1_count = row[1]
+            avg_confidence = float(row[2])
+
+            # Get representative L1 nodes for this entity
+            l1_query = text("""
+                SELECT id, content, confidence
+                FROM memory_nodes
+                WHERE workspace_id = :workspace_id
+                  AND entity_id = :entity_id
+                  AND level = 1
+                  AND status = 'active'
+                ORDER BY created_at DESC
+                LIMIT 10
+            """)
+
+            l1_result = await self.session.execute(l1_query, {
+                "workspace_id": str(workspace_id),
+                "entity_id": str(ev_entity_id),
+            })
+            l1_nodes = l1_result.fetchall()
+
+            # Create L2 Pattern
+            l2_node_id = uuid4()
+            content_parts = [str(node[1])[:200] for node in l1_nodes if node[1]]
+            aggregated_content = "; ".join(content_parts[:3]) if content_parts else f"Pattern for entity {ev_entity_id}"
+
+            await self.session.execute(text("""
+                INSERT INTO memory_nodes (
+                    id, workspace_id, entity_id, level, node_type, content, summary,
+                    confidence, importance, signal_strength, status, source, generated_by,
+                    evidence_links, contradict_evidence, _meta, created_at, updated_at
+                ) VALUES (
+                    :id, :workspace_id, :entity_id, 2, 'Pattern', :content, :summary,
+                    :confidence, :importance, :signal_strength, 'active', 'evolution_service', 'evolution_service',
+                    :evidence_links, '[]', '{}', NOW(), NOW()
+                )
+            """), {
+                "id": str(l2_node_id),
+                "workspace_id": str(workspace_id),
+                "entity_id": str(ev_entity_id),
+                "content": aggregated_content[:1000],
+                "summary": f"Pattern: {l1_count} L1 observations aggregated",
+                "confidence": avg_confidence,
+                "importance": avg_confidence,
+                "signal_strength": avg_confidence,
+                "evidence_links": json.dumps([str(node[0]) for node in l1_nodes[:5]]),
+            })
+
+            # Create relationships from L2 to L1 nodes
+            for l1_node in l1_nodes[:5]:
+                await self.session.execute(text("""
+                    INSERT INTO memory_relationships (
+                        id, source_node_id, target_node_id, relationship_type,
+                        confidence, created_at, updated_at
+                    ) VALUES (
+                        :rel_id, :source_id, :target_id, 'supports', :confidence, NOW(), NOW()
+                    )
+                """), {
+                    "rel_id": str(uuid4()),
+                    "source_id": str(l2_node_id),
+                    "target_id": str(l1_node[0]),
+                    "confidence": avg_confidence,
+                })
+
+            results.append({
+                "entity_id": str(ev_entity_id),
+                "level": 2,
+                "node_id": str(l2_node_id),
+                "l1_count": l1_count,
+                "avg_confidence": round(avg_confidence, 3),
+                "rationale": f"Created Pattern from {l1_count} L1 nodes with avg confidence {avg_confidence:.2f}",
+            })
+
+            logger.info(
+                "Entity %s evolved to L2 Pattern: %d L1 nodes, avg_conf=%.3f",
+                ev_entity_id, l1_count, avg_confidence,
+            )
+
+        return results
