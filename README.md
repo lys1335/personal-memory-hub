@@ -118,9 +118,9 @@ See `docs/INDEX.md` for the full architecture documentation.
 | **D1: Infrastructure Foundation** | ✅ Complete | Project setup, database, logging, DI, testing, CI |
 | **D2: Repository Layer** | ✅ Complete | Database models, repositories, migrations |
 | **D3: Service Layer** | ✅ Complete | Application services (Memory, Query, Entity, Reflection, Task) |
-| **D4: Domain Engine** | ⏳ Planned | Stateless domain engines |
-| **D5: Entry & API** | ⏳ Planned | REST, MCP, CLI adapters |
-| **D6: Testing & Stabilization** | ⏳ Planned | Integration, evaluation, regression |
+| **D4: Domain Engine** | ✅ Frozen | Stateless domain engines |
+| **D5: Entry & API** | ✅ Frozen | REST, MCP, CLI adapters |
+| **D6: Testing & Stabilization** | ✅ Certified | Integration, evaluation, regression |
 
 > **Note**: The implementation roadmap has evolved during the project. Service Layer architecture is intentionally completed before Domain Engine architecture. Stable service contracts provide clear capability boundaries, allowing stateless Domain Engines to be designed afterwards without affecting external service interfaces.
 
@@ -142,7 +142,7 @@ See `docs/INDEX.md` for the full architecture documentation.
 | **↓** | | |
 | **Phase F** | AI Integration | ✅ Complete |
 | **↓** | | |
-| **Phase G** | Production Ready | 🔄 In Progress |
+| **Phase G** | Production Ready | ✅ LOCKED |
 | **↓** | | |
 | **Phase 26-G-B.6** | Entity Resolution Clean Rebuild | 🔒 Locked (2026-08-23) |
 
