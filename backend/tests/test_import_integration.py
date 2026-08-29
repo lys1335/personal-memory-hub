@@ -190,10 +190,13 @@ class TestPipelineIntegration:
         result = pipeline.execute(ImportSource.OPEN_WEBUI, data)
 
         # Verify parsing results
-        assert len(result.items) == 1  # Only user messages
+        # Note: OpenWebUI adapter now includes both user and assistant messages
+        assert len(result.items) == 2
         assert result.items[0].content == "Hello, how are you?"
         assert result.items[0].metadata["source"] == "open_webui"
         assert result.items[0].metadata["conversation_title"] == "Test Conversation"
+        assert result.items[1].content == "I'm doing well, thanks!"
+        assert result.items[1].metadata["role"] == "assistant"
 
     def test_pipeline_with_multiple_conversations(self) -> None:
         """Test pipeline with multiple conversations."""

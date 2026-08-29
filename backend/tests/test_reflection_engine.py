@@ -34,14 +34,11 @@ def engine():
 def mock_provider():
     """Create MockReflectionProvider with sample data."""
     return MockReflectionProvider(
-        mock_data={
-            "facts": [
-                {"entity": "happysmile", "value": "摄影服务平台", "confidence": 0.9, "source_ids": ["e1", "e2"]},
-                {"entity": "happysmile", "value": "日本公司", "confidence": 0.85, "source_ids": ["e3"]},
-                {"entity": "happysmile", "value": "2024年成立", "confidence": 0.8, "source_ids": ["e4"]},
-            ],
-            "entities": ["happysmile"],
-        }
+        facts=[
+            {"entity": "happysmile", "value": "摄影服务平台", "confidence": 0.9, "source_ids": ["e1", "e2"]},
+            {"entity": "happysmile", "value": "日本公司", "confidence": 0.85, "source_ids": ["e3"]},
+            {"entity": "happysmile", "value": "2024年成立", "confidence": 0.8, "source_ids": ["e4"]},
+        ]
     )
 
 
@@ -314,7 +311,7 @@ class TestReflectPipeline:
     @pytest.mark.asyncio
     async def test_pipeline_no_facts(self, engine):
         """Test pipeline when no facts extracted."""
-        provider = MockReflectionProvider(mock_data={"facts": [], "entities": []})
+        provider = MockReflectionProvider(facts=[])
         candidates = [{"id": "e1", "content": "test content"}]
 
         result = await engine.reflect_pipeline(

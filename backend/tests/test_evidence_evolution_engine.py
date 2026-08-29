@@ -226,16 +226,20 @@ class TestBuildCandidates:
 
     def test_build_candidates_from_facts(self, engine):
         """Test candidate building from extracted facts."""
+        # Use valid UUID strings for source_ids since _build_candidates filters non-UUIDs
+        from uuid import uuid4
+        e1, e2, e3, e4 = str(uuid4()), str(uuid4()), str(uuid4()), str(uuid4())
+
         facts = [
-            {"entity": "A", "value": "v1", "confidence": 0.9, "source_ids": ["e1", "e2"]},
-            {"entity": "A", "value": "v2", "confidence": 0.85, "source_ids": ["e3"]},
-            {"entity": "B", "value": "v3", "confidence": 0.8, "source_ids": ["e4"]},
+            {"entity": "A", "value": "v1", "confidence": 0.9, "source_ids": [e1, e2]},
+            {"entity": "A", "value": "v2", "confidence": 0.85, "source_ids": [e3]},
+            {"entity": "B", "value": "v3", "confidence": 0.8, "source_ids": [e4]},
         ]
         evidence = [
-            {"id": "e1", "content": "c1"},
-            {"id": "e2", "content": "c2"},
-            {"id": "e3", "content": "c3"},
-            {"id": "e4", "content": "c4"},
+            {"id": e1, "content": "c1"},
+            {"id": e2, "content": "c2"},
+            {"id": e3, "content": "c3"},
+            {"id": e4, "content": "c4"},
         ]
 
         candidates = engine._build_candidates(facts, evidence)
@@ -245,6 +249,7 @@ class TestBuildCandidates:
         assert candidates[0]["source_level"] == 1
         assert candidates[0]["candidate_type"] == "pattern"
         assert candidates[0]["status"] == "candidate"
+        # Entity A has 3 source_ids (e1, e2, e3)
         assert len(candidates[0]["evidence_chain"]) == 3
 
     def test_build_candidates_empty(self, engine):
