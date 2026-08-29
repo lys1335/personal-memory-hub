@@ -104,35 +104,40 @@ class UserSemanticInterpreter:
     async def interpret(
         self,
         context: InterpretationContext,
+        workspace_id: UUID | None = None,
     ) -> InterpretationResult:
         """Interpret user semantic from context.
-        
+
         Args:
             context: InterpretationContext wrapping ContextWindow.
-            
+            workspace_id: Optional workspace id to attach to the result.
+
         Returns:
             InterpretationResult with user-owned semantic classification.
         """
         trigger = context.trigger_evidence
-        
+
         if trigger is None:
-            return self._create_no_user_fact(
+            result = self._create_no_user_fact(
                 context, "Trigger evidence not found"
             )
-        
         # Step 1: Role check - must be user
-        if trigger.role != EvidenceRole.USER:
-            return self._create_no_user_fact(
+        elif trigger.role != EvidenceRole.USER:
+            result = self._create_no_user_fact(
                 context,
                 f"Trigger is {trigger.role.value}, not user"
             )
-        
         # Step 2: Check if short confirmation needing expansion
-        if trigger.is_short and trigger.is_user_confirmation:
-            return await self._interpret_short_confirmation(context, trigger)
-        
+        elif trigger.is_short and trigger.is_user_confirmation:
+            result = await self._interpret_short_confirmation(context, trigger)
         # Step 3: Direct interpretation of user message
-        return await self._interpret_direct(context, trigger)
+        else:
+            result = await self._interpret_direct(context, trigger)
+
+        if workspace_id is not None:
+            result.workspace_id = workspace_id
+
+        return result
     
     async def _interpret_short_confirmation(
         self,

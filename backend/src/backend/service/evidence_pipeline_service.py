@@ -228,6 +228,7 @@ class EvidencePipelineService(BaseService):
         try:
             return await self.interpreter.interpret(
                 context=context_window.to_interpretation_context(),
+                workspace_id=workspace_id,
             )
         except Exception as e:
             logger.error("Failed to interpret context: %s", e)

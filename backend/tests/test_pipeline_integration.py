@@ -430,23 +430,25 @@ class TestWorkspaceIsolation:
         
         # Setup mocks to capture workspace_id
         captured_workspace_ids = []
-        
+
         async def capture_workspace(*args, **kwargs):
-            captured_workspace_ids.append(kwargs.get('workspace_id'))
+            # Capture workspace_id keyword argument
+            captured_workspace_ids.append(kwargs.get("workspace_id"))
             return MagicMock()
-        
+
         service.formulation.formulate = AsyncMock(side_effect=capture_workspace)
         service.interpreter.interpret = AsyncMock(side_effect=capture_workspace)
         service.formation.form = AsyncMock(return_value=MagicMock(success=True))
         service.topics.extract_topics_from_summary = AsyncMock(return_value=[])
-        
+
         await service.process_evidence(
             evidence_id=uuid4(),
             workspace_id=workspace_id,
         )
-        
-        # Verify workspace_id was propagated
+
+        # Verify workspace_id was propagated to at least formulation and interpretation
         assert len(captured_workspace_ids) >= 2
+        # Strict assertion: every captured workspace_id must equal the passed value
         for wid in captured_workspace_ids:
             assert wid == workspace_id
 
