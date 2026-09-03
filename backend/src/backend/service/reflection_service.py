@@ -1164,13 +1164,13 @@ class ReflectionService(BaseService):
                         candidate_type, evidence_source, evidence_id,
                         evidence_chain, evidence_count, evidence_strength,
                         status, ingested_by, ingestion_timestamp,
-                        verified_at, source_level, created_at, updated_at
+                        verified_at, created_at, updated_at
                     ) VALUES (
                         :id, :workspace_id, :entity_id, :area_id, :content,
                         :candidate_type, :evidence_source, :evidence_id,
                         :evidence_chain, :evidence_count, :evidence_strength,
                         :status, :ingested_by, NOW(),
-                        :verified_at, :source_level, NOW(), NOW()
+                        :verified_at, NOW(), NOW()
                     )
                 """), {
                     "id": str(generate_uuid()),
@@ -1187,7 +1187,6 @@ class ReflectionService(BaseService):
                     "status": "candidate",
                     "ingested_by": "ai_reflect",
                     "verified_at": candidate_verified_at,
-                    "source_level": candidate.get("level", 2),
                 })
 
         logger.info(f"Saved {len(candidates)} candidates to database")
