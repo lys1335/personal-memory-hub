@@ -20,7 +20,7 @@ class Proposal(Base):
     workspace_id = Column(String, nullable=False)
     candidate_id = Column(String, nullable=True)  # P0 Fix: FK to candidates.id (UUID stored as string)
     type = Column(String(20), nullable=False)
-    source_level = Column(DateTime, default=datetime.utcnow)
+    source_level = Column(Integer, default=1)
     target_level = Column(Integer, nullable=False)
     entity = Column(String(255), nullable=True)
     evidence_chain = Column(Text, nullable=True)
