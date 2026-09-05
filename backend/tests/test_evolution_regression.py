@@ -15,12 +15,8 @@ from __future__ import annotations
 import pytest
 from uuid import uuid4
 
-from backend.evolution.evolution_engine import (
-    EvolutionEngine,
-    TopicEvolutionService,
-    VALID_TRANSITIONS,
-)
-from backend.evolution.evolution_result import (
+from backend.service.evolution_service import VALID_TRANSITIONS
+from backend.shared.domain.evolution_result import (
     EvolutionResult,
     EvolutionDecision,
     RelationshipAction,

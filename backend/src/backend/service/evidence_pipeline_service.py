@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.context import ContextWindow, ContextWindowFormulator
 from backend.context.interpretation_result import InterpretationResult
 from backend.context.semantic_interpreter import UserSemanticInterpreter
-from backend.evolution.evolution_service import EvolutionService
+from backend.service.evolution_service import EvolutionService
 from backend.service.base import BaseService
 from backend.service.formation_service import FormationService, FormationResult
 from backend.service.topic_service import TopicService

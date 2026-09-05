@@ -195,7 +195,7 @@ def get_services(
     from backend.service.evidence_pipeline_service import EvidencePipelineService
     from backend.service.formation_service import FormationService
     from backend.service.topic_service import TopicService
-    from backend.evolution.evolution_service import EvolutionService
+    from backend.service.evolution_service import EvolutionService
 
     pipeline_session = session
     evidence_pipeline_service = EvidencePipelineService(pipeline_session)

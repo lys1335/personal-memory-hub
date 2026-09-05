@@ -301,7 +301,7 @@ class TestFormationServiceTransaction:
     @pytest.mark.asyncio
     async def test_evolution_service_inherits_base_service(self):
         """EvolutionService should inherit from BaseService."""
-        from backend.evolution.evolution_service import EvolutionService
+        from backend.service.evolution_service import EvolutionService
         
         session = MockSession()
         service = EvolutionService(session)
@@ -360,7 +360,7 @@ class TestIntegrationCallChain:
     
     def test_evolution_service_structure(self):
         """EvolutionService should inherit from BaseService."""
-        from backend.evolution.evolution_service import EvolutionService
+        from backend.service.evolution_service import EvolutionService
         from backend.service.base import BaseService
         
         assert issubclass(EvolutionService, BaseService)
@@ -395,7 +395,7 @@ class TestTransactionBoundary:
         """Sub-services should NOT manage their own transactions."""
         from backend.service.formation_service import FormationService
         from backend.service.topic_service import TopicService
-        from backend.evolution.evolution_service import EvolutionService
+        from backend.service.evolution_service import EvolutionService
         
         session = MockSession()
         
@@ -513,7 +513,7 @@ class TestHistoricalImmutability:
     @pytest.mark.asyncio
     async def test_evolution_does_not_modify_history(self):
         """Evolution should create new nodes, not modify existing ones."""
-        from backend.evolution.evolution_service import EvolutionService
+        from backend.service.evolution_service import EvolutionService
         
         session = MockSession()
         service = EvolutionService(session)

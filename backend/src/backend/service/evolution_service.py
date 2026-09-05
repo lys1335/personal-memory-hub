@@ -25,7 +25,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.evolution.evolution_result import (
+from backend.shared.domain.evolution_result import (
     EvolutionResult,
     EvolutionDecision,
     RelationshipAction,
