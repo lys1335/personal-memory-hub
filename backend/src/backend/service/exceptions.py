@@ -24,18 +24,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from backend.shared.domain.exceptions import MemoryHubError
+
 # ---------------------------------------------------------------------------
 # Base: DomainError
 # ---------------------------------------------------------------------------
-
-
-class MemoryHubError(Exception):
-    """Base exception for all MemoryHub errors.
-
-    All service-level exceptions inherit from this class.
-    Entry Layer translates MemoryHubError subclasses into protocol-specific
-    error responses.
-    """
 
 
 class DomainError(MemoryHubError):

@@ -5,7 +5,7 @@ Defines exception hierarchy for the Import Framework.
 
 from __future__ import annotations
 
-from backend.service.exceptions import MemoryHubError
+from backend.shared.domain.exceptions import MemoryHubError
 
 
 class ImportFrameworkError(MemoryHubError):

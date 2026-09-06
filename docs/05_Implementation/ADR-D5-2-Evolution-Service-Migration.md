@@ -44,6 +44,7 @@ Perform **controlled structural refactoring only** (not business logic changes):
 ## Blocked
 - pytest execution blocked: venv lacks pytest module (per user裁决 (b), not auto-fixed)
 - D5-3 (MemoryHubError migration) — **HOLD** pending separate authorization
+- D5-3 (MemoryHubError migration) — ✅ COMPLETED (ADR-D5-3, see docs/05_Implementation/ADR-D5-3-MemoryHubError-Migration.md, Step 2 LOCKED 2026-09-05)
 - D5-4 (shared extractor) — **not included**
 
 ## References
