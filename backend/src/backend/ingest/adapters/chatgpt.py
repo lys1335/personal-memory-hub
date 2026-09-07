@@ -28,7 +28,12 @@ from backend.ingest.base import (
     ImportSource,
     MemoryItem,
 )
-from backend.ingest.parser import extract_text_segments, sanitize_content, try_parse_json
+from backend.ingest.parser import (
+    extract_multimodal_text,
+    extract_text_segments,
+    sanitize_content,
+    try_parse_json,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -354,9 +359,12 @@ class ChatGPTImportAdapter(BaseImportAdapter):
             if parts:
                 return "\n".join(str(part) for part in parts)
 
-        # For multimodal_text, recursively extract text from parts
+        # For multimodal_text, recursively extract text from parts.
+        # v3 A1: explicit min_length=3 reproduces the original 0e4cf20 chatgpt
+        # list-of-str branch `len(item) > 2` filter (without affecting the
+        # dict["text"] branch, which only uses strip()).
         if isinstance(content, dict):
-            texts = self._extract_multimodal_text(content)
+            texts = extract_multimodal_text(content, min_length=3)
             if texts:
                 return "\n".join(texts)
 
@@ -371,50 +379,6 @@ class ChatGPTImportAdapter(BaseImportAdapter):
 
         # Indicate non-text content instead of returning raw JSON
         return ""
-
-    def _extract_multimodal_text(self, data: dict[str, Any], depth: int = 0) -> list[str]:
-        """Recursively extract text from multimodal content.
-
-        Traverses the content structure looking for transcription text
-        in parts array and other nested structures.
-
-        Args:
-            data: Content dictionary to traverse.
-            depth: Current recursion depth (max 5).
-
-        Returns:
-            List of extracted text strings.
-        """
-        if depth > 5 or not isinstance(data, dict):
-            return []
-
-        texts = []
-
-        # Skip metadata/pointer fields
-        skip_keys = {"asset_pointer", "content_type", "metadata", "decoding_id",
-                     "direction", "tool_audio_direction", "frames_asset_pointers",
-                     "video_container_asset_pointer", "expiry_datetime"}
-
-        for key, val in data.items():
-            if key in skip_keys:
-                continue
-
-            if key == "parts" and isinstance(val, list):
-                # Recursively extract from each part
-                for part in val:
-                    texts.extend(self._extract_multimodal_text(part, depth + 1))
-            elif key == "text" and isinstance(val, str) and val.strip():
-                texts.append(val.strip())
-            elif isinstance(val, dict):
-                texts.extend(self._extract_multimodal_text(val, depth + 1))
-            elif isinstance(val, list):
-                for item in val:
-                    if isinstance(item, str) and item.strip() and len(item) > 2:
-                        texts.append(item.strip())
-                    elif isinstance(item, dict):
-                        texts.extend(self._extract_multimodal_text(item, depth + 1))
-
-        return texts
 
     # Timestamp Extraction
     # ------------------------------------------------------------------

@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.entry.dto import ResponseStatus
 from backend.entry.rest_adapter import RESTAdapter
+from backend.ingest.parser import extract_multimodal_text, try_parse_python_dict
 from backend.service.entity_service import EntityService
 from backend.service.memory_service import MemoryService
 from backend.service.query_service import QueryService
@@ -1827,74 +1828,11 @@ async def get_evidence_memories(proposal_id: str):
         rows = await conn.execute(sql, params)
         result_rows = rows.fetchall()
 
-    def _extract_content_text(content):
-        """Extract readable text from multimodal content JSON or Python repr."""
-        if not content:
-            return ""
-
-        # If it's already a plain string, try to parse it
-        if isinstance(content, str):
-            parsed = None
-
-            # First try JSON parse
-            try:
-                parsed = _json.loads(content)
-            except (_json.JSONDecodeError, TypeError):
-                # Try Python ast literal_eval (handles single quotes)
-                try:
-                    import ast
-                    parsed = ast.literal_eval(content)
-                except (ValueError, SyntaxError):
-                    pass
-
-            # If we successfully parsed it
-            if isinstance(parsed, dict) and "parts" in parsed:
-                return _extract_multimodal_text(parsed)
-            if isinstance(parsed, str):
-                return parsed
-            return str(content)
-
-        # If it's a dict (from ORM), extract text directly
-        if isinstance(content, dict):
-            return _extract_multimodal_text(content)
-
-        return str(content)
-
-    def _extract_multimodal_text(data, depth=0):
-        """Recursively extract text from multimodal content structure."""
-        if depth > 5 or not isinstance(data, dict):
-            return ""
-
-        texts = []
-        skip_keys = {"asset_pointer", "content_type", "metadata", "decoding_id",
-                     "direction", "tool_audio_direction", "frames_asset_pointers",
-                     "video_container_asset_pointer", "expiry_datetime"}
-
-        for key, val in data.items():
-            if key in skip_keys:
-                continue
-
-            if key == "parts" and isinstance(val, list):
-                for part in val:
-                    part_text = _extract_multimodal_text(part, depth + 1)
-                    if part_text:
-                        texts.append(part_text)
-            elif key == "text" and isinstance(val, str) and val.strip():
-                texts.append(val.strip())
-            elif isinstance(val, dict):
-                nested = _extract_multimodal_text(val, depth + 1)
-                if nested:
-                    texts.append(nested)
-            elif isinstance(val, list):
-                for item in val:
-                    if isinstance(item, str) and item.strip():
-                        texts.append(item.strip())
-                    elif isinstance(item, dict):
-                        nested = _extract_multimodal_text(item, depth + 1)
-                        if nested:
-                            texts.append(nested)
-
-        return "\n".join(texts)
+    def _extract_content_text(content: str) -> str:
+        """Thin delegation: try_parse_python_dict → fallback original content → extract_multimodal_text → join."""
+        parsed = try_parse_python_dict(content)
+        target = parsed if parsed is not None else content
+        return "\n".join(extract_multimodal_text(target))
 
     evidence = []
     for row in result_rows:
