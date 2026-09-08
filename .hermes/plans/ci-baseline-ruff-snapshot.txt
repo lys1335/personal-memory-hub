@@ -1,0 +1,1241 @@
+[*] 1046 fixable with the `--fix` option (129 hidden fixes can be enabled with the `--unsafe-fixes` option).
+Found 1239 errors.
+src\backend\context\__init__.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+src\backend\context\context_window.py:139:44: UP037 [*] Remove quotes from type annotation
+src\backend\context\context_window.py:139:45: F821 Undefined name `InterpretationContext`
+src\backend\context\context_window.py:145:9: I001 [*] Import block is un-sorted or un-formatted
+src\backend\context\formulator.py:100:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:106:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:109:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+src\backend\context\formulator.py:111:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:122:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:13:20: F401 [*] `typing.Any` imported but unused
+src\backend\context\formulator.py:131:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:147:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:156:1: W293 Blank line contains whitespace
+src\backend\context\formulator.py:165:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:168:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:172:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:177:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:182:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:184:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:190:13: SIM102 Use a single `if` statement instead of nested `if` statements
+src\backend\context\formulator.py:194:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:196:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:212:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:215:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:219:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:223:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:225:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:227:13: SIM102 Use a single `if` statement instead of nested `if` statements
+src\backend\context\formulator.py:230:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:232:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:244:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:247:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:251:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:256:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:259:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:274:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:278:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:280:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:285:1: W293 Blank line contains whitespace
+src\backend\context\formulator.py:29:5: F401 [*] `backend.context.context_window.SHORT_CONFIRMATION_MAX_CHARS` imported but unused
+src\backend\context\formulator.py:290:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:294:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:299:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:306:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:32:5: F401 [*] `backend.context.context_window.TEMPORAL_WINDOW_LONG` imported but unused
+src\backend\context\formulator.py:39:1: W293 Blank line contains whitespace
+src\backend\context\formulator.py:43:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:46:1: W293 Blank line contains whitespace
+src\backend\context\formulator.py:51:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:62:1: W293 Blank line contains whitespace
+src\backend\context\formulator.py:69:1: W293 Blank line contains whitespace
+src\backend\context\formulator.py:77:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:84:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:89:1: W293 [*] Blank line contains whitespace
+src\backend\context\formulator.py:95:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:106:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:110:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:116:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:120:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:123:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:135:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:139:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:142:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:147:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:155:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:160:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:165:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:170:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:187:1: W293 Blank line contains whitespace
+src\backend\context\interpretation_result.py:191:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:197:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:201:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:209:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:218:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:24:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:32:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:36:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:39:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:43:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:53:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:65:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:70:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:73:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:81:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:86:1: W293 [*] Blank line contains whitespace
+src\backend\context\interpretation_result.py:96:1: W293 Blank line contains whitespace
+src\backend\context\interpretation_result.py:99:1: W293 Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:103:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:141:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:154:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:160:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:163:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:166:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:190:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:195:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:203:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:207:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:211:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:215:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:22:5: F401 [*] `backend.context.context_window.ContextWindow` imported but unused
+src\backend\context\semantic_interpreter.py:221:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:227:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:231:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:235:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:241:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:255:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:260:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:280:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:307:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:325:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:352:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:364:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:38:1: W293 Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:385:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:391:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:405:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:409:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:414:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:42:1: W293 Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:429:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:49:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:56:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:63:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:69:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:76:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:83:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:89:1: W293 [*] Blank line contains whitespace
+src\backend\context\semantic_interpreter.py:96:1: W293 Blank line contains whitespace
+src\backend\rebuild_phase_workspace_fixed.py:109:23: W291 Trailing whitespace
+src\backend\rebuild_phase_workspace_fixed.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+src\backend\rebuild_phase_workspace_fixed.py:286:5: F841 Local variable `engine` is assigned to but never used
+src\backend\rebuild_phase_workspace_fixed.py:63:28: RUF009 Do not perform function call `datetime.utcnow` in dataclass defaults
+src\backend\repository\reconstruction_repository.py:153:51: F821 Undefined name `datetime`
+src\backend\repository\reconstruction_repository.py:272:25: F541 [*] f-string without any placeholders
+src\backend\repository\topic_repository.py:123:13: SIM118 Use `key in dict` instead of `key in dict.keys()`
+src\backend\repository\topic_repository.py:490:9: I001 [*] Import block is un-sorted or un-formatted
+src\backend\repository\topic_repository.py:558:20: F821 Undefined name `Topic`
+src\backend\repository\topic_repository.py:559:20: F821 Undefined name `Topic`
+src\backend\service\entity_resolution.py:109:5: F841 Local variable `content_lower` is assigned to but never used
+src\backend\service\evidence_pipeline_service.py:16:1: I001 [*] Import block is un-sorted or un-formatted
+src\backend\service\evidence_pipeline_service.py:242:25: UP037 [*] Remove quotes from type annotation
+src\backend\service\evidence_pipeline_service.py:255:20: UP037 [*] Remove quotes from type annotation
+src\backend\service\evolution_service.py:107:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:114:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:123:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:130:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:133:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:147:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:154:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:156:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:166:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:171:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:175:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:18:1: I001 [*] Import block is un-sorted or un-formatted
+src\backend\service\evolution_service.py:180:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:183:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:185:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:196:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:202:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:210:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:218:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:22:20: F401 [*] `typing.Any` imported but unused
+src\backend\service\evolution_service.py:226:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:228:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:238:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:243:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:249:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:253:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:261:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:263:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:273:9: SIM114 [*] Combine `if` branches using logical `or` operator
+src\backend\service\evolution_service.py:278:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:287:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:289:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:296:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:309:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:317:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:320:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:324:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:332:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:339:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:343:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:347:9: F841 Local variable `area` is assigned to but never used
+src\backend\service\evolution_service.py:348:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:365:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:373:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:382:79: F401 [*] `backend.shared.domain.memory_models.MemoryRelationship` imported but unused
+src\backend\service\evolution_service.py:383:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:392:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:424:71: F401 [*] `backend.shared.domain.memory_models.MemoryNode` imported but unused
+src\backend\service\evolution_service.py:429:17: F821 Undefined name `text`
+src\backend\service\evolution_service.py:456:24: F821 Undefined name `text`
+src\backend\service\evolution_service.py:478:40: F821 Undefined name `text`
+src\backend\service\evolution_service.py:497:35: F821 Undefined name `json`
+src\backend\service\evolution_service.py:502:44: F821 Undefined name `text`
+src\backend\service\evolution_service.py:60:1: W293 Blank line contains whitespace
+src\backend\service\evolution_service.py:65:1: W293 Blank line contains whitespace
+src\backend\service\evolution_service.py:69:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:77:1: W293 [*] Blank line contains whitespace
+src\backend\service\evolution_service.py:87:1: W293 Blank line contains whitespace
+src\backend\service\evolution_service.py:93:1: W293 Blank line contains whitespace
+src\backend\service\evolution_service.py:96:1: W293 Blank line contains whitespace
+src\backend\service\formation_service.py:114:25: F821 Undefined name `ContextWindow`
+src\backend\service\formation_service.py:20:1: I001 [*] Import block is un-sorted or un-formatted
+src\backend\service\formation_service.py:23:22: F401 [*] `datetime.datetime` imported but unused
+src\backend\service\formation_service.py:233:25: F821 Undefined name `ContextWindow`
+src\backend\service\formation_service.py:289:25: F821 Undefined name `ContextWindow`
+src\backend\service\formation_service.py:303:52: F401 [*] `backend.context.context_window.EvidenceRole` imported but unused
+src\backend\service\formation_service.py:31:5: F401 [*] `backend.context.interpretation_result.InterpretationContext` imported but unused
+src\backend\service\formation_service.py:34:5: F401 [*] `backend.context.interpretation_result.SemanticUnit` imported but unused
+src\backend\service\formation_service.py:39:42: F401 [*] `backend.repository.workspace.WorkspaceIsolationMixin` imported but unused
+src\backend\service\reflection_service.py:1211:9: I001 [*] Import block is un-sorted or un-formatted
+src\backend\service\reflection_service.py:254:9: I001 [*] Import block is un-sorted or un-formatted
+src\backend\service\reflection_service.py:993:33: F541 [*] f-string without any placeholders
+src\backend\service\topic_service.py:101:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:108:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:116:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:119:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:123:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:128:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:137:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:139:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:143:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:147:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:151:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:161:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:164:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:17:20: F401 [*] `typing.Any` imported but unused
+src\backend\service\topic_service.py:180:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:182:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:198:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:20:24: F401 [*] `sqlalchemy.select` imported but unused
+src\backend\service\topic_service.py:200:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:216:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:218:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:222:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:226:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:32:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:37:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:48:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:55:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:58:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:69:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:73:1: W293 [*] Blank line contains whitespace
+src\backend\service\topic_service.py:81:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:85:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:89:1: W293 Blank line contains whitespace
+src\backend\service\topic_service.py:97:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:102:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:106:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:110:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:119:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:125:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:129:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:17:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:22:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:26:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:30:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:34:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:43:1: W293 Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:49:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:53:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:56:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:63:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:68:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:73:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:78:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\evolution_result.py:96:1: W293 [*] Blank line contains whitespace
+src\backend\shared\domain\exceptions.py:22:8: W292 [*] No newline at end of file
+src\backend\shared\domain\memory_models.py:35:1: I001 [*] Import block is un-sorted or un-formatted
+src\backend\shared\domain\memory_models.py:446:30: UP037 [*] Remove quotes from type annotation
+src\backend\shared\domain\memory_models.py:449:27: UP037 [*] Remove quotes from type annotation
+src\backend\shared\providers\reflection_provider.py:14:1: I001 [*] Import block is un-sorted or un-formatted
+tests\safety_mechanisms.py:11:1: UP035 `typing.Dict` is deprecated, use `dict` instead
+tests\safety_mechanisms.py:11:1: UP035 `typing.List` is deprecated, use `list` instead
+tests\safety_mechanisms.py:11:1: UP035 `typing.Set` is deprecated, use `set` instead
+tests\safety_mechanisms.py:11:1: UP035 `typing.Tuple` is deprecated, use `tuple` instead
+tests\safety_mechanisms.py:11:37: F401 [*] `typing.Optional` imported but unused
+tests\safety_mechanisms.py:119:27: UP006 [*] Use `list` instead of `List` for type annotation
+tests\safety_mechanisms.py:119:32: UP006 [*] Use `dict` instead of `Dict` for type annotation
+tests\safety_mechanisms.py:121:10: UP006 [*] Use `tuple` instead of `Tuple` for type annotation
+tests\safety_mechanisms.py:124:1: W293 Blank line contains whitespace
+tests\safety_mechanisms.py:146:44: W291 Trailing whitespace
+tests\safety_mechanisms.py:171:32: UP006 [*] Use `set` instead of `Set` for type annotation
+tests\safety_mechanisms.py:172:33: UP006 [*] Use `set` instead of `Set` for type annotation
+tests\safety_mechanisms.py:173:30: UP006 [*] Use `set` instead of `Set` for type annotation
+tests\safety_mechanisms.py:174:31: UP006 [*] Use `set` instead of `Set` for type annotation
+tests\safety_mechanisms.py:176:10: UP006 [*] Use `tuple` instead of `Tuple` for type annotation
+tests\safety_mechanisms.py:179:1: W293 Blank line contains whitespace
+tests\safety_mechanisms.py:188:1: W293 [*] Blank line contains whitespace
+tests\safety_mechanisms.py:204:1: W293 [*] Blank line contains whitespace
+tests\safety_mechanisms.py:206:21: SIM102 Use a single `if` statement instead of nested `if` statements
+tests\safety_mechanisms.py:216:1: W293 Blank line contains whitespace
+tests\safety_mechanisms.py:221:1: W293 [*] Blank line contains whitespace
+tests\safety_mechanisms.py:30:25: UP006 [*] Use `list` instead of `List` for type annotation
+tests\safety_mechanisms.py:30:30: UP006 [*] Use `dict` instead of `Dict` for type annotation
+tests\safety_mechanisms.py:36:10: UP006 [*] Use `tuple` instead of `Tuple` for type annotation
+tests\safety_mechanisms.py:39:1: W293 Blank line contains whitespace
+tests\safety_mechanisms.py:64:59: W291 Trailing whitespace
+tests\safety_mechanisms.py:66:62: W291 Trailing whitespace
+tests\safety_mechanisms.py:73:1: W293 [*] Blank line contains whitespace
+tests\safety_mechanisms.py:75:1: W293 [*] Blank line contains whitespace
+tests\safety_mechanisms.py:90:47: W291 Trailing whitespace
+tests\safety_mechanisms.py:91:47: W291 Trailing whitespace
+tests\safety_mechanisms.py:95:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:10:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_approval_safety.py:11:8: F401 [*] `pytest_asyncio` imported but unused
+tests\test_approval_safety.py:110:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:112:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:119:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:12:49: F401 [*] `unittest.mock.patch` imported but unused
+tests\test_approval_safety.py:125:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:134:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:137:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:14:24: F401 [*] `sqlalchemy.text` imported but unused
+tests\test_approval_safety.py:141:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:147:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:153:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:158:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:164:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:17:33: F401 [*] `backend.service.dto.ReflectionExecutionResult` imported but unused
+tests\test_approval_safety.py:179:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:185:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:188:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:191:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:196:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:199:16: E712 Avoid equality comparisons to `True`; use `result.metadata["skipped"]:` for truth checks
+tests\test_approval_safety.py:201:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:206:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:212:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:227:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:23:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:233:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:236:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:239:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:244:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:247:16: E712 Avoid equality comparisons to `True`; use `result.metadata["skipped"]:` for truth checks
+tests\test_approval_safety.py:249:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:255:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:260:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:266:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:269:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:27:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:272:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:278:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:280:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:286:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:288:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:292:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:295:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:316:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:318:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:322:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:330:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:333:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:336:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:337:14: B017 Do not assert blind exception: `Exception`
+tests\test_approval_safety.py:342:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:44:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:58:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:61:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:64:1: W293 [*] Blank line contains whitespace
+tests\test_approval_safety.py:88:13: SIM114 [*] Combine `if` branches using logical `or` operator
+tests\test_approval_safety.py:91:13: SIM114 [*] Combine `if` branches using logical `or` operator
+tests\test_approval_selector_fix.py:18:1: W293 [*] Blank line contains whitespace
+tests\test_approval_selector_fix.py:22:1: W293 [*] Blank line contains whitespace
+tests\test_approval_selector_fix.py:34:1: W293 [*] Blank line contains whitespace
+tests\test_approval_selector_fix.py:38:1: W293 [*] Blank line contains whitespace
+tests\test_approval_selector_fix.py:50:1: W293 [*] Blank line contains whitespace
+tests\test_approval_selector_fix.py:54:1: W293 [*] Blank line contains whitespace
+tests\test_approval_selector_fix.py:58:1: W293 [*] Blank line contains whitespace
+tests\test_approval_selector_fix.py:6:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_approval_selector_fix.py:66:1: W293 [*] Blank line contains whitespace
+tests\test_chatgpt_adapter.py:459:55: RUF100 [*] Unused `noqa` directive (unused: `RUF001`)
+tests\test_context_window_regression.py:120:32: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_context_window_regression.py:14:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_context_window_regression.py:150:33: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_context_window_regression.py:206:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:217:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:251:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:263:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:274:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:290:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:30:5: F401 [*] `backend.context.context_window.SHORT_CONFIRMATION_MAX_CHARS` imported but unused
+tests\test_context_window_regression.py:300:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:32:40: F401 [*] `backend.context.formulator.ContextWindowFormulator` imported but unused
+tests\test_context_window_regression.py:329:29: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_context_window_regression.py:329:58: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_context_window_regression.py:359:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:371:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:417:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:420:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:427:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:437:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:451:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:454:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:459:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:462:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:474:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:479:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:491:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:500:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:512:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:532:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:535:25: RUF001 String contains ambiguous `：` (FULLWIDTH COLON). Did you mean `:` (COLON)?
+tests\test_context_window_regression.py:543:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:552:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:555:36: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_context_window_regression.py:563:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:574:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:586:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:588:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:602:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:613:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:615:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:625:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:637:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:650:1: W293 [*] Blank line contains whitespace
+tests\test_context_window_regression.py:662:1: W293 [*] Blank line contains whitespace
+tests\test_cron_api_p0_security.py:12:30: F401 [*] `backend.app.require_cron_admin` imported but unused
+tests\test_cron_api_p0_security.py:12:50: F401 [*] `backend.app.validate_no_test_task` imported but unused
+tests\test_cron_api_p0_security.py:13:72: F401 [*] `backend.shared.infrastructure.config.settings.get_settings` imported but unused
+tests\test_cron_api_p0_security.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_cron_api_p0_security.py:27:5: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_cron_deadlock.py:100:36: UP015 [*] Unnecessary mode argument
+tests\test_cron_deadlock.py:107:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_cron_deadlock.py:128:36: UP015 [*] Unnecessary mode argument
+tests\test_cron_deadlock.py:21:1: W293 Blank line contains whitespace
+tests\test_cron_deadlock.py:28:1: W293 Blank line contains whitespace
+tests\test_cron_deadlock.py:32:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_cron_deadlock.py:71:36: UP015 [*] Unnecessary mode argument
+tests\test_cron_deadlock.py:78:1: W293 Blank line contains whitespace
+tests\test_cron_deadlock.py:82:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_cron_integration_entity_reflection.py:138:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_cron_integration_entity_reflection.py:175:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_cron_integration_entity_reflection.py:19:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_cron_integration_entity_reflection.py:222:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_cron_integration_entity_reflection.py:245:9: F841 Local variable `entity_a` is assigned to but never used
+tests\test_cron_integration_entity_reflection.py:246:9: F841 Local variable `entity_b` is assigned to but never used
+tests\test_cron_integration_entity_reflection.py:257:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_cron_integration_entity_reflection.py:281:16: F401 [*] `ast` imported but unused
+tests\test_cron_integration_entity_reflection.py:294:16: F401 [*] `ast` imported but unused
+tests\test_cron_integration_entity_reflection.py:329:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_cron_integration_entity_reflection.py:61:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_cron_integration_entity_reflection.py:91:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_entity_resolution_regression.py:11:5: F401 [*] `backend.service.entity_resolution.detect_competing_entities` imported but unused
+tests\test_entity_resolution_regression.py:20:1: W293 [*] Blank line contains whitespace
+tests\test_entity_resolution_regression.py:24:1: W293 [*] Blank line contains whitespace
+tests\test_entity_resolution_regression.py:28:1: W293 [*] Blank line contains whitespace
+tests\test_entity_resolution_regression.py:46:1: W293 [*] Blank line contains whitespace
+tests\test_entity_resolution_regression.py:5:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_entity_resolution_regression.py:55:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_evolution_engine_extended.py:24:79: F401 [*] `backend.engine.evidence_evolution_engine.EvolutionResult` imported but unused
+tests\test_evidence_evolution_engine_extended.py:326:1: W293 Blank line contains whitespace
+tests\test_evidence_evolution_engine_extended.py:403:9: F841 Local variable `confidence` is assigned to but never used
+tests\test_evidence_persistence_fix.py:10:38: F401 [*] `unittest.mock.MagicMock` imported but unused
+tests\test_evidence_persistence_fix.py:10:49: F401 [*] `unittest.mock.patch` imported but unused
+tests\test_evidence_persistence_fix.py:106:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:108:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:11:22: F401 [*] `datetime.datetime` imported but unused
+tests\test_evidence_persistence_fix.py:110:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:112:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:116:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:125:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:127:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:140:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:144:1: W293 Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:147:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_evidence_persistence_fix.py:148:35: F811 [*] Redefinition of unused `MagicMock` from line 10: `MagicMock` redefined here
+tests\test_evidence_persistence_fix.py:148:46: F811 [*] Redefinition of unused `patch` from line 10: `patch` redefined here
+tests\test_evidence_persistence_fix.py:149:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:153:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:159:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:174:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:179:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:183:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:185:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_evidence_persistence_fix.py:188:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:189:74: W291 [*] Trailing whitespace
+tests\test_evidence_persistence_fix.py:196:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:200:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:209:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:213:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:215:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:219:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:223:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:229:71: W291 [*] Trailing whitespace
+tests\test_evidence_persistence_fix.py:233:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:238:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:240:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:245:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:249:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:25:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:255:87: W291 [*] Trailing whitespace
+tests\test_evidence_persistence_fix.py:259:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:264:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:266:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:274:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:29:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:38:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:42:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:44:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:49:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:53:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:62:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:66:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:68:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:72:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:76:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_evidence_persistence_fix.py:85:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:87:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:89:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:9:8: F401 [*] `asyncio` imported but unused
+tests\test_evidence_persistence_fix.py:93:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_persistence_fix.py:97:1: W293 [*] Blank line contains whitespace
+tests\test_evidence_role_regression.py:10:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_evolution_regression.py:108:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:126:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_evolution_regression.py:141:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:153:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:155:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:171:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:182:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:199:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:212:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:241:9: F841 Local variable `ws1` is assigned to but never used
+tests\test_evolution_regression.py:242:9: F841 Local variable `ws2` is assigned to but never used
+tests\test_evolution_regression.py:243:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:254:9: F841 Local variable `entity1` is assigned to but never used
+tests\test_evolution_regression.py:255:9: F841 Local variable `entity2` is assigned to but never used
+tests\test_evolution_regression.py:256:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:289:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:301:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:313:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:390:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:73:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:86:1: W293 [*] Blank line contains whitespace
+tests\test_evolution_regression.py:97:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:107:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:121:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:135:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:149:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:16:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_formation_regression.py:163:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:176:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:19:22: F401 [*] `datetime.datetime` imported but unused
+tests\test_formation_regression.py:190:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:209:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:221:55: F811 [*] Redefinition of unused `FormationService` from line 29: `FormationService` redefined here
+tests\test_formation_regression.py:23:5: F401 [*] `backend.context.interpretation_result.InterpretationContext` imported but unused
+tests\test_formation_regression.py:231:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:235:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:247:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:259:55: F401 [*] `backend.service.formation_service.FormationService` imported but unused
+tests\test_formation_regression.py:259:55: F811 [*] Redefinition of unused `FormationService` from line 29: `FormationService` redefined here
+tests\test_formation_regression.py:260:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:274:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:28:44: F401 [*] `backend.context.context_window.EvidenceContext` imported but unused
+tests\test_formation_regression.py:28:61: F401 [*] `backend.context.context_window.EvidenceRole` imported but unused
+tests\test_formation_regression.py:29:47: F401 [*] `backend.service.formation_service.FormationService` imported but unused
+tests\test_formation_regression.py:300:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:301:13: B007 Loop control variable `t` not used within loop body
+tests\test_formation_regression.py:320:32: RUF003 Comment contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_formation_regression.py:323:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:333:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:348:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:358:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:368:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:376:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:387:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:398:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:407:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:450:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:465:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:47:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:479:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:63:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:77:1: W293 [*] Blank line contains whitespace
+tests\test_formation_regression.py:93:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:10:18: F401 [*] `uuid.UUID` imported but unused
+tests\test_p0_evidence_uuid_fix.py:108:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:112:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:127:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:137:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:139:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:152:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:154:13: RUF059 Unpacked variable `facts` is never used
+tests\test_p0_evidence_uuid_fix.py:154:20: RUF059 Unpacked variable `log` is never used
+tests\test_p0_evidence_uuid_fix.py:155:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:176:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:186:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:187:16: RUF059 Unpacked variable `log` is never used
+tests\test_p0_evidence_uuid_fix.py:188:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:199:26: F811 [*] Redefinition of unused `UUID` from line 10: `UUID` redefined here
+tests\test_p0_evidence_uuid_fix.py:200:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:206:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:216:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:218:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:240:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:250:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:254:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:257:23: B905 `zip()` without an explicit `strict=` parameter
+tests\test_p0_evidence_uuid_fix.py:32:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:33:16: RUF059 Unpacked variable `log` is never used
+tests\test_p0_evidence_uuid_fix.py:34:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:53:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:54:16: RUF059 Unpacked variable `log` is never used
+tests\test_p0_evidence_uuid_fix.py:55:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:67:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:69:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_p0_evidence_uuid_fix.py:8:8: F401 [*] `pytest_asyncio` imported but unused
+tests\test_p0_evidence_uuid_fix.py:82:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:9:27: F401 [*] `unittest.mock.AsyncMock` imported but unused
+tests\test_p0_evidence_uuid_fix.py:9:38: F401 [*] `unittest.mock.MagicMock` imported but unused
+tests\test_p0_evidence_uuid_fix.py:93:1: W293 [*] Blank line contains whitespace
+tests\test_p0_evidence_uuid_fix.py:94:16: RUF059 Unpacked variable `log` is never used
+tests\test_p0_evidence_uuid_fix.py:95:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:10:8: F401 [*] `pytest_asyncio` imported but unused
+tests\test_p1_scope_isolation.py:102:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:105:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:106:9: F841 Local variable `authorized_valid` is assigned to but never used
+tests\test_p1_scope_isolation.py:107:9: F841 Local variable `invalid_evidence_count` is assigned to but never used
+tests\test_p1_scope_isolation.py:108:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:11:27: F401 [*] `unittest.mock.AsyncMock` imported but unused
+tests\test_p1_scope_isolation.py:11:38: F401 [*] `unittest.mock.MagicMock` imported but unused
+tests\test_p1_scope_isolation.py:11:49: F401 [*] `unittest.mock.patch` imported but unused
+tests\test_p1_scope_isolation.py:113:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:117:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:12:18: F401 [*] `uuid.UUID` imported but unused
+tests\test_p1_scope_isolation.py:121:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:124:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:127:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:13:24: F401 [*] `sqlalchemy.text` imported but unused
+tests\test_p1_scope_isolation.py:131:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:134:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:137:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:140:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:144:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:149:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:152:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:158:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:162:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:166:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:167:9: F841 Local variable `all_requested` is assigned to but never used
+tests\test_p1_scope_isolation.py:168:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:172:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:175:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:180:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:184:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:187:31: W291 [*] Trailing whitespace
+tests\test_p1_scope_isolation.py:189:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:195:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:198:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:201:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:202:37: B905 `zip()` without an explicit `strict=` parameter
+tests\test_p1_scope_isolation.py:209:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:213:32: F811 [*] Redefinition of unused `text` from line 13: `text` redefined here
+tests\test_p1_scope_isolation.py:214:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:217:43: W291 Trailing whitespace
+tests\test_p1_scope_isolation.py:221:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:224:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:229:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:23:54: F401 [*] `backend.shared.domain.proposal_model.Proposal` imported but unused
+tests\test_p1_scope_isolation.py:236:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:239:43: W291 Trailing whitespace
+tests\test_p1_scope_isolation.py:243:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:41:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:48:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:55:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:62:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:67:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:70:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:73:9: F841 Local variable `eligible_count` is assigned to but never used
+tests\test_p1_scope_isolation.py:75:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:82:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:87:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:89:9: F841 Local variable `other_pending_count` is assigned to but never used
+tests\test_p1_scope_isolation.py:9:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_p1_scope_isolation.py:90:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:93:1: W293 [*] Blank line contains whitespace
+tests\test_p1_scope_isolation.py:97:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:122:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:147:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:154:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:163:5: I001 [*] Import block is un-sorted or un-formatted
+tests\test_phase20_db_integration.py:165:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:171:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:178:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:214:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:231:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:240:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:248:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:26:5: I001 [*] Import block is un-sorted or un-formatted
+tests\test_phase20_db_integration.py:261:5: I001 [*] Import block is un-sorted or un-formatted
+tests\test_phase20_db_integration.py:263:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:268:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:270:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:29:54: F401 [*] `backend.shared.domain.proposal_model.Proposal` imported but unused
+tests\test_phase20_db_integration.py:313:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:338:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:345:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:357:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:363:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_phase20_db_integration.py:73:5: I001 [*] Import block is un-sorted or un-formatted
+tests\test_phase20_db_integration.py:75:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_db_integration.py:79:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:10:27: F401 [*] `unittest.mock.AsyncMock` imported but unused
+tests\test_phase20_p0_fix_verification.py:10:38: F401 [*] `unittest.mock.MagicMock` imported but unused
+tests\test_phase20_p0_fix_verification.py:10:49: F401 [*] `unittest.mock.patch` imported but unused
+tests\test_phase20_p0_fix_verification.py:102:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:104:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:106:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:123:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:126:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:145:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:147:75: UP015 [*] Unnecessary mode argument
+tests\test_phase20_p0_fix_verification.py:149:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:161:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:162:79: UP015 [*] Unnecessary mode argument
+tests\test_phase20_p0_fix_verification.py:164:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:168:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:181:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:184:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:201:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:203:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:204:9: F841 Local variable `engine` is assigned to but never used
+tests\test_phase20_p0_fix_verification.py:205:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:214:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:218:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:24:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:26:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:27:9: F841 Local variable `engine` is assigned to but never used
+tests\test_phase20_p0_fix_verification.py:28:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:35:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:46:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:55:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:61:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_phase20_p0_fix_verification.py:70:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:77:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:79:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_p0_fix_verification.py:88:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_regression.py:107:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:11:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_phase20_regression.py:121:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:131:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:14:18: F401 [*] `uuid.uuid4` imported but unused
+tests\test_phase20_regression.py:145:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:158:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:171:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:182:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:23:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:31:1: W293 [*] Blank line contains whitespace
+tests\test_phase20_regression.py:38:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:51:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:60:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:73:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:83:1: W293 Blank line contains whitespace
+tests\test_phase20_regression.py:97:1: W293 Blank line contains whitespace
+tests\test_pipeline_integration.py:104:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:117:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:121:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:123:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:126:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:133:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:138:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:150:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:157:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:159:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:16:8: F401 [*] `pytest_asyncio` imported but unused
+tests\test_pipeline_integration.py:167:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:17:49: F401 [*] `unittest.mock.patch` imported but unused
+tests\test_pipeline_integration.py:172:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:177:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:18:18: F401 [*] `uuid.UUID` imported but unused
+tests\test_pipeline_integration.py:180:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:187:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:192:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:196:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:212:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:216:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:218:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:222:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:229:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:234:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:245:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:252:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:254:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:261:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:272:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:28:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:289:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:294:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:297:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:300:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:305:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:308:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:315:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:318:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:320:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:324:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:339:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:34:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:342:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:344:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:346:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:349:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:351:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:353:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:356:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:358:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:360:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:363:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:365:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:367:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:37:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:372:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:382:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:385:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:386:42: F401 [*] `backend.service.base.BaseService` imported but unused
+tests\test_pipeline_integration.py:387:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:389:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:393:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:396:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:399:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:40:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:401:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:405:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:414:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:419:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:423:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:43:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:430:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:458:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:46:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:462:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:464:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:468:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:475:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:512:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:517:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:520:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:53:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:557:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:561:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:563:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:566:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:57:9: I001 [*] Import block is un-sorted or un-formatted
+tests\test_pipeline_integration.py:573:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:578:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:59:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:600:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:602:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:619:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:62:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:621:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:625:9: F841 Local variable `result` is assigned to but never used
+tests\test_pipeline_integration.py:629:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:69:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:74:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:85:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:92:1: W293 [*] Blank line contains whitespace
+tests\test_pipeline_integration.py:96:1: W293 [*] Blank line contains whitespace
+tests\test_reconstruction_lineage.py:16:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_reconstruction_lineage.py:21:49: F401 [*] `backend.shared.domain.memory_models.Evidence` imported but unused
+tests\test_reconstruction_lineage.py:21:94: F401 [*] `backend.shared.domain.memory_models.Candidate` imported but unused
+tests\test_reconstruction_lineage.py:22:59: F401 [*] `backend.shared.infrastructure.database.engine.get_async_session` imported but unused
+tests\test_reconstruction_lineage.py:24:52: F401 [*] `backend.repository.evidence_repository.EvidenceRepository` imported but unused
+tests\test_reconstruction_lineage.py:25:50: F401 [*] `backend.repository.entity_repository.EntityRepository` imported but unused
+tests\test_reconstruction_lineage.py:26:42: F401 [*] `backend.repository.workspace.WorkspaceIsolationMixin` imported but unused
+tests\test_reconstruction_lineage.py:27:53: F401 [*] `backend.repository.candidate_repository.CandidateRepository` imported but unused
+tests\test_reconstruction_lineage.py:277:27: RUF005 Consider `[*base_evidence, str(uuid4())]` instead of concatenation
+tests\test_reconstruction_lineage.py:547:52: RUF100 [*] Unused `noqa` directive (non-enabled: `E402`)
+tests\test_reconstruction_lineage.py:549:5: F811 [*] Redefinition of unused `Entity` from line 21: `Entity` redefined here
+tests\test_reconstruction_lineage.py:551:5: F811 [*] Redefinition of unused `Workspace` from line 21: `Workspace` redefined here
+tests\test_reflection_service_entity_boundary.py:108:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:112:17: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:135:9: F841 Local variable `entity_b` is assigned to but never used
+tests\test_reflection_service_entity_boundary.py:142:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:146:17: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:156:17: F541 [*] f-string without any placeholders
+tests\test_reflection_service_entity_boundary.py:175:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:209:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:213:17: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:23:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_reflection_service_entity_boundary.py:232:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:236:17: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:267:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:271:17: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:322:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:355:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:359:17: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:379:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_reflection_service_entity_boundary.py:409:9: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_safety_mechanisms.py:101:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:104:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:106:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:112:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:113:16: E712 Avoid equality comparisons to `False`; use `not is_valid:` for false checks
+tests\test_safety_mechanisms.py:115:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:12:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_safety_mechanisms.py:120:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:126:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:127:16: E712 Avoid equality comparisons to `False`; use `not is_valid:` for false checks
+tests\test_safety_mechanisms.py:13:8: F401 [*] `asyncio` imported but unused
+tests\test_safety_mechanisms.py:133:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:138:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:140:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:142:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:148:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:149:16: E712 Avoid equality comparisons to `False`; use `not is_valid:` for false checks
+tests\test_safety_mechanisms.py:15:22: F401 [*] `datetime.datetime` imported but unused
+tests\test_safety_mechanisms.py:15:32: F401 [*] `datetime.timezone` imported but unused
+tests\test_safety_mechanisms.py:151:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:156:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:161:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:165:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:168:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:170:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:175:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:181:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:182:16: E712 Avoid equality comparisons to `False`; use `not is_valid:` for false checks
+tests\test_safety_mechanisms.py:184:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:189:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:194:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:198:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:201:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:203:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:208:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:214:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:215:16: E712 Avoid equality comparisons to `True`; use `is_valid:` for truth checks
+tests\test_safety_mechanisms.py:221:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:226:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:230:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:234:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:237:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:239:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:248:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:249:16: E712 Avoid equality comparisons to `True`; use `is_valid:` for truth checks
+tests\test_safety_mechanisms.py:251:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:256:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:258:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:267:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:268:16: E712 Avoid equality comparisons to `False`; use `not is_valid:` for false checks
+tests\test_safety_mechanisms.py:274:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:279:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:282:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:286:24: E712 Avoid equality comparisons to `True`; use `triggered:` for truth checks
+tests\test_safety_mechanisms.py:288:24: E712 Avoid equality comparisons to `False`; use `not triggered:` for false checks
+tests\test_safety_mechanisms.py:289:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:294:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:297:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:299:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:305:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:309:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:34:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:39:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:43:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:47:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:50:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:52:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:58:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:59:16: E712 Avoid equality comparisons to `True`; use `is_valid:` for truth checks
+tests\test_safety_mechanisms.py:61:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:66:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_safety_mechanisms.py:70:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:74:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:77:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:79:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:8:8: F401 [*] `os` imported but unused
+tests\test_safety_mechanisms.py:85:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:86:16: E712 Avoid equality comparisons to `False`; use `not is_valid:` for false checks
+tests\test_safety_mechanisms.py:88:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:93:1: W293 [*] Blank line contains whitespace
+tests\test_safety_mechanisms.py:97:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:105:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:113:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:117:1: W293 Blank line contains whitespace
+tests\test_scheduler_security.py:125:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:132:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:136:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:140:1: W293 Blank line contains whitespace
+tests\test_scheduler_security.py:144:9: F841 Local variable `original_count` is assigned to but never used
+tests\test_scheduler_security.py:149:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:152:49: N806 Variable `MockEngine` in function should be lowercase
+tests\test_scheduler_security.py:159:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:17:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_scheduler_security.py:17:49: F401 [*] `backend.app._cron_tasks` imported but unused
+tests\test_scheduler_security.py:17:62: F401 [*] `backend.app._cron_lock` imported but unused
+tests\test_scheduler_security.py:170:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:177:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:18:72: F401 [*] `backend.shared.infrastructure.config.settings.get_settings` imported but unused
+tests\test_scheduler_security.py:182:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:184:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:191:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:195:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:197:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:205:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:217:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:221:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:226:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:228:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:233:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:236:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:240:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:243:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:245:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:249:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:251:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:263:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:272:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:279:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:287:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:295:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:299:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:301:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:31:5: SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+tests\test_scheduler_security.py:311:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:64:1: W293 Blank line contains whitespace
+tests\test_scheduler_security.py:68:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:72:1: W293 Blank line contains whitespace
+tests\test_scheduler_security.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_scheduler_security.py:81:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:87:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:91:1: W293 [*] Blank line contains whitespace
+tests\test_scheduler_security.py:95:1: W293 Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:103:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:104:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:115:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:126:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:128:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_semantic_interpretation_regression.py:139:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:142:23: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_semantic_interpretation_regression.py:150:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:157:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:159:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:168:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:178:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:185:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:187:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:198:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:201:24: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_semantic_interpretation_regression.py:208:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:21:5: F401 [*] `backend.context.context_window.ContextWindow` imported but unused
+tests\test_semantic_interpretation_regression.py:215:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:217:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:227:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:228:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:259:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:271:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:272:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:282:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:295:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:305:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:312:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:314:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:324:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:325:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:335:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:345:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:346:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:356:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:366:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:369:28: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_semantic_interpretation_regression.py:376:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:383:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:385:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:397:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:40:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:407:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:414:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:416:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:428:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:43:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:431:28: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_semantic_interpretation_regression.py:438:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:445:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:447:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:458:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:468:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:475:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:477:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:489:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:499:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:506:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:508:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:520:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:522:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:537:32: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_semantic_interpretation_regression.py:54:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:546:28: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_semantic_interpretation_regression.py:554:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:561:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:563:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:57:23: RUF001 String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_semantic_interpretation_regression.py:574:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:575:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:577:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:588:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:598:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:599:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:601:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:612:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:622:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:632:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:639:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:641:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:648:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:65:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:655:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:657:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:677:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:679:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:695:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:712:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:72:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:729:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:74:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:749:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:83:9: F841 Local variable `interpreter` is assigned to but never used
+tests\test_semantic_interpretation_regression.py:84:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:86:1: W293 [*] Blank line contains whitespace
+tests\test_semantic_interpretation_regression.py:97:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:106:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:120:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:148:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:160:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:168:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:169:9: F841 Local variable `grandparent` is assigned to but never used
+tests\test_topic_regression.py:187:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:201:9: F841 Local variable `topic_id` is assigned to but never used
+tests\test_topic_regression.py:218:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:224:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:233:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:243:9: F841 Local variable `workspace1` is assigned to but never used
+tests\test_topic_regression.py:244:9: F841 Local variable `workspace2` is assigned to but never used
+tests\test_topic_regression.py:245:9: F841 Local variable `parent_id` is assigned to but never used
+tests\test_topic_regression.py:246:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:25:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_topic_regression.py:260:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:267:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:275:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:282:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:293:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:299:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:30:49: F401 [*] `backend.repository.topic_repository.TopicRepository` imported but unused
+tests\test_topic_regression.py:309:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:32:56: F401 [*] `backend.shared.domain.memory_models.TopicLink` imported but unused
+tests\test_topic_regression.py:321:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:327:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:344:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:350:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:361:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:367:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:388:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:394:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:404:9: F841 Local variable `workspace1` is assigned to but never used
+tests\test_topic_regression.py:405:9: F841 Local variable `workspace2` is assigned to but never used
+tests\test_topic_regression.py:406:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:419:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:422:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:445:22: RUF003 Comment contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_topic_regression.py:445:29: RUF003 Comment contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+tests\test_topic_regression.py:448:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:451:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:457:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:468:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:471:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:478:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:480:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:486:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:489:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:66:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:78:1: W293 [*] Blank line contains whitespace
+tests\test_topic_regression.py:84:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:106:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:108:5: F841 Local variable `default_ws` is assigned to but never used
+tests\test_workspace_resolution.py:11:39: F401 [*] `pytest_asyncio.fixture` imported but unused
+tests\test_workspace_resolution.py:110:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:113:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:117:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:119:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:122:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:24:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:27:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:35:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:38:1: W293 [*] Blank line contains whitespace
+tests\test_workspace_resolution.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+tests\test_workspace_resolution.py:7:49: F401 [*] `unittest.mock.patch` imported but unused
+tests\verify_phase20_p0_fix.py:106:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:110:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:119:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:13:1: I001 [*] Import block is un-sorted or un-formatted
+tests\verify_phase20_p0_fix.py:152:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:177:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:184:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:189:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:191:23: F541 [*] f-string without any placeholders
+tests\verify_phase20_p0_fix.py:199:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:212:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:217:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:219:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:228:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:261:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:286:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:293:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:299:23: F541 [*] f-string without any placeholders
+tests\verify_phase20_p0_fix.py:30:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:304:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:307:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:321:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:328:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:332:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:339:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:34:55: W291 Trailing whitespace
+tests\verify_phase20_p0_fix.py:341:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:346:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:35:44: W291 Trailing whitespace
+tests\verify_phase20_p0_fix.py:39:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:47:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:51:39: W291 Trailing whitespace
+tests\verify_phase20_p0_fix.py:52:28: W291 Trailing whitespace
+tests\verify_phase20_p0_fix.py:56:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:63:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:67:61: W291 Trailing whitespace
+tests\verify_phase20_p0_fix.py:68:31: W291 Trailing whitespace
+tests\verify_phase20_p0_fix.py:72:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:80:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:89:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:95:1: W293 [*] Blank line contains whitespace
+tests\verify_phase20_p0_fix.py:97:1: W293 [*] Blank line contains whitespace
