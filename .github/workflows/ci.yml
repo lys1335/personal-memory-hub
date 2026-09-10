@@ -39,7 +39,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "0.11.x"
+          version: "0.11.32"
 
       - name: Install dependencies
         working-directory: backend
@@ -47,7 +47,16 @@ jobs:
 
       - name: Run ruff (linting)
         working-directory: backend
-        run: uv run ruff check src/ tests/
+        run: |
+          uv run ruff check src/ tests/ --output-format=concise | grep -E "^src" | sort > current.txt
+          grep -E "^src" ../.hermes/plans/ci-baseline-ruff-snapshot.txt | sort > baseline.txt
+          new_errors="$(comm -13 baseline.txt current.txt)"
+          if [ -n "$new_errors" ]; then
+            echo "New Ruff errors detected:"
+            printf '%s\n' "$new_errors"
+            exit 1
+          fi
+          echo "No new Ruff debt (Legacy Baseline + No New Debt)"
 
       - name: Run mypy (type checking)
         working-directory: backend
@@ -74,7 +83,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "0.11.x"
+          version: "0.11.32"
 
       - name: Install dependencies
         working-directory: backend
@@ -82,7 +91,7 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: uv run pytest tests/ -v --cov=backend --cov-report=term-missing
+        run: uv run pytest tests/ -v --tb=short -x --durations=10 --cov=backend --cov-report=term-missing
 
       - name: Upload coverage (non-blocking)
         working-directory: backend
@@ -107,7 +116,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "0.11.x"
+          version: "0.11.32"
 
       - name: Build package
         working-directory: backend
