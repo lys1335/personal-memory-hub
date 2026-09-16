@@ -35,7 +35,6 @@ import pytest
 
 from backend.ingest.parser import extract_multimodal_text
 
-
 # =============================================================================
 # Section 1: 递归 — parts 嵌套 parts 嵌套 text
 # =============================================================================
@@ -487,7 +486,6 @@ class TestCallContracts:
         # (1) Source-level check: app.py must NOT pass min_length explicitly.
         # Read app.py and check that the call to extract_multimodal_text inside
         # _extract_content_text does NOT contain min_length.
-        import inspect
         from pathlib import Path
         app_path = Path(__file__).resolve().parent.parent / "src" / "backend" / "app.py"
         source = app_path.read_text(encoding="utf-8")
@@ -523,7 +521,6 @@ class TestCallContracts:
             "patching path mismatch?"
         )
         call_kwargs = mock_fn.call_args.kwargs
-        call_args = mock_fn.call_args.args
         # extract_multimodal_text signature forces min_length to be kwarg-only
         # (`*,` in signature). If it appears, it must be 0.
         assert "min_length" not in call_kwargs or call_kwargs["min_length"] == 0, (
