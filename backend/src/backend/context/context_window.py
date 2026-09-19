@@ -16,8 +16,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from backend.context.interpretation_result import InterpretationContext
 
 
 class EvidenceRole(Enum):
@@ -44,7 +47,7 @@ class EvidenceContext:
     content: str
     role: EvidenceRole
     created_at: datetime
-    entity_id: UUID
+    entity_id: UUID | None
     workspace_id: UUID
     importance: float
     token_count: int = 0

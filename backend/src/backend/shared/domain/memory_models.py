@@ -437,7 +437,7 @@ class Topic(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="initial")
     evidence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reconstruction_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    metadata_col: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True, default=dict)
+    metadata_col: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True, default=dict)
 
     created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))
     updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=text("NOW()"))

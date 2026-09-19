@@ -17,12 +17,13 @@ Design constraints:
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.shared.domain.evolution_result import (
@@ -289,7 +290,7 @@ class EvolutionService(BaseService):
         
         if has_conflict:
             return EvolutionDecision(
-                action="create_with_conflict",
+                decision_type="create_with_conflict",
                 reason="Historical conflict detected",
                 weight=0.8,
             )
@@ -405,7 +406,7 @@ class EvolutionService(BaseService):
         entity_id: UUID | None = None,
         min_l1_count: int = 3,
         min_avg_confidence: float = 0.8,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Evolve historical L1 MemoryNodes into L2 Patterns / L3 Beliefs.
 
         This method is called AFTER ReflectionService has created L1 nodes.

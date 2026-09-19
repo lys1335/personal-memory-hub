@@ -374,9 +374,11 @@ class EvidenceEvolutionEngine(EngineBase):
 
             if entity not in entity_candidate_facts:
                 entity_candidate_facts[entity] = {}
-            if cid not in entity_candidate_facts[entity]:
-                entity_candidate_facts[entity][cid] = []
-            entity_candidate_facts[entity][cid].append(fact)
+            # Use empty string as key for None candidate_id to avoid dict index type error
+            cid_key = cid if cid is not None else ""
+            if cid_key not in entity_candidate_facts[entity]:
+                entity_candidate_facts[entity][cid_key] = []
+            entity_candidate_facts[entity][cid_key].append(fact)
 
         # Build one candidate per (entity, candidate_id) group
         for entity, candidate_groups in entity_candidate_facts.items():

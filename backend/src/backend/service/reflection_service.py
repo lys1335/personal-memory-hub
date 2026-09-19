@@ -533,25 +533,25 @@ class ReflectionService(BaseService):
 
             # FIX P1: Create memory_evidences junction records (not memory_relationships)
             for evidence_id in evidence_links:
-                try:
-                    await conn.execute(text("""
-                        INSERT INTO memory_evidences (
-                            id, workspace_id, memory_node_id, evidence_id,
-                            relationship_type, contribution_weight, created_at
-                        ) VALUES (
-                            :id, :workspace_id, :memory_node_id, :evidence_id,
-                            'supports', :weight, NOW()
-                        )
-                        ON CONFLICT (memory_node_id, evidence_id) DO NOTHING
-                    """), {
-                        "id": str(self._generate_id()),
-                        "workspace_id": str(workspace_id),
-                        "memory_node_id": str(new_node_id),
-                        "evidence_id": str(evidence_id),
-                        "weight": prop["confidence"],
-                    })
-                except Exception as rel_err:
-                    logger.warning(f"Failed to create memory_evidence for {evidence_id}: {rel_err}")
+                                try:
+                                    await conn.execute(text("""
+                                        INSERT INTO memory_evidences (
+                                            id, workspace_id, memory_node_id, evidence_id,
+                                            relationship_type, contribution_weight, created_at
+                                        ) VALUES (
+                                            :id, :workspace_id, :memory_node_id, :evidence_id,
+                                            'supports', :weight, NOW()
+                                        )
+                                        ON CONFLICT (memory_node_id, evidence_id) DO NOTHING
+                                    """), {
+                                        "id": str(self._generate_id()),
+                                        "workspace_id": str(workspace_id),
+                                        "memory_node_id": str(new_node_id),
+                                        "evidence_id": str(evidence_id),
+                                        "weight": prop["confidence"],
+                                    })
+                                except Exception as rel_err:
+                                    logger.warning(f"Failed to create memory_evidence for {evidence_id}: {rel_err}")
 
             logger.info(f"Approved proposal {proposal_id}: created {node_type} node {new_node_id}")
 
@@ -569,24 +569,25 @@ class ReflectionService(BaseService):
                     # Log but don't fail - candidate status is secondary
                     logger.warning(f"Failed to update candidate status: {e}")
 
-        # Check if auto-approval should trigger next level
-        auto_approved_next = False
-        confidence = prop.get("confidence", 0)
-        threshold = float(os.environ.get('AUTO_APPROVE_THRESHOLD', '0.9'))
-        max_level = int(os.environ.get('AUTO_APPROVE_MAX_LEVEL', '3'))
-        if confidence >= threshold and level < max_level:
-            auto_approved_next = True
+            # Check if auto-approval should trigger next level
+            auto_approved_next = False
+            confidence = float(prop.get("confidence", 0))
+            threshold = float(os.environ.get('AUTO_APPROVE_THRESHOLD', '0.9'))
+            max_level = int(os.environ.get('AUTO_APPROVE_MAX_LEVEL', '3'))
+            level = int(prop.get("target_level", 1))
+            if confidence >= threshold and level < max_level:
+                auto_approved_next = True
 
-        return ReflectionExecutionResult(
-            status=ReflectionStatus.COMPLETED,
-            reflections_performed=1,
-            scope=f"approve:{proposal_id}",
-            metadata={
-                "new_node_id": str(new_node_id),
-                "level": level,
-                "auto_approved_next": auto_approved_next,
-            },
-        )
+            return ReflectionExecutionResult(
+                status=ReflectionStatus.COMPLETED,
+                reflections_performed=1,
+                scope=f"approve:{proposal_id}",
+                metadata={
+                    "new_node_id": str(new_node_id),
+                    "level": level,
+                    "auto_approved_next": auto_approved_next,
+                },
+                            )
 
     async def _auto_approve_by_threshold(
         self,

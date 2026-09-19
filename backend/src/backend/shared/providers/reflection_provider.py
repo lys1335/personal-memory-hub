@@ -198,23 +198,23 @@ Return ONLY valid JSON, no explanations."""
             return {"facts": []}
 
     def _parse_response(self, response_text: str) -> dict[str, Any]:
-        """Parse LLM response into structured facts."""
-        # Try to extract JSON from response
-        response_text = response_text.strip()
+                """Parse LLM response into structured facts."""
+                # Try to extract JSON from response
+                response_text = response_text.strip()
 
-        # Find JSON block
-        start = response_text.find("{")
-        end = response_text.rfind("}")
-        if start != -1 and end != -1:
-            response_text = response_text[start : end + 1]
+                # Find JSON block
+                start = response_text.find("{")
+                end = response_text.rfind("}")
+                if start != -1 and end != -1:
+                    response_text = response_text[start : end + 1]
 
-        try:
-            data = json.loads(response_text)
-            return data
-        except json.JSONDecodeError as e:
-            self._log.error(f"Failed to parse LLM response: {e}")
-            # Return empty facts
-            return {"facts": []}
+                try:
+                    data = json.loads(response_text)
+                    return data  # type: ignore[no-any-return]
+                except json.JSONDecodeError as e:
+                    self._log.error(f"Failed to parse LLM response: {e}")
+                    # Return empty facts
+                    return {"facts": []}
 
 
 class MockReflectionProvider(ReflectionProvider):

@@ -145,6 +145,7 @@ class ReconstructionRepository(BaseRepository):  # type: ignore[type-arg]
 
     async def soft_delete_impl(self, id: UUID) -> None:
         """Soft delete a reconstruction by setting status to 'archived'."""
+        from datetime import datetime
         from sqlalchemy import update
 
         stmt = (

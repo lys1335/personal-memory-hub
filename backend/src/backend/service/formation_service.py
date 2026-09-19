@@ -33,6 +33,7 @@ from backend.context.interpretation_result import (
     InterpretationType,
     SemanticUnit,
 )
+from backend.context.context_window import ContextWindow
 from backend.repository.candidate_repository import CandidateRepository
 from backend.repository.reconstruction_repository import ReconstructionRepository
 from backend.repository.entity_repository import EntityRepository
@@ -265,8 +266,8 @@ class FormationService(BaseService):
                 Evidence.id == evidence_id,
                 Evidence.workspace_id == workspace_id,
             )
-            result = await self.session.execute(stmt)
-            evidence = result.scalar_one_or_none()
+            db_result = await self.session.execute(stmt)
+            evidence = db_result.scalar_one_or_none()
             evidence_content = evidence.content if evidence else None
 
         if evidence_content is None or not evidence_content.strip():
@@ -332,7 +333,7 @@ class FormationService(BaseService):
         self,
         interpretation: InterpretationResult,
         workspace_id: UUID,
-        entity_id: UUID,
+        entity_id: UUID | None,
         parent_reconstruction_id: UUID | None,
         evidence_ids: list[UUID],
         is_unresolved: bool = False,
@@ -374,7 +375,7 @@ class FormationService(BaseService):
         self,
         interpretation: InterpretationResult,
         workspace_id: UUID,
-        entity_id: UUID,
+        entity_id: UUID | None,
         evidence_ids: list[UUID],
         is_unresolved: bool = False,
         resolution_method: str | None = None,

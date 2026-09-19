@@ -130,7 +130,7 @@ class InterpretationResult:
         return round(1.0 - self.confidence, 2)
 
     # Override __post_init__ to compute uncertainty
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.uncertainty = self.computed_uncertainty
     
     # Audit trail

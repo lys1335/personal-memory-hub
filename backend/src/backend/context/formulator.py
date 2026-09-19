@@ -290,7 +290,7 @@ class ContextWindowFormulator:
         
         # Trim oldest Evidence first (keeping trigger Evidence)
         trigger_id = context.trigger_evidence_id
-        trimmed = []
+        trimmed: list[EvidenceContext] = []
         
         for evidence in reversed(context.evidence_list):
             if evidence.evidence_id == trigger_id:

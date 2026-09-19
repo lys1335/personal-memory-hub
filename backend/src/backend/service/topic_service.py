@@ -97,7 +97,7 @@ class TopicService(BaseService):
         
         if existing is not None:
             logger.debug("Found existing topic: %s = %s", name, existing.id)
-            return existing.id
+            return UUID(existing.id) if not isinstance(existing.id, UUID) else existing.id
         
         new_topic = await self.create_topic(
             workspace_id=workspace_id,

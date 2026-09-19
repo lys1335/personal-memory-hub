@@ -15,10 +15,10 @@ Per Phase 21.6 Stage 2.2 frozen design:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING, NoReturn
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +30,9 @@ from backend.repository.exceptions import (
 from backend.repository.exceptions import (
     IntegrityError as DomainIntegrityError,
 )
+
+if TYPE_CHECKING:
+    from backend.shared.domain.memory_models import Topic
 
 
 class TopicRepository(BaseRepository):  # type: ignore[type-arg]
@@ -59,6 +62,14 @@ class TopicRepository(BaseRepository):  # type: ignore[type-arg]
         from backend.shared.domain.memory_models import Topic
 
         self._model_class = Topic
+
+    def _raise_integrity_error(self, exc: IntegrityError) -> NoReturn:
+        """Map SQLAlchemy IntegrityError to domain exceptions and raise.
+
+        Args:
+            exc: The SQLAlchemy integrity error.
+        """
+        raise self._map_integrity_error(exc) from exc
 
     # ------------------------------------------------------------------
     # CRUD Operations
@@ -507,6 +518,7 @@ class TopicRepository(BaseRepository):  # type: ignore[type-arg]
             )
 
         # Increment the count
+        from backend.shared.domain.memory_models import Topic
         stmt = (
             update(Topic)
             .where(Topic.id == topic_id)
@@ -554,6 +566,7 @@ class TopicRepository(BaseRepository):  # type: ignore[type-arg]
             )
 
         # Set the count
+        from backend.shared.domain.memory_models import Topic
         stmt = (
             update(Topic)
             .where(Topic.id == topic_id)
