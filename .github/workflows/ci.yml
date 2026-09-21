@@ -47,6 +47,7 @@ jobs:
 
       - name: Run ruff (linting)
         working-directory: backend
+        id: ruff-check
         run: |
           uv run ruff check src/ tests/ --output-format=concise | sed 's/\\\\/\\//g' | grep -E "^src" > current_raw.txt
           grep -E "^src" ../.hermes/plans/ci-baseline-ruff-snapshot.txt > baseline_raw.txt
@@ -63,6 +64,18 @@ jobs:
             exit 1
           fi
           echo "No new Ruff debt (Legacy Baseline: current $current_count <= baseline $baseline_count)"
+
+      - name: Upload Ruff diagnostic artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ruff-diagnostics-py${{ matrix.python-version }}
+          path: |
+            backend/current_raw.txt
+            backend/baseline_raw.txt
+            backend/current.txt
+            backend/baseline.txt
+          retention-days: 7
 
   # =========================================================================
   # Stage 1: Static Analysis — MyPy Type Checking
@@ -93,7 +106,19 @@ jobs:
 
       - name: Run mypy (type checking)
         working-directory: backend
-        run: uv run mypy src/
+        id: mypy-check
+        run: |
+          uv run mypy src/ --show-error-codes --show-column-numbers --no-pretty 2>&1 | tee mypy_output.txt
+          exit_code=${PIPESTATUS[0]}
+          exit $exit_code
+
+      - name: Upload MyPy diagnostic artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mypy-diagnostics-py${{ matrix.python-version }}
+          path: backend/mypy_output.txt
+          retention-days: 7
 
   # =========================================================================
   # Stage 2: Unit Tests
@@ -124,7 +149,19 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: uv run pytest tests/ -v --tb=short -x --durations=10 --cov=backend --cov-report=term-missing
+        id: pytest-run
+        run: |
+          uv run pytest tests/ -v --tb=long --maxfail=3 --durations=10 --cov=backend --cov-report=term-missing 2>&1 | tee pytest_output.txt
+          exit_code=${PIPESTATUS[0]}
+          exit $exit_code
+
+      - name: Upload pytest diagnostic artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-diagnostics-py${{ matrix.python-version }}
+          path: backend/pytest_output.txt
+          retention-days: 7
 
       - name: Upload coverage (non-blocking)
         working-directory: backend
