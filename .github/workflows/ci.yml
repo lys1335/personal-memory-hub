@@ -19,10 +19,10 @@ on:
 
 jobs:
   # =========================================================================
-  # Stage 1: Static Analysis
+  # Stage 1: Static Analysis — Ruff Linting
   # =========================================================================
-  static-analysis:
-    name: Static Analysis (ruff + mypy)
+  ruff-lint:
+    name: Ruff Linting
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -48,15 +48,48 @@ jobs:
       - name: Run ruff (linting)
         working-directory: backend
         run: |
-          uv run ruff check src/ tests/ --output-format=concise | grep -E "^src" | sort > current.txt
-          grep -E "^src" ../.hermes/plans/ci-baseline-ruff-snapshot.txt | sort > baseline.txt
-          new_errors="$(comm -13 baseline.txt current.txt)"
-          if [ -n "$new_errors" ]; then
-            echo "New Ruff errors detected:"
-            printf '%s\n' "$new_errors"
+          uv run ruff check src/ tests/ --output-format=concise | sed 's/\\\\/\\//g' | grep -E "^src" > current_raw.txt
+          grep -E "^src" ../.hermes/plans/ci-baseline-ruff-snapshot.txt > baseline_raw.txt
+          current_count=$(wc -l < current_raw.txt | tr -d ' ')
+          baseline_count=$(wc -l < baseline_raw.txt | tr -d ' ')
+          echo "Current src errors: $current_count"
+          echo "Baseline src errors: $baseline_count"
+          if [ "$current_count" -gt "$baseline_count" ]; then
+            echo "ERROR: New Ruff debt detected (current $current_count > baseline $baseline_count)"
+            echo "New errors (set difference):"
+            sort current_raw.txt > current.txt
+            sort baseline_raw.txt > baseline.txt
+            comm -13 baseline.txt current.txt
             exit 1
           fi
-          echo "No new Ruff debt (Legacy Baseline + No New Debt)"
+          echo "No new Ruff debt (Legacy Baseline: current $current_count <= baseline $baseline_count)"
+
+  # =========================================================================
+  # Stage 1: Static Analysis — MyPy Type Checking
+  # =========================================================================
+  mypy-typecheck:
+    name: MyPy Type Checking
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.11.32"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --all-extras
 
       - name: Run mypy (type checking)
         working-directory: backend
