@@ -24,7 +24,7 @@ class CronSafetyValidator:
     MAX_MUTATIONS_PER_BATCH = int(os.environ.get('PMH_MAX_MUTATIONS_PER_BATCH', '100'))
     CIRCUIT_BREAKER_THRESHOLD = int(os.environ.get('PMH_CB_THRESHOLD', '3'))
 
-    def __init__(self, engine=None):
+    def __init__(self, engine: Optional[Any] = None):
         self.engine = engine
         self.failure_counter = 0
         self.audit_log: List[Dict[str, Any]] = []
@@ -236,7 +236,7 @@ class CronSafetyValidator:
             return True  # Signal to disable cron
         return False
 
-    async def reset_failure_counter(self):
+    async def reset_failure_counter(self) -> None:
         """Reset failure counter on successful run."""
         if self.failure_counter > 0:
             logger.info(f"[SAFETY] Resetting failure counter ({self.failure_counter} -> 0)")

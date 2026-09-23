@@ -49,7 +49,7 @@ jobs:
         working-directory: backend
         id: ruff-check
         run: |
-          uv run ruff check src/ tests/ --output-format=concise | sed 's/\\\\/\\//g' | grep -E "^src" > current_raw.txt
+          uv run ruff check src/ tests/ --output-format=concise | sed 's|\\\\|/|g' | grep -E "^src" > current_raw.txt
           grep -E "^src" ../.hermes/plans/ci-baseline-ruff-snapshot.txt > baseline_raw.txt
           current_count=$(wc -l < current_raw.txt | tr -d ' ')
           baseline_count=$(wc -l < baseline_raw.txt | tr -d ' ')
@@ -150,6 +150,8 @@ jobs:
       - name: Run tests
         working-directory: backend
         id: pytest-run
+        env:
+          LOG_DIR: ${{ runner.temp }}/logs
         run: |
           uv run pytest tests/ -v --tb=long --maxfail=3 --durations=10 --cov=backend --cov-report=term-missing 2>&1 | tee pytest_output.txt
           exit_code=${PIPESTATUS[0]}
