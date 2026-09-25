@@ -15,6 +15,7 @@ These tests verify the Phase 21.2 implementation:
 
 from __future__ import annotations
 
+import asyncio
 import pytest
 from uuid import uuid4
 
@@ -610,6 +611,16 @@ async def seed_candidate(session, candidate_id, area_id=None):
 @pytest.fixture
 async def session():
     """Test database session against a dedicated test DB (fresh per test)."""
+    # Guard: skip when PostgreSQL is unavailable (CI has no PG service)
+    try:
+        await asyncio.wait_for(
+            asyncio.open_connection('localhost', 5433),
+            timeout=2,
+        )
+    except OSError:
+        pytest.skip(
+            "Requires local PostgreSQL on :5433 (docker-compose), not available in CI"
+        )
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
     from backend.shared.domain.memory_models import Base
