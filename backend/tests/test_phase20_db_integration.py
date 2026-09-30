@@ -6,6 +6,7 @@ Requires running PostgreSQL via Docker.
 
 from __future__ import annotations
 
+import asyncio
 import pytest
 from uuid import uuid4
 
@@ -23,6 +24,17 @@ def db_url():
 @pytest.fixture(scope="function")
 async def engine(db_url):
     """Create test engine."""
+    # Guard: skip when PostgreSQL is unavailable (CI has no PG service)
+    try:
+        await asyncio.wait_for(
+            asyncio.open_connection('localhost', 5433),
+            timeout=2,
+        )
+    except (OSError, asyncio.TimeoutError):
+        pytest.skip(
+            "Requires local PostgreSQL on :5433 (docker-compose), not available in CI"
+        )
+
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import create_async_engine
 
