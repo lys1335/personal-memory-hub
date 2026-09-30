@@ -1,0 +1,59 @@
+"""
+Phase 24-C v5: Fixed with immediate commits
+"""
+import asyncio
+import json
+import logging
+from uuid import UUID
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from backend.service.evidence_pipeline_service import EvidencePipelineService
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+DATABASE_URL = 'postgresql+asyncpg://postgres:postgres@db:5432/memory_hub'
+WORKSPACE_ID = UUID('fd0223ed-7aa2-491e-8db5-b0de71b75219')
+
+async def run():
+    engine = create_async_engine(DATABASE_URL)
+    results = {'total': 0, 'success': 0, 'failed': 0}
+    
+    try:
+        async with engine.begin() as conn:
+            # Get all evidence IDs
+            result = await conn.execute(text('SELECT id FROM evidences WHERE workspace_id = :wid ORDER BY created_at ASC'), {'wid': str(WORKSPACE_ID)})
+            evidence_ids = [r[0] for r in result.fetchall()]
+            results['total'] = len(evidence_ids)
+            logger.info(f'Total evidences: {len(evidence_ids)}')
+            
+            pipeline = EvidencePipelineService(conn)
+            
+            for i, ev_id in enumerate(evidence_ids, 1):
+                try:
+                    outcome = await pipeline.process_evidence(evidence_id=ev_id, workspace_id=WORKSPACE_ID)
+                    if outcome.success:
+                        results['success'] += 1
+                    else:
+                        results['failed'] += 1
+                except Exception as e:
+                    results['failed'] += 1
+                
+                # Commit every batch
+                if i % 100 == 0:
+                    await conn.commit()
+                    logger.info(f'{i}/{len(evidence_ids)} ({i*100//len(evidence_ids)}%), success={results["success"]}')
+            
+            # Final commit
+            await conn.commit()
+            logger.info(f'Final commit done')
+            
+    finally:
+        await engine.dispose()
+    
+    with open('/tmp/phase24_c_v5.json', 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    logger.info(f'Final Results: {results}')
+
+if __name__ == '__main__':
+    asyncio.run(run())

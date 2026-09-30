@@ -80,3 +80,17 @@ docs/CODEX_CONTEXT.md
 
 # Temporary runtime directories
 tmp/
+
+# Batch 1 governance cleanup - backend temp files
+backend/mypy_output.txt
+backend/pytest_output.txt
+backend/pytest_output_311.txt
+backend/current.txt
+backend/current_raw.txt
+backend/baseline_raw.txt
+
+# Batch 1 - Hermes temp plan files (do NOT ignore entire .hermes/)
+.hermes/plans/_tmp_*.txt
+
+# Batch 1 - backup files
+*.bak
