@@ -31,7 +31,7 @@
 
 | ID | 风险 | 影响 | 发现来源 | 状态 |
 |----|------|------|----------|------|
-| **R-004** | **Dual `_extract_facts()` 并存** | `evidence_evolution_engine.py:160` 与 `reflection_engine.py:141` 各有一个；可能双重 LLM 调用、候选重复、source_level 污染 | Step 1 前 + 验证 | 🟢 记录，Step 2 处理 |
+|| **R-004** | **Dual `_extract_facts()` 并存** | `evidence_evolution_engine.py:160` 与 `reflection_engine.py:141` 各有一个；可能双重 LLM 调用、候选重复、source_level 污染 | Step 1 前 + 验证 | ✅ **经核验非问题**：两个 `_extract_facts()` 属架构分工（ADR-EvidenceEvolution-Split）。EvidenceEvolutionEngine 处理 Raw Evidence→Facts→Candidates；ReflectionEngine 处理 Candidates→Facts→Proposals。两者处理不同数据阶段，当前代码、调用链、ADR 与测试核验未发现上述重复 LLM 调用、候选重复或 source_level 污染问题。均有直接测试及 pipeline 测试覆盖。 ||
 | **R-005** | **source_level 三处默认值不一致** | `reflection_service.py:1000` 默认 2 / `:1190` 取 `level` 默认 2 / `:1305` 默认 1 —— 候选/提案层级决策不可信 | Step 1 前 + 验证 | ✅ **已修复**：`32e9577` 移除 candidates INSERT 中 source_level；`86910e2` proposals.source_level DateTime→Integer + migration 005，三处默认值已统一为 Integer(default=1) |
 | **R-006** | **D5 层边界系统性越界** | `app.py`/`cli.py`/cron 直连 repo/engine；`service↔ingest` 双向依赖；`service→context`；`evolution→repo` 直连 | arch-laguna 侦察 + 验证 | 🟢 记录，Step 2 处理 |
 | **R-007** | **BUG-WS1：`EvidencePipelineService._interpret` 未透传 `workspace_id`** | 导致解释器无 workspace 上下文；测试曾被放宽断言掩盖（假绿） | Step 1 验证 | ✅ **已修复**：`58ff5cb` semantic_interpreter.interpret() 增加 workspace_id 参数、evidence_pipeline_service 透传、测试断言恢复严格模式，全量 703 passed |
@@ -80,10 +80,11 @@ R-002 (CI PG) 🟡 已缓解 skip-guard (75f70a9)，待根治
 
 ## 5. 变更记录
 
-| 日期 | 版本 | 变更 | 作者 |
-|------|------|------|------|
-| 2026-10-01 | 1.1 | 基线同步：R-007 BUG-WS1 已修复 (58ff5cb)；R-005 source_level 已修复 (32e9577+86910e2)；R-002 CI PG skip-guard 缓解 (75f70a9)；R-009 数量重算与分类更新 | @pm-hy3 |
-| 2026-08-28 | 1.0 | 初版：基于 Step 1 验收结果落盘 | @review-nemo |
+|| 日期 | 版本 | 变更 | 作者 ||
+||------|------|------|------||
+|| 2026-10-02 | 1.2 | R-004 状态更新：经代码、调用链、ADR 与测试核验，原登记三项风险未获证据支持；两个 `_extract_facts()` 属有意架构分工 | @pm-hy3 ||
+|| 2026-10-01 | 1.1 | 基线同步：R-007 BUG-WS1 已修复 (58ff5cb)；R-005 source_level 已修复 (32e9577+86910e2)；R-002 CI PG skip-guard 缓解 (75f70a9)；R-009 数量重算与分类更新 | @pm-hy3 ||
+|| 2026-08-28 | 1.0 | 初版：基于 Step 1 验收结果落盘 | @review-nemo ||
 
 ---
 
