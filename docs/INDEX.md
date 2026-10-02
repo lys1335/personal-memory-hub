@@ -259,7 +259,7 @@ Complete human verification guide for D1 Infrastructure Foundation. Allows any d
 * [phase26g_b6_preflight_report.md](./phase26g_b6_preflight_report.md)
 * [phase26g_b6_scope_reassessment.md](./phase26g_b6_scope_reassessment.md)
 * [phase26g_b6_step2_workspace_fix_report.md](./phase26g_b6_step2_workspace_fix_report.md)
-* [phase26g_b6_step4_1_final_stability_check.md](./phase26g_b6_step4_1_final_stability_check.md)
+* [phase26g_b6_step4_1_final_stability_check_final.md](./phase26g_b6_step4_1_final_stability_check_final.md)
 * [phase26g_b6_clean_phase_report.md](./phase26g_b6_clean_phase_report.md)
 * [phase26g_b6_fresh_backup_report.md](./phase26g_b6_fresh_backup_report.md)
 
