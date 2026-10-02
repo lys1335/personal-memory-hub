@@ -45,7 +45,7 @@ services:
     environment:
       APP_NAME: personal-memory-hub
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/memory_hub}
+      PMH_DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/memory_hub}
       DATABASE_ECHO: ${DATABASE_ECHO:-false}
       VECTOR_DIMENSION: ${VECTOR_DIMENSION:-1536}
       PMH_OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.65.254:11434}
